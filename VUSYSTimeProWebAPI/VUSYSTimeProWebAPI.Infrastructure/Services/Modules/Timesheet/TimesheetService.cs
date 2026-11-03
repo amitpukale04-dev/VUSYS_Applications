@@ -1,7 +1,6 @@
 ﻿using System.Data;
 using CommonLibCore10;
 using CommonLibCore10.Constants;
-using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json.Linq;
 using VUSYSTimeProWebAPI.Application.Abstractions.Common;
@@ -11,7 +10,6 @@ using VUSYSTimeProWebAPI.Application.Models;
 using VUSYSTimeProWebAPI.Infrastructure.Common;
 using VUSYSTimeProWebAPI.Infrastructure.Persistence.Constants;
 using static CommonLibCore10.CONST;
-using ApplicationSendEmailRequestParam = VUSYSTimeProWebAPI.Application.Models.SendEmailRequestParam;
 
 namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Timesheet
 {
