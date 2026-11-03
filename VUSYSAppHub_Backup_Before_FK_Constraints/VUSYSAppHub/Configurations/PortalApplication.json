@@ -1,0 +1,574 @@
+{
+    "PortalApplications": [
+        {
+            "ApplicationName": "Sharpply",
+            "Environments": [
+                {
+                    "Environment": "Development",
+                    "Applications": [
+                        {
+                            "Id": 1,
+                            "Name": "Front End",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply Front End",
+                            "Url": "https://sharpply.vusys.in:8081",
+                            "IconCss": "bi bi-display-fill",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 1,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 2,
+                            "Name": "Web API",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply Web API",
+                            "Url": "https://sharpply-location.vusys.in:8083/swagger/index.html",
+                            "IconCss": "bi bi-hdd-network-fill",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 2,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 3,
+                            "Name": "Front End PWA",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply PWA",
+                            "Url": "https://sharpply-pwa.vusys.in:5000",
+                            "IconCss": "bi bi-display-fill",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 3,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 4,
+                            "Name": "PWA Web API",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply PWA Web API",
+                            "Url": "https://sharpply-pwa-api.vusys.in:8086/swagger/index.html",
+                            "IconCss": "bi bi-hdd-network-fill",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 4,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 5,
+                            "Name": "Email Approval",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply Email Approval",
+                            "Url": "https://sharpply-invapproval.vusys.in:8085/Invoice/InvoiceApproval?dc_ref=MjVJL1RTVDEvMDQ3NA==&oa_ref=VFNUMS8yNS0yNi8wNjI4&user=QW1pdA==",
+                            "IconCss": "bi bi-envelope-check-fill",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 5,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 6,
+                            "Name": "Tally Web API",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply Tally Web API",
+                            "Url": "https://sharpply-tally.vusys.in:8093/swagger/index.html",
+                            "IconCss": "bi bi-journal-text",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 6,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 7,
+                            "Name": "QR-Code",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply QR-Code",
+                            "Url": "https://103.160.144.33:8084",
+                            "IconCss": "bi bi-qr-code-scan",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 7,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 8,
+                            "Name": "One-Drive Web API",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply One-Drive Web API",
+                            "Url": "https://sharpply-odrive.vusys.in:8087/swagger/index.html",
+                            "IconCss": "bi bi-cloud-fill",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 8,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 9,
+                            "Name": "E-Invoice Web API",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply E-Invoice Web API",
+                            "Url": "https://einvoice.vusys.in:7070/swagger/index.html",
+                            "IconCss": "bi bi-receipt",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 9,
+                            "Status": "Live"
+                        }
+                    ]
+                },
+                {
+                    "Environment": "Staging",
+                    "Applications": [
+                    ]
+                },
+                {
+                    "Environment": "Production",
+                    "Applications": [
+                        {
+                            "Id": 1,
+                            "Name": "Front End",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply Front End",
+                            "Url": "https://erp.sharpply.com:8081",
+                            "IconCss": "bi bi-display-fill",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 1,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 2,
+                            "Name": "Web API",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply Web API",
+                            "Url": "https://erp-api.sharpply.com:8082/swagger/index.html",
+                            "IconCss": "bi bi-hdd-network-fill",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 2,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 3,
+                            "Name": "Front End PWA",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply PWA",
+                            "Url": "https://crm.sharpply.com:8087",
+                            "IconCss": "bi bi-display-fill",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 3,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 4,
+                            "Name": "PWA Web API",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply PWA Web API",
+                            "Url": "https://crm-api.sharpply.com:8086/swagger/index.html",
+                            "IconCss": "bi bi-hdd-network-fill",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 4,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 5,
+                            "Name": "Email Approval",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply Email Approval",
+                            "Url": "https://emailapp.sharpply.com:8085",
+                            "IconCss": "bi bi-envelope-check-fill",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 5,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 6,
+                            "Name": "Tally Web API",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply Tally Web API",
+                            "Url": "https://tallydata.sharpply.com:8093/swagger/index.html",
+                            "IconCss": "bi bi-journal-text",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 6,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 7,
+                            "Name": "QR-Code",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply QR-Code",
+                            "Url": "https://qr.sharpply.com:8084",
+                            "IconCss": "bi bi-qr-code-scan",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 7,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 8,
+                            "Name": "One-Drive Web API",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply One-Drive Web API",
+                            "Url": "https://odrive.sharpply.com:8089/swagger/index.html",
+                            "IconCss": "bi bi-cloud-fill",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 8,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 9,
+                            "Name": "E-Invoice Web API",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply E-Invoice Web API",
+                            "Url": "https://einvoice.sharpply.com:7070/swagger/index.html",
+                            "IconCss": "bi bi-receipt",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 9,
+                            "Status": "Live"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "ApplicationName": "Protectron",
+            "Environments": [
+                {
+                    "Environment": "Development",
+                    "Applications": [
+                        {
+                            "Id": 1,
+                            "Name": "Front End",
+                            "ProductGroup": "Protectron",
+                            "Description": "Protectron Front End",
+                            "Url": "https://protectron-web.vusys.in:8182",
+                            "IconCss": "bi bi-display-fill",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 1,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 2,
+                            "Name": "Web API",
+                            "ProductGroup": "Protectron",
+                            "Description": "Protectron Web API",
+                            "Url": "https://protectron-webapi.vusys.in:8181/swagger/index.html",
+                            "IconCss": "bi bi-hdd-network-fill",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 2,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 3,
+                            "Name": "HR Web API",
+                            "ProductGroup": "Protectron",
+                            "Description": "Protectron HR Web API",
+                            "Url": "https://protectronhr-webapi.vusys.in:8185/swagger/index.html",
+                            "IconCss": "bi bi-hdd-network-fill",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 3,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 4,
+                            "Name": "Email Approval",
+                            "ProductGroup": "Sharpply",
+                            "Description": "Sharpply Email Approval",
+                            "Url": "https://103.160.144.33:8180/Customer/ShipmentBlock?c_code=123==&user=abc",
+                            "IconCss": "bi bi-envelope-check-fill",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 5,
+                            "Status": "Live"
+                        }
+                    ]
+                },
+                {
+                    "Environment": "Staging",
+                    "Applications": [
+                        {
+                            "Id": 1,
+                            "Name": "Front End",
+                            "ProductGroup": "Protectron",
+                            "Description": "Protectron Front End",
+                            "Url": "https://preprod-protectron-web.vusys.in:8184",
+                            "IconCss": "bi bi-display-fill",
+                            "Environment": "Staging",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 1,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 2,
+                            "Name": "Web API",
+                            "ProductGroup": "Protectron",
+                            "Description": "Protectron Web API",
+                            "Url": "https://preprod-protectron-webapi.vusys.in:8183/swagger/index.html",
+                            "IconCss": "bi bi-hdd-network-fill",
+                            "Environment": "Staging",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 2,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 3,
+                            "Name": "HR Web API",
+                            "ProductGroup": "Protectron",
+                            "Description": "Protectron HR Web API",
+                            "Url": "http://localhost:8186/swagger/index.html",
+                            "IconCss": "bi bi-hdd-network-fill",
+                            "Environment": "Staging",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 3,
+                            "Status": "Live"
+                        }
+                    ]
+                },
+                {
+                    "Environment": "Production",
+                    "Applications": [
+                        {
+                            "Id": 1,
+                            "Name": "Front End",
+                            "ProductGroup": "Protectron",
+                            "Description": "Protectron Front End",
+                            "Url": "https://erp.protectron.co.in:8184",
+                            "IconCss": "bi bi-display-fill",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 1,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 2,
+                            "Name": "Web API",
+                            "ProductGroup": "Protectron",
+                            "Description": "Protectron Web API",
+                            "Url": "https://api-erp.protectron.co.in:8183/swagger/index.html",
+                            "IconCss": "bi bi-hdd-network-fill",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 2,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 3,
+                            "Name": "HR Web API",
+                            "ProductGroup": "Protectron",
+                            "Description": "Protectron HR Web API",
+                            "Url": "https://api-hr.protectron.co.in:8185/swagger/index.html",
+                            "IconCss": "bi bi-hdd-network-fill",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 3,
+                            "Status": "Live"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "ApplicationName": "Inspire Magnetics",
+            "Environments": [
+                {
+                    "Environment": "Development",
+                    "Applications": [
+                        {
+                            "Id": 1,
+                            "Name": "Front End",
+                            "ProductGroup": "Inspire Magnetics",
+                            "Description": "Inspire Magnetics Front End",
+                            "Url": "https://im-web.vusys.in:8381",
+                            "IconCss": "bi bi-display-fill",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 1,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 2,
+                            "Name": "Web API",
+                            "ProductGroup": "Inspire Magnetics",
+                            "Description": "Inspire Magnetics Web API",
+                            "Url": "https://im-webapi.vusys.in:8380/swagger/index.html",
+                            "IconCss": "bi bi-hdd-network-fill",
+                            "Environment": "Development",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 2,
+                            "Status": "Live"
+                        }
+                    ]
+                },
+                {
+                    "Environment": "Staging",
+                    "Applications": [
+                        {
+                            "Id": 1,
+                            "Name": "Front End",
+                            "ProductGroup": "Inspire Magnetics",
+                            "Description": "Inspire Magnetics Front End",
+                            "Url": "https://preprod-im-web.vusys.in:8382",
+                            "IconCss": "bi bi-display-fill",
+                            "Environment": "Staging",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 1,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 2,
+                            "Name": "Web API",
+                            "ProductGroup": "Inspire Magnetics",
+                            "Description": "Inspire Magnetics Web API",
+                            "Url": "https://preprod-im-webapi.vusys.in:8383/swagger/index.html",
+                            "IconCss": "bi bi-hdd-network-fill",
+                            "Environment": "Staging",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 2,
+                            "Status": "Live"
+                        }
+                    ]
+                },
+                {
+                    "Environment": "Production",
+                    "Applications": [
+                        {
+                            "Id": 1,
+                            "Name": "Front End",
+                            "ProductGroup": "Inspire Magnetics",
+                            "Description": "Inspire Magnetics Front End",
+                            "Url": "https://erp.inspiremagnetics.com:8080",
+                            "IconCss": "bi bi-display-fill",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 1,
+                            "Status": "Live"
+                        },
+                        {
+                            "Id": 2,
+                            "Name": "Web API",
+                            "ProductGroup": "Inspire Magnetics",
+                            "Description": "Inspire Magnetics Web API",
+                            "Url": "https://api-erp.inspiremagnetics.com:8081/swagger/index.html",
+                            "IconCss": "bi bi-hdd-network-fill",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 2,
+                            "Status": "Live"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "ApplicationName": "TimePro",
+            "Environments": [
+                {
+                    "Environment": "Development",
+                    "Applications": [
+                    ]
+                },
+                {
+                    "Environment": "Staging",
+                    "Applications": [
+                    ]
+                },
+                {
+                    "Environment": "Production",
+                    "Applications": [
+                        {
+                            "Id": 1,
+                            "Name": "TimePro",
+                            "ProductGroup": "TimePro",
+                            "Description": "Employee Time Tracking Portal.",
+                            "Url": "https://timepro.vusys.in:9090",
+                            "IconCss": "bi bi-clock-history",
+                            "Environment": "Production",
+                            "AppType": "WebApp",
+                            "IsActive": true,
+                            "OpenInNewTab": true,
+                            "SortOrder": 1,
+                            "Status": "Live"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,382 @@
+
+now we will integrate Timesheet Report with API Integration under Reports Menu. Shall share i my existing latest complete project code and API Details?
+
+
+I have attached my existing latest completed project code. Modify and Provide me full updated project code.
+
+I have attached screen screenshots for your reference. But you should follow our UI/UX and architecture standards. As per this application standards.
+
+In Timesheet Report Below controls
+
+In tp-form-page-heading-actions it should have search Report Icon and cancel icon
+
+--First Row (3 Controls) All are Mandatory Fields
+
+1. Employee - Dropdown
+2. Month - Dropdown
+3. Year - Dropdown
+
+Use Sortable Table like Columns should be
+1. Actions (Notify To User) - This is Link Button
+   - Notify To User Link Button Flow 
+     1. It Should Visible if IsShowSendNotificationButton is true else dont show from /api/Report/GetTimesheetReportList for that particular row
+	 2. On Click of Notify To User Link Button. It should ConfirmModal and message should be "Are You Sure You Want To Send Timesheet Submission Notification ?"
+	 3. If i on click on Yes, Confirm then call the API /api/Timesheet/SendTimesheetSubmissionReminderNotificationToEmployee for that particular row
+   
+2. Employee Name
+3. Month
+4. Year
+5. No. of Hours Worked
+6. Approval Status
+7. Approved/Rejected Details - Display View Details Link Button if ApprovedOrRejectedReason is not null and empty from /api/Report/GetTimesheetReportList for that particular row
+    - On click of that Link Button Open a Popup to Show the Details like ApprovedOrRejectedByUser, ApprovedOrRejectedDateTime and ApprovedOrRejectedReason
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Dropdown API
+
+--Employee
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "EmployeeProjectWithAll",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "ALL",
+        "ValueText": "0"
+      },
+      {
+        "DisplayText": "Amit P Pukale",
+        "ValueText": "VUT0011"
+      },
+      {
+        "DisplayText": "Anitha",
+        "ValueText": "VUT002"
+      },
+      {
+        "DisplayText": "Sanket",
+        "ValueText": "VUT003"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+--Month
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Month",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "January",
+        "ValueText": "January"
+      },
+      {
+        "DisplayText": "February",
+        "ValueText": "February"
+      },
+      {
+        "DisplayText": "March",
+        "ValueText": "March"
+      },
+      {
+        "DisplayText": "April",
+        "ValueText": "April"
+      },
+      {
+        "DisplayText": "May",
+        "ValueText": "May"
+      },
+      {
+        "DisplayText": "June",
+        "ValueText": "June"
+      },
+      {
+        "DisplayText": "July",
+        "ValueText": "July"
+      },
+      {
+        "DisplayText": "August",
+        "ValueText": "August"
+      },
+      {
+        "DisplayText": "September",
+        "ValueText": "September"
+      },
+      {
+        "DisplayText": "October",
+        "ValueText": "October"
+      },
+      {
+        "DisplayText": "November",
+        "ValueText": "November"
+      },
+      {
+        "DisplayText": "December",
+        "ValueText": "December"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+--Year
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Year",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "2026",
+        "ValueText": "2026"
+      },
+      {
+        "DisplayText": "2025",
+        "ValueText": "2025"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+/api/Report/GetTimesheetReportList
+
+{
+  "employeeCode": "0",
+  "timesheetMonth": "June",
+  "timesheetYear": 2026
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "TIMESHEET_REPORT_RESPONSE": [
+      {
+        "ProjectTimeSheetID": 1004,
+        "EmployeeCode": "VUT001",
+        "FullName": "Amit P Pukale",
+        "TimeSheetMonth": "June",
+        "TimeSheetYear": 2026,
+        "TotalHoursWorked": 8,
+        "TimesheetApprovalStatus": "Not Submitted",
+        "ApprovedOrRejectedReason": "",
+        "ApprovedOrRejectedByUser": "",
+        "ApprovedOrRejectedDateTime": "",
+        "IsShowSendForApprovalButton": false,
+        "IsShowSendNotificationButton": true,
+        "IsSentForApproval": false,
+        "IsAvailableToResendForApproval": false,
+        "IsShowViewDetailsButton": false,
+        "IsShowApproveRejectButton": false
+      },
+      {
+        "ProjectTimeSheetID": 1005,
+        "EmployeeCode": "VUT002",
+        "FullName": "Anitha",
+        "TimeSheetMonth": "June",
+        "TimeSheetYear": 2026,
+        "TotalHoursWorked": 8,
+        "TimesheetApprovalStatus": "Not Submitted",
+        "ApprovedOrRejectedReason": "",
+        "ApprovedOrRejectedByUser": "",
+        "ApprovedOrRejectedDateTime": "",
+        "IsShowSendForApprovalButton": false,
+        "IsShowSendNotificationButton": true,
+        "IsSentForApproval": false,
+        "IsAvailableToResendForApproval": false,
+        "IsShowViewDetailsButton": false,
+        "IsShowApproveRejectButton": false
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "TIMESHEET_REPORT_RESPONSE": [
+      {
+        "Message": "Timesheet Report Not Found."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      },
+      {
+        "Key": "TimesheetMonth",
+        "Message": "Enter The Timesheet Month."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Timesheet/SendTimesheetSubmissionReminderNotificationToEmployee
+
+Request Payload
+
+{
+  "employeeCode": "VUT001",
+  "timesheetMonth": "June",
+  "timesheetYear": 2026
+}
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "TIMESHEET_SUBMISSION_REMINDER_NOTIFICATION_RESPONSE": [
+      {
+        "Message": "An Email Notification Has Been Sent to the Employee !!!"
+      }
+    ]
+  }
+}
+
+Error Reponse
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "TIMESHEET_SUBMISSION_REMINDER_NOTIFICATION_RESPONSE": [
+      {
+        "Message": "We Encountered An Issue Sending An Email Notification To The Employee !!!"
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      },
+      {
+        "Key": "TimesheetYear",
+        "Message": "Timesheet Year Should Be Greater Than 0."
+      },
+      {
+        "Key": "TimesheetMonth",
+        "Message": "Enter The Timesheet Month."
+      }
+    ]
+  }
+}

@@ -1,0 +1,867 @@
+﻿@page "/github-billing-usage"
+@rendermode InteractiveServer
+
+@inject IGitHubService GitHubService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+@using System.Globalization
+@using System.Text.Json
+@using Microsoft.JSInterop
+@using VUSYSAppHub.Contracts
+@using VUSYSAppHub.Models
+
+<PageTitle>GitHub Billing Usage</PageTitle>
+
+<div class="apphub-page @(isDarkMode ? "dark-mode" : "")">
+    <div class="container-fluid px-3 px-md-4 px-lg-5 py-4 py-lg-5">
+
+        <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
+            <div>
+                <h2 class="page-title mb-1">GitHub Billing Usage</h2>
+                <div class="page-note">
+                    Personal GitHub account billing overview, metered usage and repository-wise spend.
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="button"
+                        class="btn btn-back-dashboard d-inline-flex align-items-center gap-2"
+                        @onclick="GoBackToHome">
+                    <i class="bi bi-arrow-left-circle-fill"></i>
+                    <span>Back to App Hub</span>
+                </button>
+
+                <button type="button"
+                        class="btn btn-theme d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                        style="width: 56px; height: 56px; padding: 0;"
+                        title="@(isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")"
+                        @onclick="ToggleThemeAsync">
+                    <i class="bi @(isDarkMode ? "bi-sun-fill" : "bi-moon-stars-fill") fs-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4 monitoring-dashboard-card">
+            <div class="monitoring-dashboard-header">
+                <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="monitoring-dashboard-icon">
+                            <i class="bi bi-github"></i>
+                        </div>
+                        <div>
+                            <h4 class="monitoring-dashboard-title mb-1">GitHub Billing Overview</h4>
+                            <div class="monitoring-dashboard-subtitle">
+                                View current usage for GitHub Actions, Codespaces, Packages, Models and other products
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="monitoring-dashboard-right">
+                        <div class="monitoring-refresh-pill @(isBusy ? "refreshing" : "")">
+                            <span class="monitoring-refresh-dot"></span>
+                            <span>@GetStatusText()</span>
+                        </div>
+
+                        <div class="monitoring-last-refresh">
+                            <i class="bi bi-clock-history me-1"></i>
+                            @(lastRefreshAt.HasValue ? $"Last refresh: {lastRefreshAt.Value:dd-MMM-yyyy hh:mm:ss tt}" : "Last refresh: --")
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+
+                @if (!string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    <div class="alert alert-danger mb-4" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        @errorMessage
+                    </div>
+                }
+
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+                    <h5 class="mb-0 fw-bold">Overview</h5>
+
+                    <div class="d-flex flex-column flex-sm-row gap-2">
+                        <select class="form-select form-select-sm github-billing-timeframe"
+                                @bind="selectedTimeFrame"
+                                @bind:after="LoadBillingUsageAsync"
+                                disabled="@isBusy">
+                            <option value="current">Timeframe: Current month</option>
+                            <option value="previous">Timeframe: Previous month</option>
+                        </select>
+
+                        <button class="btn btn-sm btn-monitoring-dashboard d-inline-flex align-items-center justify-content-center gap-2"
+                                @onclick="LoadBillingUsageAsync"
+                                disabled="@isBusy">
+                            <i class="bi bi-arrow-clockwise"></i>
+                            <span>@(isBusy ? "Loading..." : "Refresh")</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-4">
+                        <div class="github-billing-summary-card">
+                            <div class="github-billing-card-title">Current metered usage</div>
+                            <div class="github-billing-card-amount">@FormatCurrency(currentMeteredUsage)</div>
+                            <div class="github-billing-card-note">
+                                Gross metered usage for @usageDateText.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <div class="github-billing-summary-card">
+                            <div class="d-flex justify-content-between gap-2">
+                                <div class="github-billing-card-title">Current included usage</div>
+                                <button type="button" class="btn btn-link btn-sm p-0" @onclick="ShowRawJsonAsync">
+                                    More details
+                                </button>
+                            </div>
+                            <div class="github-billing-card-amount">@FormatCurrency(currentIncludedUsage)</div>
+                            <div class="github-billing-card-note">
+                                Included usage discounts for @usageDateText.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <div class="github-billing-summary-card">
+                            <div class="d-flex justify-content-between gap-2">
+                                <div class="github-billing-card-title">Next payment due</div>
+                                <a href="https://github.com/settings/billing/payment_history" target="_blank">
+                                    Payment history
+                                </a>
+                            </div>
+                            <div class="github-billing-card-amount">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0 fw-bold">Subscriptions</h5>
+                    <a href="https://github.com/settings/billing" target="_blank">Manage subscriptions</a>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-6">
+                        <div class="github-billing-summary-card">
+                            <div class="github-billing-card-title">GitHub Free</div>
+                            <div class="github-billing-card-amount">$0.00 <span>per month</span></div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <div class="github-billing-summary-card">
+                            <div class="github-billing-card-title">Copilot Free</div>
+                            <div class="github-billing-card-amount">$0.00 <span>per month</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mb-3 fw-bold">Metered usage</h5>
+
+                <div class="github-billing-usage-card mb-4">
+                    <div class="fw-bold mb-3">Usage by products</div>
+
+                    <div class="github-billing-product-tabs">
+                        @foreach (var product in productTabs)
+                        {
+                            <button type="button"
+                                    class="github-billing-product-tab @(selectedProduct == product.Key ? "active" : "")"
+                                    @onclick="() => SelectProduct(product.Key)">
+                                <i class="bi @product.Icon"></i>
+                                <span>@product.DisplayName</span>
+                            </button>
+                        }
+                    </div>
+
+                    <div class="row g-0 mt-3">
+                        <div class="col-12 col-lg-6 pe-lg-4 github-billing-usage-left">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="fw-bold">Billable usage</div>
+                                <button class="btn btn-link btn-sm p-0" @onclick="ShowRawJsonAsync">
+                                    View details
+                                </button>
+                            </div>
+
+                            <div class="github-billing-billable-amount">@FormatCurrency(selectedProductNetAmount)</div>
+
+                            <div class="github-billing-small-text">
+                                @FormatCurrency(selectedProductGrossAmount) estimated consumed usage -
+                                @FormatCurrency(selectedProductDiscountAmount) discounts
+                            </div>
+
+                            <div class="github-billing-small-text mt-2">
+                                Billable spend for @selectedProductDisplayName for the selected timeframe.
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 ps-lg-4 mt-4 mt-lg-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="fw-bold">Included usage</div>
+                                <a href="https://github.com/settings/billing/budgets" target="_blank">
+                                    Manage budgets
+                                </a>
+                            </div>
+
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between github-billing-small-text">
+                                    <span>Actions minutes</span>
+                                    <span>@actionsMinutesUsed.ToString("0.##") min used / @actionsMinutesIncluded.ToString("0.##") min included</span>
+                                </div>
+                                <div class="progress github-billing-progress">
+                                    <div class="progress-bar" style="width:@GetPercentage(actionsMinutesUsed, actionsMinutesIncluded)%"></div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between github-billing-small-text">
+                                    <span>Actions storage</span>
+                                    <span>@actionsStorageUsed.ToString("0.##") GB used / @actionsStorageIncluded.ToString("0.##") GB included</span>
+                                </div>
+                                <div class="progress github-billing-progress">
+                                    <div class="progress-bar" style="width:@GetPercentage(actionsStorageUsed, actionsStorageIncluded)%"></div>
+                                </div>
+                            </div>
+
+                            <div class="github-billing-small-text mt-3">
+                                Included usage limits reset in @daysRemainingInMonth days.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="github-billing-usage-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-bold">Usage by repository</div>
+                            <div class="github-billing-small-text">Top five repositories this month</div>
+                        </div>
+
+                        <i class="bi bi-three-dots"></i>
+                    </div>
+
+                    <div class="github-billing-repo-bar mt-3">
+                        @foreach (var repo in topRepositories)
+                        {
+                            <div style="width:@repo.Percentage%"></div>
+                        }
+                    </div>
+
+                    <div class="table-responsive mt-3">
+                        <table class="table github-billing-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Repository</th>
+                                    <th class="text-end">Gross amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (topRepositories.Any())
+                                {
+                                    @foreach (var repo in topRepositories)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="github-billing-repo-dot"></span>
+                                                @repo.RepositoryName
+                                            </td>
+                                            <td class="text-end">@FormatCurrency(repo.GrossAmount)</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="2" class="text-center text-muted py-4">
+                                            No repository usage found for selected timeframe.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (showRawJsonModal)
+{
+    <div class="apphub-modal-overlay" @onclick="CloseRawJsonModal">
+        <div class="apphub-modal-card monitoring-dashboard-card shadow-lg" style="max-width: 1000px;" @onclick:stopPropagation="true">
+            <div class="monitoring-dashboard-header apphub-modal-header">
+                <div class="d-flex align-items-center justify-content-between gap-3 w-100">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="monitoring-dashboard-icon">
+                            <i class="bi bi-code-square"></i>
+                        </div>
+                        <div>
+                            <h4 class="monitoring-dashboard-title mb-1">GitHub Billing API Response</h4>
+                            <div class="monitoring-dashboard-subtitle">
+                                Raw response for debugging and mapping
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-light" @onclick="CloseRawJsonModal">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <pre class="github-billing-json">@rawJsonForDisplay</pre>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .github-billing-summary-card,
+    .github-billing-usage-card {
+        background: var(--bs-body-bg);
+        border: 1px solid rgba(148, 163, 184, .35);
+        border-radius: 8px;
+        padding: 16px;
+    }
+
+    .github-billing-card-title {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .github-billing-card-amount {
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--bs-body-color);
+    }
+
+        .github-billing-card-amount span {
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+    .github-billing-card-note,
+    .github-billing-small-text {
+        font-size: 12px;
+        color: #64748b;
+    }
+
+    .github-billing-product-tabs {
+        display: flex;
+        gap: 18px;
+        overflow-x: auto;
+        border-bottom: 1px solid rgba(148, 163, 184, .35);
+    }
+
+    .github-billing-product-tab {
+        border: 0;
+        background: transparent;
+        padding: 10px 0;
+        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border-bottom: 2px solid transparent;
+        white-space: nowrap;
+        color: var(--bs-body-color);
+    }
+
+        .github-billing-product-tab.active {
+            border-bottom-color: #f97373;
+            font-weight: 700;
+        }
+
+    .github-billing-billable-amount {
+        font-size: 28px;
+        font-weight: 600;
+        margin-top: 12px;
+    }
+
+    .github-billing-usage-left {
+        border-right: 1px solid rgba(148, 163, 184, .35);
+    }
+
+    .github-billing-progress {
+        height: 8px;
+        border-radius: 999px;
+        background: #cbd5e1;
+    }
+
+        .github-billing-progress .progress-bar {
+            background: #0969da;
+        }
+
+    .github-billing-repo-bar {
+        display: flex;
+        height: 8px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: #cbd5e1;
+    }
+
+        .github-billing-repo-bar div:nth-child(1) {
+            background: green;
+        }
+
+        .github-billing-repo-bar div:nth-child(2) {
+            background: blue;
+        }
+
+        .github-billing-repo-bar div:nth-child(3) {
+            background: purple;
+        }
+
+        .github-billing-repo-bar div:nth-child(4) {
+            background: red;
+        }
+
+        .github-billing-repo-bar div:nth-child(5) {
+            background: brown;
+        }
+
+    .github-billing-table th {
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .github-billing-table td {
+        font-size: 14px;
+    }
+
+    .github-billing-repo-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: green;
+        margin-right: 8px;
+    }
+
+    .github-billing-json {
+        max-height: 600px;
+        overflow: auto;
+        font-size: 12px;
+        background: #0f172a;
+        color: #e2e8f0;
+        border-radius: 10px;
+        padding: 16px;
+    }
+
+    .github-billing-timeframe {
+        min-width: 220px;
+    }
+
+    .dark-mode .github-billing-summary-card,
+    .dark-mode .github-billing-usage-card {
+        background: rgba(15, 23, 42, .75);
+        border-color: rgba(148, 163, 184, .25);
+    }
+
+    @@media (max-width: 991px) {
+        .github-billing-usage-left {
+            border-right: 0;
+        }
+    }
+</style>
+
+@code {
+    private bool isDarkMode = false;
+    private bool isBusy = false;
+    private string errorMessage = string.Empty;
+    private DateTime? lastRefreshAt;
+
+    private string selectedTimeFrame = "current";
+    private string usageDateText = string.Empty;
+
+    private decimal currentMeteredUsage = 0;
+    private decimal currentIncludedUsage = 0;
+
+    private decimal selectedProductGrossAmount = 0;
+    private decimal selectedProductNetAmount = 0;
+    private decimal selectedProductDiscountAmount = 0;
+    private string selectedProduct = "actions";
+    private string selectedProductDisplayName = "Actions";
+
+    private decimal actionsMinutesUsed = 0;
+    private decimal actionsMinutesIncluded = 2000;
+    private decimal actionsStorageUsed = 0;
+    private decimal actionsStorageIncluded = 0.5m;
+    private int daysRemainingInMonth = 0;
+
+    private List<GitHubBillingUsageItemModel> usageItems = new();
+    private List<GitHubRepositoryUsageModel> topRepositories = new();
+
+    private bool showRawJsonModal = false;
+    private string summaryRawJson = string.Empty;
+    private string usageRawJson = string.Empty;
+    private string rawJsonForDisplay = string.Empty;
+
+    private readonly List<GitHubProductTabModel> productTabs = new()
+    {
+        new("copilot", "Copilot", "bi-people"),
+        new("actions", "Actions", "bi-play-circle"),
+        new("codespaces", "Codespaces", "bi-pc-display"),
+        new("git-lfs", "Git LFS", "bi-database"),
+        new("models", "Models", "bi-diagram-3"),
+        new("packages", "Packages", "bi-box-seam"),
+        new("sandbox", "Sandbox", "bi-code-square"),
+        new("spark", "Spark", "bi-stars")
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await LoadBillingUsageAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            if (firstRender)
+            {
+                isDarkMode = await JS.InvokeAsync<bool>("themeManager.getCurrentThemeIsDark");
+            }
+        }
+        catch
+        {
+            isDarkMode = false;
+        }
+        finally
+        {
+            if (firstRender)
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    private async Task LoadBillingUsageAsync()
+    {
+        try
+        {
+            errorMessage = string.Empty;
+            isBusy = true;
+
+            var result = await GitHubService.GetPersonalBillingUsageAsync(selectedTimeFrame);
+
+            usageDateText = result.UsageDateText;
+
+            currentMeteredUsage = result.CurrentMeteredUsage;
+            currentIncludedUsage = result.CurrentIncludedUsage;
+
+            actionsMinutesUsed = result.ActionsMinutesUsed;
+            actionsMinutesIncluded = result.ActionsMinutesIncluded;
+
+            actionsStorageUsed = result.ActionsStorageUsed;
+            actionsStorageIncluded = result.ActionsStorageIncluded;
+
+            daysRemainingInMonth = result.DaysRemainingInMonth;
+
+            summaryRawJson = result.SummaryRawJson;
+            usageRawJson = result.UsageRawJson;
+
+            usageItems = result.UsageItems ?? new();
+
+            BuildSelectedProductUsage();
+            BuildTopRepositories();
+
+            lastRefreshAt = DateTime.Now;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void SelectProduct(string productKey)
+    {
+        try
+        {
+            selectedProduct = productKey;
+            BuildSelectedProductUsage();
+            BuildTopRepositories();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void BuildSelectedProductUsage()
+    {
+        try
+        {
+            var product = productTabs.FirstOrDefault(x => x.Key == selectedProduct);
+            selectedProductDisplayName = product?.DisplayName ?? selectedProduct;
+
+            var filtered = usageItems
+                .Where(x => IsSameProduct(x.Product, selectedProduct) || IsSameProduct(x.Sku, selectedProduct))
+                .ToList();
+
+            selectedProductGrossAmount = filtered.Sum(x => x.GrossAmount);
+            selectedProductNetAmount = filtered.Sum(x => x.NetAmount);
+            selectedProductDiscountAmount = Math.Max(0, selectedProductGrossAmount - selectedProductNetAmount);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+        }
+    }
+
+    private void BuildTopRepositories()
+    {
+        try
+        {
+            var filtered = usageItems
+                .Where(x => IsSameProduct(x.Product, selectedProduct) || IsSameProduct(x.Sku, selectedProduct))
+                .GroupBy(x => string.IsNullOrWhiteSpace(x.RepositoryName) ? "No Repository" : x.RepositoryName)
+                .Select(g => new GitHubRepositoryUsageModel
+                {
+                    RepositoryName = g.Key,
+                    GrossAmount = g.Sum(x => x.GrossAmount)
+                })
+                .OrderByDescending(x => x.GrossAmount)
+                .Take(5)
+                .ToList();
+
+            var total = filtered.Sum(x => x.GrossAmount);
+
+            foreach (var repo in filtered)
+            {
+                repo.Percentage = total > 0
+                    ? Math.Max(2, Math.Round((repo.GrossAmount / total) * 100, 2))
+                    : 0;
+            }
+
+            topRepositories = filtered;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+        }
+    }
+
+    private static string NormalizeProductKey(string value)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+
+            var normalized = value.Trim().ToLowerInvariant();
+
+            if (normalized.Contains("action"))
+                return "actions";
+
+            if (normalized.Contains("codespace"))
+                return "codespaces";
+
+            if (normalized.Contains("package"))
+                return "packages";
+
+            if (normalized.Contains("copilot"))
+                return "copilot";
+
+            if (normalized.Contains("lfs"))
+                return "git-lfs";
+
+            if (normalized.Contains("model"))
+                return "models";
+
+            if (normalized.Contains("sandbox"))
+                return "sandbox";
+
+            if (normalized.Contains("spark"))
+                return "spark";
+
+            return normalized;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+        finally
+        {
+        }
+    }
+
+    private static bool IsSameProduct(string value, string productKey)
+    {
+        try
+        {
+            return string.Equals(NormalizeProductKey(value), productKey, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+        }
+    }
+
+    private static string FormatCurrency(decimal value)
+    {
+        try
+        {
+            return value.ToString("C2", CultureInfo.GetCultureInfo("en-US"));
+        }
+        catch
+        {
+            return "$0.00";
+        }
+        finally
+        {
+        }
+    }
+
+    private static decimal GetPercentage(decimal used, decimal included)
+    {
+        try
+        {
+            if (included <= 0)
+                return 0;
+
+            var percentage = (used / included) * 100;
+            return Math.Min(100, Math.Round(percentage, 2));
+        }
+        catch
+        {
+            return 0;
+        }
+        finally
+        {
+        }
+    }
+
+    private async Task ShowRawJsonAsync()
+    {
+        try
+        {
+            var jsonObject = new
+            {
+                summary = string.IsNullOrWhiteSpace(summaryRawJson)
+                    ? null
+                    : JsonSerializer.Deserialize<object>(summaryRawJson),
+                usage = string.IsNullOrWhiteSpace(usageRawJson)
+                    ? null
+                    : JsonSerializer.Deserialize<object>(usageRawJson)
+            };
+
+            rawJsonForDisplay = JsonSerializer.Serialize(jsonObject, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            showRawJsonModal = true;
+        }
+        catch (Exception ex)
+        {
+            rawJsonForDisplay = ex.Message;
+            showRawJsonModal = true;
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void CloseRawJsonModal()
+    {
+        try
+        {
+            showRawJsonModal = false;
+            rawJsonForDisplay = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void GoBackToHome()
+    {
+        try
+        {
+            Navigation.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+        }
+    }
+
+    private async Task ToggleThemeAsync()
+    {
+        try
+        {
+            isDarkMode = await JS.InvokeAsync<bool>("themeManager.toggleTheme");
+        }
+        catch
+        {
+            isDarkMode = !isDarkMode;
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private string GetStatusText()
+    {
+        try
+        {
+            return isBusy ? "Loading GitHub billing usage..." : "Ready";
+        }
+        catch
+        {
+            return "Ready";
+        }
+        finally
+        {
+        }
+    }
+}

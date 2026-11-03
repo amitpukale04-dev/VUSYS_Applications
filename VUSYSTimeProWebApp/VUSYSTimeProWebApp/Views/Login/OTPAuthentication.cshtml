@@ -1,0 +1,68 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel
+
+@{
+	Layout = "_LoginLayout";
+	ViewData["Title"] = "OTP Authentication";
+}
+<link href="~/Admin/OTPAuthentication.css" rel="stylesheet" />
+<div class="hold-transition login-page customOtpBackgroundImage">
+	<div class="login-box">
+		<div class="card card-outline card-primary">
+			<div class="card-header text-center">
+				<img src="~/Admin/dist/img/AppLogo.png" alt="Logo">
+			</div>
+			<div class="card-body">
+				<p class="login-box-msg loginAppName">OTP Authentication</p>
+				<form asp-controller="Login" asp-action="OTPAuthentication" id="OTPAuthenticationForm" method="post">
+					<div class="row customAlignment">
+						<div class="col-2">
+							<input asp-for="otpAuth.Digit1" id="Digit1" maxlength="1" class="form-control" />
+						</div>
+						<div class="col-2">
+							<input asp-for="otpAuth.Digit2" id="Digit2" maxlength="1" class="form-control" />
+						</div>
+						<div class="col-2">
+							<input asp-for="otpAuth.Digit3" id="Digit3" maxlength="1" class="form-control" />
+						</div>
+						<div class="col-2">
+							<input asp-for="otpAuth.Digit4" id="Digit4" maxlength="1" class="form-control" />
+						</div>
+					</div>
+					<div class="row customAlignment">
+						<span asp-validation-for="otpAuth.OTPDigits" class="text-danger"></span>
+					</div>
+					<div class="social-auth-links text-center mt-2 mb-3">
+						<button type="submit" id="btnVerifyOTP" class="btn btn-block btn-lg btn-primary VUSYSbg">Verify OTP</button>
+					</div>
+					<div class="mt-3">
+						<button type="button" class="btn btn-link" id="resendOtpLink" style="cursor:pointer" data-toggle="tooltip" data-placement="top" title="Click Here To Resend OTP">Resend OTP</button>
+						<span id="timer" class="text-muted ml-2" style="display: none;"></span>
+					</div>
+					@if (ViewBag.OTPAuthenticationSuccess != null)
+					{
+						<label class="form-label" id="otpauthsuccess" style="color:green">@ViewBag.OTPAuthenticationSuccess</label>
+					}
+					@if (ViewBag.OTPAuthenticationError != null)
+					{
+						<label class="form-label" id="otpautherror" style="color:red">@ViewBag.OTPAuthenticationError</label>
+					}
+					@await Html.PartialAsync("CommonControls/_EnvironmentVersionNo")
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+	const timeoutDuration = @ViewBag.ResendTimeoutSeconds;
+	const resendUrl = '@Url.Action("ResendOTP", "Login")';
+	const antiForgeryToken = $('input[name="__RequestVerificationToken"]').val();
+
+	$('#resendOtpLink').on('click', function () {
+		ResendOTP(resendUrl, timeoutDuration, antiForgeryToken);
+	});
+</script>
+
+@section PageScripts {
+	<script src="~/Admin/CustomJS/FormPlugins/OTPAuthentication.js"></script>
+}
+

@@ -1,0 +1,24 @@
+﻿@model VUSYSTimeProWebApp.Models.UserLoggedInInfo
+
+@if(Model != null)
+{
+    <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+        <div class="image">
+            <a href="#" id="UploadImagePopUp">
+                <img src="@Model.UserProfileImage" class="img-circle elevation-2" alt="User Image">
+            </a>
+        </div>
+        <div class="info">
+            <a href="#" class="d-block" style="color:#000;">@Model.FullName</a>
+        </div>
+    </div>
+    <div class="user-panel mt-3 pb-3 mb-3 d-flex center bg-light">
+        <a>Last Logged at: @Model.LastLogoutDate</a>
+    </div>
+}
+else
+{
+    <script>
+        fnRedirectToErrorPage();
+    </script>
+}

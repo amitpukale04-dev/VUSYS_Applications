@@ -1,0 +1,35 @@
+﻿/* Reduce navbar height */
+.main-header.navbar {
+    min-height: 45px; /* Adjust this value as needed */
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+/* Adjust brand link (app name) font size and spacing */
+.main-header .navbar-brand {
+    font-size: 1.2rem; /* Decrease font size */
+    padding: 0;
+    margin: 0;
+    line-height: 1.2;
+}
+
+/* Reduce search input group height */
+.main-header .input-group-sm .form-control,
+.main-header .input-group-sm .input-group-text {
+    height: calc(1.5em + 0.5rem + 2px); /* Adjust for smaller height */
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Resize profile image */
+.main-header .nav-link img {
+    width: 26px;
+    height: 26px;
+}
+
+.text-center h5 {
+    font-size: 1rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+}

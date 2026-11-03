@@ -1,0 +1,6 @@
+﻿@if (TempData["ActionName"] != null && TempData["ControllerName"] != null)
+{
+	<div>
+		<a asp-action="@TempData["ActionName"]" asp-controller="@TempData["ControllerName"]">Back to List</a>
+	</div>
+}

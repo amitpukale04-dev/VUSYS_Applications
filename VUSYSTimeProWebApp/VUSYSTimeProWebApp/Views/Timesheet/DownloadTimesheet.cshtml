@@ -1,0 +1,77 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	ViewData["Title"] = "Download Timesheet";
+	Layout = "_CommonNavLayout";
+}
+
+<form id="DownloadTimesheetForm" asp-action="DownloadTimesheet" method="post">
+	<section class="content">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-md-12">
+					<div class="card card-primary">
+						<div class="card-header VUSYSbg">
+							<h3 class="card-title divcustombold">Download Timesheet</h3>
+						</div>
+						<div class="card-body" style="padding-left:10px;">
+							<div class="row form-group">
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6 mandatory">
+										<label asp-for="downloadTimesheetFilter.EmployeeCode" class="control-label"></label>
+									</div>
+									<div class="col-sm-12 col-md-10">
+										<select id="ddlDownloadTimesheetEmployee" asp-for="downloadTimesheetFilter.EmployeeCode" class="form-control" asp-items="@(new SelectList(ViewBag.EmployeeList,"Value","Text"))"></select>
+										<span asp-validation-for="downloadTimesheetFilter.EmployeeCode" class="text-danger"></span>
+									</div>
+								</div>
+
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6 mandatory">
+										<label asp-for="downloadTimesheetFilter.TimesheetMonth" class="control-label"></label>
+									</div>
+									<div class="col-sm-12 col-md-10">
+										<select id="ddlDownloadTimesheetMonth" asp-for="downloadTimesheetFilter.TimesheetMonth" class="form-control" asp-items="@(new SelectList(ViewBag.MonthList,"Value","Text"))"></select>
+										<span asp-validation-for="downloadTimesheetFilter.TimesheetMonth" class="text-danger"></span>
+									</div>
+								</div>
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6 mandatory">
+										<label asp-for="downloadTimesheetFilter.TimesheetYear" class="control-label"></label>
+									</div>
+									<div class="col-sm-12 col-md-10">
+										<select id="ddlDownloadTimesheetYear" asp-for="downloadTimesheetFilter.TimesheetYear" class="form-control" asp-items="@(new SelectList(ViewBag.YearList,"Value","Text"))"></select>
+										<span asp-validation-for="downloadTimesheetFilter.TimesheetYear" class="text-danger"></span>
+									</div>
+								</div>
+								<div class="col-sm-6 col-md-12 left">
+									<div class="col-sm-12 col-md-6">
+									</div>
+									<div class="col-sm-12 mt-4 col-md-10">
+										@if (ViewBag.ShowViewTimeSheet != null && ViewBag.ShowViewTimeSheet == true)
+										{
+											<button type="button" id="btnViewTimesheetDetails" name="action" value="ViewTimesheet" class="btn btn-success btn-mgn VUSYSbg" onclick="ViewDownloadTimeSheetDetails(this)"><i class="fas fa-list"></i> View Timesheet</button>
+										}
+										<button type="submit" id="btnDownloadTimesheetDetails" name="action" value="DownloadTimesheet" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-download"></i> Download</button>
+										<button type="submit" id="btnDownloadTimesheetDetailsDateWise" name="action" value="DownloadTimesheetDateWise" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-download"></i> Download Date Wise</button>
+										<button type="button" id="btnDownloadTimesheetDetailsClear" class="btn btn-success btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-sync"></i> Clear</button>
+									</div>
+								</div>
+							</div>
+							@{
+								if (ViewBag.ShowTimeSheetDetailsPopup != null && ViewBag.ShowTimeSheetDetailsPopup == true)
+								{
+									@await Html.PartialAsync("_GetViewTimesheetList")
+								}
+							}
+							@await Html.PartialAsync("AlertNotification/_AlertNotification")
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+</form>
+
+
+

@@ -1,0 +1,38 @@
+﻿@{
+	ViewData["Title"] = "Access Denied";
+	Layout = "~/Views/Shared/_BlankLayout.cshtml";
+}
+
+<style>
+	.DeniedMsgStyle {
+		text-align: center;
+		left: 15%;
+		position: absolute;
+	}
+
+	.Mfooter {
+		bottom: 0;
+		margin: 0 auto !important;
+		left: 0px;
+		text-align: center !important;
+		width: 100% !important;
+		position: fixed;
+		background-color: #fff;
+		border-top: 1px solid #dee2e6;
+		color: #869099;
+		padding: 1rem;
+	}
+</style>
+
+<form id="form1" runat="server">
+	<div class="DeniedMsgStyle">
+		<img src="~/Admin/dist/img/AccessDeniedImg.png" class="img-circle img-responsive center-block">
+		<h2>You Don't Have Access To This Page. Please Contact Administrator.</h2>
+		<div class="form-group">
+			<a href="@Url.Action("Home","Home")" style="margin-left: 10px; font-weight: bold; color: blue;">Return To HomePage</a>
+		</div>
+	</div>
+	<footer class="Mfooter">
+		<partial name="_Footer" />
+	</footer>
+</form>

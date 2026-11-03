@@ -1,0 +1,212 @@
+now we will integrate Leave Type Master with API Integration under Leave Management Menu. Shall share i my existing latest complete project code and API Details?
+
+Refer Project Master Screen (ProjectFormPage.jsx, ProjectMaster.jsx and projectService.js) and also code Pattern, Indentation, code comments.
+Also Refer Attached Screenshots.
+
+I have attached my existing latest completed project code. Modify and Provide me full updated project code.
+
+
+In Leave Type Master (Create/Edit/View) Below controls
+
+--First Row (3 Controls)
+
+1. Leave Type Code - Textbox (Mandatory Field)
+2. Leave Type - Textbox (Mandatory Field)
+3. Leave Type Description - Textarea (Mandatory Field)
+--Second Row (2 Controls)
+4. Default Leave Count - Textbox (Number and Decimal) (Mandatory Field)
+5. Is Paid Leave - Toggle Switch
+6. Allow Half Day - Toggle Switch
+--Third Row (3 Controls)
+7. Obsolete - Toggle Switch (Show only Edit Mode)
+
+In Leave Type List Below Columns
+1. Actions (Same Like Project Master)
+2. Leave Type Code
+3. Leave Type
+4. Default Leave Count
+5. Is Paid Leave (1 Means Yes, 0 Means No)
+6. Allow Half Day (1 Means Yes, 0 Means No)
+7. Status (Active/Inactive)
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Master/SaveAndUpdateLeaveTypeDetails
+
+Request Body
+
+{
+  "id": 0,
+  "leaveTypeCode": "COMPOFF",
+  "leaveType": "COMPOFF",
+  "leaveTypeDescription": "Compensatory Off",
+  "defaultLeaveCount": 0,
+  "isPaidLeave": true,
+  "allowHalfDay": true,
+  "isDeleted": false,
+  "createdBy": 1,
+  "updatedBy": 0
+}
+
+
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "LEAVE_TYPE_DETAILS_RESPONSE": [
+      {
+        "Id": 1,
+        "Message": "New Leave Type Added Successfully."
+      }
+    ]
+  }
+}
+
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "LEAVE_TYPE_DETAILS_RESPONSE": [
+      {
+        "Id": 1,
+        "Message": "The Leave Type Already Exists."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "LeaveType",
+        "Message": "Enter The Leave Type."
+      },
+      {
+        "Key": "LeaveTypeCode",
+        "Message": "Enter The Leave Type Code."
+      },
+      {
+        "Key": "LeaveTypeDescription",
+        "Message": "Enter The Leave Type Description."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------
+/api/Master/GetLeaveTypeDetails
+
+
+Request Body
+
+{
+  "id": 1
+}
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "LEAVE_TYPE_DETAILS_RESPONSE": [
+      {
+        "SLNo": 1,
+        "Id": 1,
+        "LeaveTypeCode": "SL/CL",
+        "LeaveType": "Sick Leave/Casual Leave",
+        "LeaveTypeDescription": "Sick Leave/Casual Leave",
+        "DefaultLeaveCount": 0,
+        "IsPaidLeave": true,
+        "AllowHalfDay": true,
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      }
+    ]
+  }
+}
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "LEAVE_TYPE_DETAILS_RESPONSE": [
+      {
+        "Message": "Leave Type Details Not Found"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Master/GetLeaveTypeList
+
+{
+  "id": 0,
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "LEAVE_TYPE_LIST_RESPONSE": [
+      {
+        "SLNo": 1,
+        "Id": 2,
+        "LeaveTypeCode": "CO",
+        "LeaveType": "COMPOFF",
+        "LeaveTypeDescription": "Compensatory Off",
+        "DefaultLeaveCount": 0,
+        "IsPaidLeave": true,
+        "AllowHalfDay": true,
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 2,
+        "Id": 1,
+        "LeaveTypeCode": "SL/CL",
+        "LeaveType": "Sick Leave/Casual Leave",
+        "LeaveTypeDescription": "Sick Leave/Casual Leave",
+        "DefaultLeaveCount": 0,
+        "IsPaidLeave": true,
+        "AllowHalfDay": true,
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "LEAVE_TYPE_LIST_RESPONSE": [
+      {
+        "Message": "Leave Type List Not Found"
+      }
+    ]
+  }
+}

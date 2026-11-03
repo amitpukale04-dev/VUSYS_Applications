@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <base href="/" />
+
+    <!-- App Icon / Favicon -->
+    <link rel="shortcut icon" type="image/x-icon" href="images/apphub-icon-512.png" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#183f66" />
+    <link rel="apple-touch-icon" href="/images/apphub-icon-192.png" />
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="lib/bootstrap-icons/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="css/styles.css" />
+
+    <HeadOutlet />
+</head>
+<body>
+    <!-- Premium App Hub Splash Screen -->
+    <div id="apphub-splash">
+        <div class="apphub-splash-content">
+            <img src="/images/apphub-icon-512.png"
+                 class="apphub-splash-logo"
+                 alt="VUSYS App Hub" />
+
+            <div class="apphub-splash-title">VUSYS App Hub</div>
+
+            <div class="apphub-spinner"></div>
+        </div>
+    </div>
+
+    <script src="/js/apphub-splash.js"></script>
+
+    <Routes />
+
+    <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/apphub-scroll.js"></script>
+
+    <script type="module" src="js/apphub-pdf-viewer.js"></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script src="/js/service-worker-register.js"></script>
+    <script src="/js/apphub-install.js"></script>
+    <script src="/js/apphub-refresh.js"></script>
+    <script src="_framework/blazor.web.js"></script>
+</body>
+</html>

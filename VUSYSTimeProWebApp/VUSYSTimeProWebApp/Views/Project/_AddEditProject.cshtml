@@ -1,0 +1,125 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	TempData["ActionName"] = "GetAllProjectList";
+	TempData["ControllerName"] = "Project";
+}
+
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="ProjectMaster.ProjectCode" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="ProjectMaster.ProjectCode" class="form-control" />
+			<span asp-validation-for="ProjectMaster.ProjectCode" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="ProjectMaster.ClientName" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="ProjectMaster.ClientName" class="form-control" />
+			<span asp-validation-for="ProjectMaster.ClientName" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="ProjectMaster.ProjectName" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="ProjectMaster.ProjectName" class="form-control" />
+			<span asp-validation-for="ProjectMaster.ProjectName" class="text-danger"></span>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-6 col-md-8 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="ProjectMaster.ProjectDescription" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-11">
+			<textarea asp-for="ProjectMaster.ProjectDescription" id="txtProjectDescription" class="form-control"></textarea>
+			<span asp-validation-for="ProjectMaster.ProjectDescription" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="ProjectMaster.StartDate" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="ProjectMaster.StartDate" class="form-control" />
+			<span asp-validation-for="ProjectMaster.StartDate" class="text-danger"></span>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="ProjectMaster.EndDate" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="ProjectMaster.EndDate" class="form-control" />
+			<span asp-validation-for="ProjectMaster.EndDate" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="ProjectMaster.AllocatedHours" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="ProjectMaster.AllocatedHours" class="form-control" />
+			<span asp-validation-for="ProjectMaster.AllocatedHours" class="text-danger"></span>
+		</div>
+	</div>
+
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="ProjectMaster.ConsumedHours" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="ProjectMaster.ConsumedHours" class="form-control" />
+			<span asp-validation-for="ProjectMaster.ConsumedHours" class="text-danger"></span>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="ProjectMaster.ProjectStatus" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<select id="ddlProjectStatus" asp-for="ProjectMaster.ProjectStatus" class="form-control" asp-items="@(new SelectList(ViewBag.ProjectStatusList,"Value","Text"))"></select>
+			<span asp-validation-for="ProjectMaster.ProjectStatus" class="text-danger"></span>
+		</div>
+	</div>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<div class="col-sm-6 col-md-4 left">
+			<div class="col-sm-12 col-md-4">
+				<div class="custom-control custom-switch mandatory mt-4">
+					<input type="checkbox" class="custom-control-input" asp-for="ProjectMaster.IsDeleted">
+					<label asp-for="ProjectMaster.IsDeleted" class="custom-control-label"></label>
+					<span asp-validation-for="ProjectMaster.IsDeleted" class="text-danger"></span>
+				</div>
+			</div>
+		</div>
+	}
+</div>
+
+<div class="form-group">
+	<button type="submit" id="btnAddEditProject" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-save"></i> Save</button>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<button type="button" id="btnAddEditProjectMasterClear" class="btn btn-secondary btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-reset"></i> Clear</button>
+	}
+	@await Html.PartialAsync("CommonControls/_CancelButton")
+</div>
+@await Html.PartialAsync("CommonControls/_BackToList")
+@await Html.PartialAsync("AlertNotification/_AlertNotification")
+<script type="text/javascript">
+	$(function () {
+		$("#ddlProjectStatus").select2();
+	});
+</script>

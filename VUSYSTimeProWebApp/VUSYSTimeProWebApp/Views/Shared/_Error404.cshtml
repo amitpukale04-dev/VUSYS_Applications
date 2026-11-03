@@ -1,0 +1,17 @@
+﻿@{
+	Layout = "_ErrorLayout";
+	ViewData["Title"] = "Error 404";
+}
+
+<form id="form1" runat="server">
+	<div class="Error404MsgStyle">
+		<img src="~/Admin/dist/img/Error404.jpg" class="img-circle img-responsive center-block">
+		<h2>We could not find the page you were looking for. Meanwhile, you may</h2>
+		<div class="form-group">
+			<a href="@Url.Action("Home","Home")" style="margin-left: 10px; font-weight: bold; color: blue;">Return To HomePage</a>
+		</div>
+	</div>
+	<footer class="Mfooter">
+		<partial name="_Footer" />
+	</footer>
+</form>

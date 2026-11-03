@@ -1,0 +1,102 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel
+
+@{
+    ViewData["Title"] = "User Profile";
+	Layout = "_CommonNavLayout";
+}
+
+<form id="UserProfileForm" asp-action="UpdateUserProfile" method="post" enctype="multipart/form-data">
+	<section class="content">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-md-12">
+					<div class="card card-primary">
+						<div class="card-header VUSYSbg">
+							<h3 class="card-title divcustombold">Logged-In User Profile</h3>
+						</div>
+						<div class="card-body" style="padding-left:10px;">
+							<div>
+								<div class="row">
+									<div class="col-md-3 border-right">
+										<div class="d-flex flex-column align-items-center text-center p-3 py-5"><img style="width:100%; border-radius: 20% !important;" src="@ViewBag.UserProfileImage"><span class="font-weight-bold">@ViewBag.UserName</span><span class="text-black-50">@ViewBag.UserEmailID</span><span> </span></div>
+									</div>
+									<div class="col-md-5 border-right">
+										<div class="p-3 py-5">
+											<div class="d-flex justify-content-between align-items-center mb-3">
+												<h4 class="text-right">User Profile</h4>
+											</div>
+											<div class="row mt-3">
+												<div class="col-md-12">
+													<label asp-for="Users.FullName" class="control-label mandatory"></label>
+													<input type="hidden" asp-for="Users.Id" /><input asp-for="Users.FullName" class="form-control" />
+													<span asp-validation-for="Users.FullName" class="text-danger"></span>
+													<br />
+												</div>
+												<div class="col-md-12">
+													<label asp-for="Users.UserName" class="control-label mandatory"></label><input asp-for="Users.UserName" class="form-control" readonly="readonly" />
+													<span asp-validation-for="Users.UserName" class="text-danger"></span>
+													<br />
+												</div>
+												<div class="col-md-12">
+													<label asp-for="Users.EmployeeCode" class="control-label mandatory"></label><input asp-for="Users.EmployeeCode" class="form-control" readonly="readonly" />
+													<span asp-validation-for="Users.EmployeeCode" class="text-danger"></span>
+													<br />
+												</div>
+												<div class="col-md-12">
+													<label asp-for="Users.UserEmailID" class="control-label mandatory"></label><input type="email" asp-for="Users.UserEmailID" class="form-control" />
+													<span asp-validation-for="Users.UserEmailID" class="text-danger"></span>
+													<br />
+												</div>
+												<div class="col-md-12">
+													<label asp-for="Users.RoleID" class="control-label mandatory"></label><select id="ddlRolesUserProfile" asp-for="Users.RoleID" disabled="true" class="form-control" disabled="true" asp-items="@(new SelectList(ViewBag.RoleList,"Value","Text"))"></select>
+													<span asp-validation-for="Users.RoleID" class="text-danger"></span>
+												</div>
+												<div class="col-md-12">
+													<div class="custom-control custom-switch mandatory mt-5">
+														<input type="checkbox" class="custom-control-input" asp-for="Users.IsEnableTwoFactorAuthentication">
+														<label asp-for="Users.IsEnableTwoFactorAuthentication" class="custom-control-label"></label>
+														<span asp-validation-for="Users.IsEnableTwoFactorAuthentication" class="text-danger"></span>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="col-md-4">
+										<div class="p-3 py-5">
+											<div class="col-md-12">
+												<label asp-for="Users.ProfileUserImage" class="control-label"></label><input type="file" asp-for="userProfileImage.ProfileImage" id="ProfileImageUpload" accept="image/*" />
+												<span asp-validation-for="Users.ProfileUserImage" class="text-danger"></span>
+												<br />
+											</div>
+											<div class="col-sm-6 col-md-4 left">
+												<div class="col-sm-12 col-md-4 mandatory">
+													<label asp-for="Users.IsDeleted" class="control-label mandatory"></label>
+													<div class="form-check">
+														<input type="checkbox" class="form-check-input" asp-for="Users.IsDeleted" disabled="true" />
+														<span asp-validation-for="Users.IsDeleted" class="text-danger"></span>
+													</div>
+												</div>
+											</div>
+											<div class="mt-5 text-center">
+												<button type="submit" id="btnUserProfile" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-save"></i> Save</button>
+												<button type="button" id="btnUserProfileClear" class="btn btn-secondary btn-mgn VUSYSbg"><i class="fas fa-reset"></i> Clear</button>
+												@await Html.PartialAsync("CommonControls/_CancelButton")
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+	@await Html.PartialAsync("AlertNotification/_AlertNotification")
+	<script type="text/javascript">
+		$(function () {
+			$("#ddlRolesUserProfile").select2();
+		});
+	</script>
+</form>
+

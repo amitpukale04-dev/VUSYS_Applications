@@ -1,0 +1,66 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	ViewData["Title"] = "Timesheet Submission List";
+	Layout = "_CommonNavLayout";
+}
+
+<form id="GetAllTimesheetSubmissionListForm" asp-action="GetAllTimesheetSubmissionList" method="post">
+	<section class="content">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-md-12">
+					<div class="card card-primary">
+						<div class="card-header VUSYSbg">
+							<h3 class="card-title divcustombold">Timesheet Submission List</h3>
+						</div>
+						<div class="card-body" style="padding-left:10px;">
+							<div class="row form-group">
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6 mandatory">
+										<label asp-for="projectTimesheetSubmissionFilter.TimesheetMonth" class="control-label"></label>
+									</div>
+									<div class="col-sm-12 col-md-10">
+										<select id="ddlMonth" asp-for="projectTimesheetSubmissionFilter.TimesheetMonth" class="form-control" asp-items="@(new SelectList(ViewBag.MonthList,"Value","Text"))"></select>
+										<span asp-validation-for="projectTimesheetSubmissionFilter.TimesheetMonth" class="text-danger"></span>
+									</div>
+								</div>
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6 mandatory">
+										<label asp-for="projectTimesheetSubmissionFilter.TimesheetYear" class="control-label"></label>
+									</div>
+									<div class="col-sm-12 col-md-10">
+										<select id="ddlYear" asp-for="projectTimesheetSubmissionFilter.TimesheetYear" class="form-control" asp-items="@(new SelectList(ViewBag.YearList,"Value","Text"))"></select>
+										<span asp-validation-for="projectTimesheetSubmissionFilter.TimesheetYear" class="text-danger"></span>
+									</div>
+								</div>
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6">
+									</div>
+									<div class="col-sm-12 mt-4 col-md-10">
+										<button type="submit" id="btnSearchTimesheetSubmissionDetails" name="action" value="ByGetDetails" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-list"></i> Search</button>
+										<button type="button" id="btnSearchTimesheetSubmissionDetailsClear" class="btn btn-success btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-sync"></i> Clear</button>
+									</div>
+								</div>
+							</div>
+							@{
+								if (ViewBag.DisplayGrid != null && ViewBag.DisplayGrid == true)
+								{
+									@await Html.PartialAsync("_GetTimesheetSubmissionList")
+								}
+							}
+							@await Html.PartialAsync("AlertNotification/_AlertNotification")
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+</form>
+<script type="text/javascript">
+	$(function () {
+		$("#ddlMonth").select2();
+		$("#ddlYear").select2();
+	});
+</script>
+

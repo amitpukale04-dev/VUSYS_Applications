@@ -1,0 +1,2052 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject IPortalAppService PortalAppService
+@inject IJSRuntime JS
+@inject IWebHostEnvironment Env
+@inject NavigationManager Navigation
+
+@using System.Net
+@using System.Reflection
+@using System.Text.Json
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Web
+@using VUSYSAppHub.DACHelper
+@using VUSYSAppHub.Models
+@using VUSYSAppHub.AppHubHelper
+
+<PageTitle>@CommonHelper.KeyOption.AppTitle</PageTitle>
+
+<HeadContent>
+	<link rel="icon" type="image/png" href="images/AppLogo.png" />
+</HeadContent>
+
+<div class="apphub-page @(isDarkMode ? "dark-mode" : "")">
+	<div class="container-fluid px-3 px-md-4 px-lg-5 py-4 py-lg-5">
+		<div class="top-header card border-0 shadow-sm mb-4">
+			<div class="card-body p-4">
+				<div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+					<div>
+						<div class="d-flex align-items-center gap-3 mb-2">
+							<div class="brand-logo">
+								<img src="images/AppLogo.png" alt="VUSYS AppHub Logo" class="brand-logo-img" />
+							</div>
+							<div>
+								<h1 class="page-title mb-0">@CommonHelper.KeyOption.AppTitle</h1>
+								<div class="page-subtitle">Central Application Launcher</div>
+							</div>
+						</div>
+						<div class="page-note">
+							@CommonHelper.KeyOption.AppNote
+						</div>
+					</div>
+
+					<div class="d-flex align-items-center gap-2 flex-wrap justify-content-lg-end">
+						<a href="/update-app-deployment-version"
+						   class="btn btn-monitoring-dashboard d-inline-flex align-items-center gap-2 text-decoration-none"
+						   title="Click Here To Update Deployment Version No.">
+							<i class="bi bi-arrow-repeat"></i>
+							<span>Update Deployment Version No.</span>
+						</a>
+						<a href="/iis-monitoring-dashboard"
+						   class="btn btn-monitoring-dashboard d-inline-flex align-items-center gap-2 text-decoration-none"
+						   title="Open Real Time IIS Monitoring Dashboard">
+							<i class="bi bi-hdd-network-fill"></i>
+							<span>Real Time IIS Monitoring Dashboard</span>
+						</a>
+
+						<button type="button"
+								class="btn btn-launcher d-inline-flex align-items-center gap-2"
+								title="Open launcher (Ctrl + K)"
+								@onclick="OpenLauncherAsync">
+							<i class="bi bi-command"></i>
+							<span>Launcher</span>
+							<span class="launcher-shortcut-badge">Ctrl + K</span>
+						</button>
+
+						<button type="button"
+								class="btn btn-theme d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+								style="width: 56px; height: 56px; padding: 0;"
+								title="@(isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")"
+								aria-label="@(isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")"
+								@onclick="ToggleThemeAsync">
+							<i class="bi @(isDarkMode ? "bi-sun-fill" : "bi-moon-stars-fill") fs-4"></i>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="filter-panel card border-0 shadow-sm mb-4">
+			<div class="card-body p-4">
+				<div class="row g-3 align-items-end">
+					<div class="col-12 col-xl-6">
+						<label class="form-label filter-label d-flex align-items-center justify-content-between gap-2">
+							<span>Global Search</span>
+							<button type="button"
+									class="btn btn-search-shortcut"
+									title="Open global launcher"
+									@onclick="OpenLauncherAsync">
+								<i class="bi bi-command me-1"></i>Ctrl + K
+							</button>
+						</label>
+
+						<div class="search-box position-relative">
+							<i class="bi bi-search search-icon"></i>
+
+							<input id="globalSearchInput"
+								   type="text"
+								   autocomplete="off"
+								   class="form-control search-input with-clear-btn"
+								   placeholder="Search by application name, environment, other links..."
+								   @bind="SearchText"
+								   @bind:event="oninput"
+								   @onfocus="HandleSearchFocus"
+								   @onblur="HandleSearchBlur" />
+
+							@if (HasActiveFilters)
+							{
+								<button type="button"
+										class="btn search-clear-btn"
+										title="Clear filters"
+										@onclick="ClearAllFilters">
+									<i class="bi bi-x-lg"></i>
+								</button>
+							}
+
+							@if (ShowSearchSuggestions && SearchSuggestions.Any())
+							{
+								<div class="search-suggestion-dropdown shadow-sm">
+									@foreach (var suggestion in SearchSuggestions)
+									{
+										<div class="search-suggestion-item"
+											 role="button"
+											 tabindex="0"
+											 @onmousedown="@(() => SelectSuggestion(suggestion))"
+											 @onkeydown="(e) => HandleSuggestionKeyDown(e, suggestion)">
+
+											<div class="search-suggestion-top-row">
+												<div class="search-suggestion-main">
+													<i class="@GetItemIconCss(suggestion) me-1"></i> @suggestion.Name
+												</div>
+
+												<div class="search-suggestion-actions">
+													<a href="@suggestion.Url"
+													   target="@(suggestion.OpenInNewTab ? "_blank" : "_self")"
+													   class="search-suggestion-open-link"
+													   title="Open"
+													   @onmousedown:stopPropagation="true"
+													   @onclick:stopPropagation="true">
+														<i class="bi @(suggestion.OpenInNewTab ? "bi-box-arrow-up-right" : "bi-arrow-right-circle")"></i>
+													</a>
+
+													<span class="app-status-badge @GetAppStatusCssClass(suggestion)">
+														<i class="@GetAppStatusIcon(suggestion) me-1"></i>@GetAppStatus(suggestion)
+													</span>
+												</div>
+											</div>
+
+											<div class="search-suggestion-meta">
+												@GetSuggestionMeta(suggestion)
+											</div>
+										</div>
+									}
+								</div>
+							}
+						</div>
+					</div>
+
+					<div class="col-12 col-md-6 col-xl-3">
+						<label class="form-label filter-label">Applications</label>
+						<select class="form-select form-select-modern" @bind="SelectedProductGroup">
+							@foreach (var item in productGroups)
+							{
+								<option value="@item">@item</option>
+							}
+						</select>
+					</div>
+
+					<div class="col-12 col-md-6 col-xl-3">
+						<label class="form-label filter-label">Environments</label>
+						<select class="form-select form-select-modern" @bind="SelectedEnvironment">
+							@foreach (var item in environments)
+							{
+								<option value="@item">@item</option>
+							}
+						</select>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="summary-bar d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-4">
+			<div class="summary-text">
+				Showing <strong>@FilteredItems.Count()</strong> item(s)
+			</div>
+			<div class="summary-chip-wrap">
+				<span class="summary-chip">Application: @SelectedProductGroup</span>
+				<span class="summary-chip">Environment: @SelectedEnvironment</span>
+				<span class="summary-chip summary-chip-analytics">
+					<i class="bi bi-graph-up-arrow me-1"></i>Tracked Launches: @appLaunchCounts.Values.Sum()
+				</span>
+			</div>
+		</div>
+
+		@if (MostUsedApps.Any())
+		{
+			<div class="card border-0 shadow-sm mb-4 analytics-section">
+				<div class="application-section-header application-section analytics-section-header">
+					<div class="d-flex align-items-center justify-content-between gap-3">
+						<div class="d-flex align-items-center gap-3">
+							<span class="accordion-toggle-icon">
+								<i class="bi bi-bar-chart-line-fill"></i>
+							</span>
+							<div>
+								<h4 class="application-section-title">Most Used Apps</h4>
+								<div class="application-section-subtitle">
+									Based on your launch activity
+								</div>
+							</div>
+						</div>
+
+						<div class="application-section-count">
+							Top: @MostUsedApps.Count item(s)
+						</div>
+					</div>
+				</div>
+
+				<div class="card-body p-4">
+					<div class="most-used-grid">
+						@foreach (var app in MostUsedApps)
+						{
+							<div class="most-used-card">
+								<div class="most-used-card-top">
+									<div class="most-used-icon">
+										<i class="@GetItemIconCss(app)"></i>
+									</div>
+									<div class="most-used-content">
+										<div class="most-used-title-row">
+											<div class="most-used-title">@app.Name</div>
+											<span class="app-status-badge @GetAppStatusCssClass(app)">
+												<i class="@GetAppStatusIcon(app) me-1"></i>@GetAppStatus(app)
+											</span>
+										</div>
+										<div class="most-used-meta">@GetDisplayGroup(app) • @GetDisplayEnvironment(app)</div>
+										<div class="most-used-count">
+											<i class="bi bi-lightning-charge-fill me-1"></i>Used @GetLaunchCount(app) time(s)
+										</div>
+									</div>
+								</div>
+
+								<div class="most-used-actions">
+									<button type="button"
+											class="btn btn-sm @(IsPinned(app) ? "btn-secondary" : "btn-outline-secondary") app-pin-link"
+											title="Pin item"
+											@onclick="() => TogglePinnedAppAsync(app)">
+										<i class="bi @(IsPinned(app) ? "bi-pin-angle-fill" : "bi-pin-angle") me-1"></i>
+										@(IsPinned(app) ? "Pinned" : "Pin")
+									</button>
+
+									<button type="button"
+											class="btn btn-sm @GetOpenButtonClass(app.Environment) app-open-link"
+											@onclick="() => OpenAppAsync(app)">
+										<i class="bi @(app.OpenInNewTab ? "bi-box-arrow-up-right" : "bi-arrow-right-circle") me-1"></i>Open
+									</button>
+								</div>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		}
+
+		<div class="card border-0 shadow-sm mb-4 application-section pinned-section-card">
+			<div class="application-section-header">
+				<div class="d-flex align-items-center justify-content-between gap-3">
+					<div class="d-flex align-items-center gap-3">
+						<span class="accordion-toggle-icon">
+							<i class="bi bi-pin-angle-fill"></i>
+						</span>
+						<div>
+							<h4 class="application-section-title">My Pinned List</h4>
+							<div class="application-section-subtitle">
+								Quick access to your pinned applications and links
+							</div>
+						</div>
+					</div>
+
+					<div class="application-section-count">
+						Total: @PinnedApps.Count item(s)
+					</div>
+				</div>
+			</div>
+
+			<div class="card-body p-4">
+				@if (PinnedApps.Any())
+				{
+					<div class="pinned-help-text mb-3">
+						<i class="bi bi-arrow-down-up me-2"></i>Drag and drop pinned items to reorder them.
+					</div>
+
+					<div class="row g-4">
+						@foreach (var pinnedGroup in PinnedGroupedSections)
+						{
+							<div class="col-12 col-xl-4">
+								<div class="environment-column">
+									<div class="environment-column-header @GetPinnedGroupHeaderClass(pinnedGroup.Environment)">
+										<div>
+											<i class="@GetPinnedGroupIcon(pinnedGroup.Environment) me-2"></i>@pinnedGroup.Environment
+										</div>
+										<span class="environment-column-count">@pinnedGroup.Apps.Count</span>
+									</div>
+
+									<div class="environment-column-body">
+										<ul class="app-link-list">
+											@foreach (var app in pinnedGroup.Apps)
+											{
+												var pinnedKey = GetAppUniqueKey(app);
+
+												<li class="app-link-item pinned-draggable @(string.Equals(activeDragPinnedKey, pinnedKey, StringComparison.OrdinalIgnoreCase) ? "dragging" : "")"
+													draggable="true"
+													@ondragstart="(e) => HandlePinnedDragStart(e, app)"
+													@ondragover:preventDefault
+													@ondrop="() => HandlePinnedDrop(app)"
+													@ondragend="HandlePinnedDragEnd">
+													<div class="app-link-top">
+														<div class="app-link-left">
+															<div class="app-link-title-row">
+																<div class="drag-handle" title="Drag to reorder">
+																	<i class="bi bi-grip-vertical"></i>
+																</div>
+
+																<div class="app-link-title-content">
+																	<div class="app-link-name">
+																		<i class="@GetItemIconCss(app) me-1"></i>@app.Name
+																	</div>
+																	<div class="app-link-meta-row">
+																		<div class="pinned-product-name">@GetDisplayGroup(app)</div>
+																		<span class="app-status-badge @GetAppStatusCssClass(app)">
+																			<i class="@GetAppStatusIcon(app) me-1"></i>@GetAppStatus(app)
+																		</span>
+																	</div>
+																</div>
+															</div>
+														</div>
+
+														<div class="app-action-group">
+															<button type="button"
+																	class="btn btn-sm btn-outline-secondary app-pin-link"
+																	title="Unpin item"
+																	@onclick="() => TogglePinnedAppAsync(app)">
+																<i class="bi bi-pin-angle-fill me-1"></i>Unpin
+															</button>
+
+															<button type="button"
+																	class="btn btn-sm @GetOpenButtonClass(app.Environment) app-open-link"
+																	@onclick="() => OpenAppAsync(app)">
+																<i class="bi @(app.OpenInNewTab ? "bi-box-arrow-up-right" : "bi-arrow-right-circle") me-1"></i>Open
+															</button>
+														</div>
+													</div>
+												</li>
+											}
+										</ul>
+									</div>
+								</div>
+							</div>
+						}
+					</div>
+				}
+				else
+				{
+					<div class="no-environment-data">
+						<i class="bi bi-pin-angle me-2"></i>No pinned applications or links yet. Use the Pin button to add items here.
+					</div>
+				}
+			</div>
+		</div>
+
+		@if (GroupedApplicationSections.Any())
+		{
+			@foreach (var group in GroupedApplicationSections)
+			{
+				var isExpanded = IsSectionExpanded(group.ApplicationName);
+
+				<div class="application-section card border-0 shadow-sm mb-4">
+					<div class="application-section-header"
+						 role="button"
+						 tabindex="0"
+						 @onclick="() => ToggleSection(group.ApplicationName)"
+						 @onkeydown="(e) => HandleSectionHeaderKeyDown(e, group.ApplicationName)">
+						<div class="d-flex align-items-center justify-content-between gap-3">
+							<div class="d-flex align-items-center gap-3">
+								<span class="accordion-toggle-icon @(isExpanded ? "rotated" : "")">
+									<i class="bi bi-chevron-down"></i>
+								</span>
+								<div>
+									<h4 class="application-section-title">@group.ApplicationName</h4>
+									<div class="application-section-subtitle">
+										Environment-wise application launcher
+									</div>
+								</div>
+							</div>
+
+							<div class="application-section-count">
+								Total: @group.TotalCount app(s)
+							</div>
+						</div>
+					</div>
+
+					<div class="application-section-content @(isExpanded ? "expanded" : "collapsed")">
+						<div class="card-body p-4">
+							<div class="row g-4">
+								<div class="col-12 col-xl-4">
+									<div class="environment-column">
+										<div class="environment-column-header environment-column-header-dev">
+											<div><i class="bi bi-code-slash me-2"></i>Development</div>
+											<span class="environment-column-count">@group.DevelopmentApps.Count</span>
+										</div>
+
+										<div class="environment-column-body">
+											@if (group.DevelopmentApps.Any())
+											{
+												<ul class="app-link-list">
+													@foreach (var app in group.DevelopmentApps.OrderBy(x => x.SortOrder).ThenBy(x => x.Name))
+													{
+														<li class="app-link-item">
+															<div class="app-link-top">
+																<div class="app-link-left">
+																	<div class="app-link-title-row no-drag">
+																		<div class="app-link-title-content">
+																			<div class="app-link-name">
+																				<i class="@GetItemIconCss(app) me-1"></i>@app.Name
+																			</div>
+																			<div class="app-link-meta-row">
+																				<span class="app-status-badge @GetAppStatusCssClass(app)">
+																					<i class="@GetAppStatusIcon(app) me-1"></i>@GetAppStatus(app)
+																				</span>
+																			</div>
+																		</div>
+																	</div>
+																</div>
+
+																<div class="app-action-group">
+																	<button type="button"
+																			class="btn btn-sm @(IsPinned(app) ? "btn-secondary" : "btn-outline-secondary") app-pin-link"
+																			title="Pin application"
+																			@onclick="() => TogglePinnedAppAsync(app)">
+																		<i class="bi @(IsPinned(app) ? "bi-pin-angle-fill" : "bi-pin-angle") me-1"></i>
+																		@(IsPinned(app) ? "Pinned" : "Pin")
+																	</button>
+
+																	<button type="button"
+																			class="btn btn-sm btn-outline-primary app-open-link"
+																			@onclick="() => OpenAppAsync(app)">
+																		<i class="bi @(app.OpenInNewTab ? "bi-box-arrow-up-right" : "bi-arrow-right-circle") me-1"></i>Open
+																	</button>
+																</div>
+															</div>
+														</li>
+													}
+												</ul>
+											}
+											else
+											{
+												<div class="no-environment-data">
+													<i class="bi bi-grid me-2"></i>No Development applications
+												</div>
+											}
+										</div>
+									</div>
+								</div>
+
+								<div class="col-12 col-xl-4">
+									<div class="environment-column">
+										<div class="environment-column-header environment-column-header-stage">
+											<div><i class="bi bi-bezier2 me-2"></i>Staging</div>
+											<span class="environment-column-count">@group.StagingApps.Count</span>
+										</div>
+
+										<div class="environment-column-body">
+											@if (group.StagingApps.Any())
+											{
+												<ul class="app-link-list">
+													@foreach (var app in group.StagingApps.OrderBy(x => x.SortOrder).ThenBy(x => x.Name))
+													{
+														<li class="app-link-item">
+															<div class="app-link-top">
+																<div class="app-link-left">
+																	<div class="app-link-title-row no-drag">
+																		<div class="app-link-title-content">
+																			<div class="app-link-name">
+																				<i class="@GetItemIconCss(app) me-1"></i>@app.Name
+																			</div>
+																			<div class="app-link-meta-row">
+																				<span class="app-status-badge @GetAppStatusCssClass(app)">
+																					<i class="@GetAppStatusIcon(app) me-1"></i>@GetAppStatus(app)
+																				</span>
+																			</div>
+																		</div>
+																	</div>
+																</div>
+
+																<div class="app-action-group">
+																	<button type="button"
+																			class="btn btn-sm @(IsPinned(app) ? "btn-secondary" : "btn-outline-secondary") app-pin-link"
+																			title="Pin application"
+																			@onclick="() => TogglePinnedAppAsync(app)">
+																		<i class="bi @(IsPinned(app) ? "bi-pin-angle-fill" : "bi-pin-angle") me-1"></i>
+																		@(IsPinned(app) ? "Pinned" : "Pin")
+																	</button>
+
+																	<button type="button"
+																			class="btn btn-sm btn-outline-warning app-open-link"
+																			@onclick="() => OpenAppAsync(app)">
+																		<i class="bi @(app.OpenInNewTab ? "bi-box-arrow-up-right" : "bi-arrow-right-circle") me-1"></i>Open
+																	</button>
+																</div>
+															</div>
+														</li>
+													}
+												</ul>
+											}
+											else
+											{
+												<div class="no-environment-data">
+													<i class="bi bi-grid me-2"></i>No Staging applications
+												</div>
+											}
+										</div>
+									</div>
+								</div>
+
+								<div class="col-12 col-xl-4">
+									<div class="environment-column">
+										<div class="environment-column-header environment-column-header-prod">
+											<div><i class="bi bi-cloud-check me-2"></i>Production</div>
+											<span class="environment-column-count">@group.ProductionApps.Count</span>
+										</div>
+
+										<div class="environment-column-body">
+											@if (group.ProductionApps.Any())
+											{
+												<ul class="app-link-list">
+													@foreach (var app in group.ProductionApps.OrderBy(x => x.SortOrder).ThenBy(x => x.Name))
+													{
+														<li class="app-link-item">
+															<div class="app-link-top">
+																<div class="app-link-left">
+																	<div class="app-link-title-row no-drag">
+																		<div class="app-link-title-content">
+																			<div class="app-link-name">
+																				<i class="@GetItemIconCss(app) me-1"></i>@app.Name
+																			</div>
+																			<div class="app-link-meta-row">
+																				<span class="app-status-badge @GetAppStatusCssClass(app)">
+																					<i class="@GetAppStatusIcon(app) me-1"></i>@GetAppStatus(app)
+																				</span>
+																			</div>
+																		</div>
+																	</div>
+																</div>
+
+																<div class="app-action-group">
+																	<button type="button"
+																			class="btn btn-sm @(IsPinned(app) ? "btn-secondary" : "btn-outline-secondary") app-pin-link"
+																			title="Pin application"
+																			@onclick="() => TogglePinnedAppAsync(app)">
+																		<i class="bi @(IsPinned(app) ? "bi-pin-angle-fill" : "bi-pin-angle") me-1"></i>
+																		@(IsPinned(app) ? "Pinned" : "Pin")
+																	</button>
+
+																	<button type="button"
+																			class="btn btn-sm btn-outline-success app-open-link"
+																			@onclick="() => OpenAppAsync(app)">
+																		<i class="bi @(app.OpenInNewTab ? "bi-box-arrow-up-right" : "bi-arrow-right-circle") me-1"></i>Open
+																	</button>
+																</div>
+															</div>
+														</li>
+													}
+												</ul>
+											}
+											else
+											{
+												<div class="no-environment-data">
+													<i class="bi bi-grid me-2"></i>No Production applications
+												</div>
+											}
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			}
+		}
+
+		@if (ShouldShowOtherLinksSection)
+		{
+			var isOtherLinksExpanded = IsSectionExpanded(OtherLinksSectionKey);
+
+			<div class="application-section card border-0 shadow-sm mb-4 other-links-section-card">
+				<div class="application-section-header"
+					 role="button"
+					 tabindex="0"
+					 @onclick="() => ToggleSection(OtherLinksSectionKey)"
+					 @onkeydown="(e) => HandleSectionHeaderKeyDown(e, OtherLinksSectionKey)">
+					<div class="d-flex align-items-center justify-content-between gap-3">
+						<div class="d-flex align-items-center gap-3">
+							<span class="accordion-toggle-icon @(isOtherLinksExpanded ? "rotated" : "")">
+								<i class="bi bi-chevron-down"></i>
+							</span>
+							<div>
+								<h4 class="application-section-title">Other Links</h4>
+								<div class="application-section-subtitle">
+									Reference links, documentation, and useful resources
+								</div>
+							</div>
+						</div>
+
+						<div class="application-section-count">
+							Total: @FilteredOtherLinks.Count() link(s)
+						</div>
+					</div>
+				</div>
+
+				<div class="application-section-content @(isOtherLinksExpanded ? "expanded" : "collapsed")">
+					<div class="card-body p-4">
+						@if (FilteredOtherLinks.Any())
+						{
+							<div class="row g-4">
+								<div class="col-12">
+									<div class="environment-column other-links-column">
+										<div class="environment-column-header other-links-column-header">
+											<div><i class="bi bi-link-45deg me-2"></i>Links</div>
+											<span class="environment-column-count">@FilteredOtherLinks.Count()</span>
+										</div>
+
+										<div class="environment-column-body">
+											<ul class="app-link-list">
+												@foreach (var link in FilteredOtherLinks.OrderBy(x => x.SortOrder).ThenBy(x => x.Name))
+												{
+													<li class="app-link-item other-link-item">
+														<div class="app-link-top">
+															<div class="app-link-left">
+																<div class="app-link-title-row no-drag">
+																	<div class="app-link-title-content">
+																		<div class="app-link-name">
+																			<i class="@GetItemIconCss(link) me-1"></i>@link.Name
+																		</div>
+
+																		@if (!string.IsNullOrWhiteSpace(link.Description))
+																		{
+																			<div class="other-link-description">
+																				@link.Description
+																			</div>
+																		}
+
+																		<div class="app-link-meta-row">
+																			<div class="pinned-product-name">@GetDisplayGroup(link)</div>
+																			<span class="app-status-badge @GetAppStatusCssClass(link)">
+																				<i class="@GetAppStatusIcon(link) me-1"></i>@GetAppStatus(link)
+																			</span>
+																		</div>
+																	</div>
+																</div>
+															</div>
+
+															<div class="app-action-group">
+																<button type="button"
+																		class="btn btn-sm @(IsPinned(link) ? "btn-secondary" : "btn-outline-secondary") app-pin-link"
+																		title="Pin link"
+																		@onclick="() => TogglePinnedAppAsync(link)">
+																	<i class="bi @(IsPinned(link) ? "bi-pin-angle-fill" : "bi-pin-angle") me-1"></i>
+																	@(IsPinned(link) ? "Pinned" : "Pin")
+																</button>
+
+																<button type="button"
+																		class="btn btn-sm btn-outline-info app-open-link"
+																		@onclick="() => OpenAppAsync(link)">
+																	<i class="bi @(link.OpenInNewTab ? "bi-box-arrow-up-right" : "bi-arrow-right-circle") me-1"></i>Open
+																</button>
+															</div>
+														</div>
+													</li>
+												}
+											</ul>
+										</div>
+									</div>
+								</div>
+							</div>
+						}
+						else
+						{
+							<div class="no-environment-data">
+								<i class="bi bi-link-45deg me-2"></i>No Other Links found
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		}
+
+		@if (!GroupedApplicationSections.Any() && !FilteredOtherLinks.Any())
+		{
+			<div class="card border-0 shadow-sm no-data-card">
+				<div class="card-body text-center py-5">
+					<div class="no-data-icon mb-3">
+						<i class="bi bi-grid"></i>
+					</div>
+					<h4 class="mb-2">No applications or links found</h4>
+					<p class="mb-0 text-body-secondary">Try changing the search text or dropdown filters.</p>
+				</div>
+			</div>
+		}
+	</div>
+
+	<button type="button"
+			class="scroll-to-top-btn @(showScrollToTop ? "show" : "")"
+			title="Scroll to top"
+			aria-label="Scroll to top"
+			@onclick="ScrollToTopAsync">
+		<i class="bi bi-chevron-up"></i>
+	</button>
+
+	@if (showLauncher)
+	{
+		<div class="launcher-overlay" @onclick="CloseLauncher">
+			<div class="launcher-modal shadow-lg" @onclick:stopPropagation="true">
+				<div class="launcher-header">
+					<div class="launcher-search-wrap">
+						<i class="bi bi-search launcher-search-icon"></i>
+						<input id="launcherSearchInput"
+							   type="text"
+							   class="form-control launcher-search-input"
+							   placeholder="Search apps, links, environments, descriptions..."
+							   @bind="LauncherSearchText"
+							   @bind:event="oninput"
+							   @onkeydown="HandleLauncherKeyDown" />
+					</div>
+
+					<button type="button"
+							class="btn launcher-close-btn"
+							title="Close"
+							@onclick="CloseLauncher">
+						<i class="bi bi-x-lg"></i>
+					</button>
+				</div>
+
+				<div class="launcher-shortcuts-row">
+					<span class="launcher-helper-chip"><i class="bi bi-command me-1"></i>Ctrl + K</span>
+					<span class="launcher-helper-chip"><i class="bi bi-arrow-return-left me-1"></i>Enter to open first result</span>
+					<span class="launcher-helper-chip"><i class="bi bi-escape me-1"></i>Esc to close</span>
+				</div>
+
+				<div class="launcher-body">
+					@if (LauncherResults.Any())
+					{
+						<div class="launcher-results-list">
+							@foreach (var app in LauncherResults)
+							{
+								<button type="button"
+										class="launcher-result-item"
+										@onclick="() => OpenFromLauncherAsync(app)">
+									<div class="launcher-result-left">
+										<div class="launcher-result-icon">
+											<i class="@GetItemIconCss(app)"></i>
+										</div>
+										<div class="launcher-result-content">
+											<div class="launcher-result-title-row">
+												<div class="launcher-result-title">@app.Name</div>
+												<span class="app-status-badge @GetAppStatusCssClass(app)">
+													<i class="@GetAppStatusIcon(app) me-1"></i>@GetAppStatus(app)
+												</span>
+											</div>
+											<div class="launcher-result-meta">
+												@GetDisplayGroup(app) • @GetDisplayEnvironment(app)
+											</div>
+											@if (!string.IsNullOrWhiteSpace(app.Description))
+											{
+												<div class="launcher-result-description">
+													@app.Description
+												</div>
+											}
+										</div>
+									</div>
+
+									<div class="launcher-result-actions">
+										@if (IsPinned(app))
+										{
+											<span class="launcher-result-pin">
+												<i class="bi bi-pin-angle-fill"></i>
+											</span>
+										}
+
+										<span class="launcher-result-open">
+											<i class="bi @(app.OpenInNewTab ? "bi-box-arrow-up-right" : "bi-arrow-right-circle")"></i>
+										</span>
+									</div>
+								</button>
+							}
+						</div>
+					}
+					else
+					{
+						<div class="launcher-empty-state">
+							<i class="bi bi-search"></i>
+							<div>No matching applications or links found.</div>
+						</div>
+					}
+				</div>
+			</div>
+		</div>
+	}
+</div>
+
+<script>
+	window.appHubHome = window.appHubHome || (function () {
+		let hotkeyHandler = null;
+
+		return {
+			registerHotkeys: function (dotNetRef) {
+				if (hotkeyHandler) return;
+
+				hotkeyHandler = function (event) {
+					const isCtrlOrMeta = event.ctrlKey || event.metaKey;
+
+					if (isCtrlOrMeta && event.key.toLowerCase() === "k") {
+						event.preventDefault();
+						dotNetRef.invokeMethodAsync("OpenLauncherFromHotkey");
+						return;
+					}
+
+					if (event.key === "Escape") {
+						dotNetRef.invokeMethodAsync("CloseLauncherFromHotkey");
+					}
+				};
+
+				document.addEventListener("keydown", hotkeyHandler);
+			},
+
+			unregisterHotkeys: function () {
+				if (!hotkeyHandler) return;
+				document.removeEventListener("keydown", hotkeyHandler);
+				hotkeyHandler = null;
+			},
+
+			focusElementById: function (elementId) {
+				const el = document.getElementById(elementId);
+				if (!el) return;
+
+				window.requestAnimationFrame(() => {
+					el.focus();
+					if (el.select) {
+						el.select();
+					}
+				});
+			},
+
+			openApp: function (url, openInNewTab) {
+				if (!url) return;
+
+				if (openInNewTab) {
+					window.open(url, "_blank", "noopener,noreferrer");
+				} else {
+					window.location.href = url;
+				}
+			}
+		};
+	})();
+</script>
+
+@code {
+	private const string PinnedAppsStorageKey = "VUSYSAppHub_PinnedApps";
+	private const string AppLaunchAnalyticsStorageKey = "VUSYSAppHub_AppLaunchAnalytics";
+	private const string OtherLinksSectionKey = "__OTHER_LINKS__";
+	private const int MaxSuggestions = 8;
+	private const int MaxLauncherResults = 20;
+	private const int MaxMostUsedApps = 8;
+	private const int StatusRefreshIntervalSeconds = 10;
+	private static readonly TimeSpan StatusRequestTimeout = TimeSpan.FromSeconds(5);
+
+	private bool isDarkMode = false;
+	private bool showScrollToTop = false;
+	private bool showLauncher = false;
+
+	private string searchText = string.Empty;
+	private string launcherSearchText = string.Empty;
+	private string selectedProductGroup = "All";
+	private string selectedEnvironment = "All";
+	private string? activeDragPinnedKey;
+
+	private bool isSearchFocused = false;
+	private bool showSearchSuggestions = false;
+
+	private List<string> productGroups = new() { "All" };
+	private IReadOnlyList<string> environments = Array.Empty<string>();
+	private IReadOnlyList<PortalApp> apps = new List<PortalApp>();
+	private IReadOnlyList<PortalApp> otherLinks = new List<PortalApp>();
+	private List<string> pinnedAppKeys = new();
+	private Dictionary<string, int> appLaunchCounts = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, string> runtimeAppStatuses = new(StringComparer.OrdinalIgnoreCase);
+
+	private readonly Dictionary<string, bool> expandedSections = new(StringComparer.OrdinalIgnoreCase);
+
+	private DotNetObjectReference<Home>? dotNetRef;
+	private bool scrollListenerRegistered = false;
+	private bool hotkeysRegistered = false;
+
+	private readonly HttpClient _statusHttpClient = new(new HttpClientHandler
+	{
+		AllowAutoRedirect = false
+	})
+	{
+		Timeout = StatusRequestTimeout
+	};
+
+	private CancellationTokenSource? _statusMonitorCts;
+	private Task? _statusMonitorTask;
+	private bool _isStatusMonitorStarted = false;
+	private bool _isDisposed = false;
+
+	private string SearchText
+	{
+		get => searchText;
+		set
+		{
+			var newValue = value ?? string.Empty;
+
+			if (searchText == newValue)
+				return;
+
+			searchText = newValue;
+			HandleFilterChange();
+			UpdateSuggestionVisibility();
+		}
+	}
+
+	private string LauncherSearchText
+	{
+		get => launcherSearchText;
+		set
+		{
+			launcherSearchText = value ?? string.Empty;
+		}
+	}
+
+	private string SelectedProductGroup
+	{
+		get => selectedProductGroup;
+		set
+		{
+			if (selectedProductGroup == value)
+				return;
+
+			selectedProductGroup = string.IsNullOrWhiteSpace(value) ? "All" : value;
+			HandleFilterChange();
+			UpdateSuggestionVisibility();
+		}
+	}
+
+	private string SelectedEnvironment
+	{
+		get => selectedEnvironment;
+		set
+		{
+			if (selectedEnvironment == value)
+				return;
+
+			selectedEnvironment = string.IsNullOrWhiteSpace(value) ? "All" : value;
+			HandleFilterChange();
+			UpdateSuggestionVisibility();
+		}
+	}
+
+	private bool HasActiveFilters =>
+		!string.IsNullOrWhiteSpace(SearchText) ||
+		!string.Equals(SelectedProductGroup, "All", StringComparison.OrdinalIgnoreCase) ||
+		!string.Equals(SelectedEnvironment, "All", StringComparison.OrdinalIgnoreCase);
+
+	private IEnumerable<PortalApp> FilteredApps =>
+		FilterItems(apps, includeOtherLinksWhenEnvironmentFiltered: false);
+
+	private IEnumerable<PortalApp> FilteredOtherLinks =>
+		FilterOtherLinks();
+
+	private IEnumerable<PortalApp> FilteredItems =>
+		FilteredApps.Concat(FilteredOtherLinks);
+
+	private IEnumerable<ApplicationSectionGroup> GroupedApplicationSections =>
+		AppHubHomeHelper.GroupedApplicationSections(FilteredApps);
+
+	private List<PortalApp> SearchSuggestions =>
+		GetSearchSuggestions().ToList();
+
+	private bool ShowSearchSuggestions =>
+		showSearchSuggestions && SearchSuggestions.Any();
+
+	private List<PortalApp> PinnedApps =>
+		pinnedAppKeys
+			.Select(FindAppByKey)
+			.Where(app => app is not null)
+			.Select(app => app!)
+			.ToList();
+
+	private IEnumerable<PinnedEnvironmentGroup> PinnedGroupedSections =>
+		PinnedApps
+			.GroupBy(x => GetPinnedGroupName(x))
+			.OrderBy(g => GetPinnedGroupOrder(g.Key))
+			.Select(g => new PinnedEnvironmentGroup
+			{
+				Environment = g.Key,
+				Apps = g.ToList()
+			});
+
+	private List<PortalApp> MostUsedApps =>
+		AllItems
+			.Where(x => appLaunchCounts.ContainsKey(GetAppUniqueKey(x)))
+			.OrderByDescending(x => GetLaunchCount(x))
+			.ThenBy(x => x.Name)
+			.Take(MaxMostUsedApps)
+			.ToList();
+
+	private List<PortalApp> LauncherResults =>
+		GetLauncherResults().ToList();
+
+	private IEnumerable<PortalApp> AllItems =>
+		apps.Concat(otherLinks);
+
+	private bool ShouldShowOtherLinksSection =>
+		otherLinks.Any() &&
+		(
+			FilteredOtherLinks.Any() ||
+			(!HasActiveFilters && SelectedEnvironment.Equals("All", StringComparison.OrdinalIgnoreCase))
+		);
+
+	protected override Task OnInitializedAsync()
+	{
+		environments = AppHubHomeHelper.Environments;
+		productGroups = LoadProductGroups();
+		apps = AppHubHomeHelper.LoadPortalApplicationsFromJson(Env, PortalAppService);
+		otherLinks = AppHubHomeHelper.LoadOtherLinksFromJson(Env);
+
+		InitializeExpandedSectionsCollapsed();
+		return Task.CompletedTask;
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			isDarkMode = await JS.InvokeAsync<bool>("themeManager.getCurrentThemeIsDark");
+			await LoadPinnedAppsAsync();
+			await LoadAppLaunchAnalyticsAsync();
+
+			dotNetRef = DotNetObjectReference.Create(this);
+			await JS.InvokeVoidAsync("appHubScroll.registerScrollListener", dotNetRef);
+			scrollListenerRegistered = true;
+
+			await JS.InvokeVoidAsync("appHubHome.registerHotkeys", dotNetRef);
+			hotkeysRegistered = true;
+
+			await RefreshAllAppStatusesAsync();
+			StartStatusMonitor();
+
+			StateHasChanged();
+		}
+
+		if (showLauncher)
+		{
+			await JS.InvokeVoidAsync("appHubHome.focusElementById", "launcherSearchInput");
+		}
+	}
+
+	private void StartStatusMonitor()
+	{
+		if (_isStatusMonitorStarted || _isDisposed)
+			return;
+
+		_isStatusMonitorStarted = true;
+		_statusMonitorCts = new CancellationTokenSource();
+		_statusMonitorTask = RunStatusMonitorAsync(_statusMonitorCts.Token);
+	}
+
+	private async Task RunStatusMonitorAsync(CancellationToken cancellationToken)
+	{
+		try
+		{
+			using var timer = new PeriodicTimer(TimeSpan.FromSeconds(StatusRefreshIntervalSeconds));
+
+			while (await timer.WaitForNextTickAsync(cancellationToken))
+			{
+				await RefreshAllAppStatusesAsync(cancellationToken);
+			}
+		}
+		catch (OperationCanceledException)
+		{
+		}
+		catch
+		{
+		}
+	}
+
+	private async Task RefreshAllAppStatusesAsync(CancellationToken cancellationToken = default)
+	{
+		var statusChanged = false;
+
+		foreach (var app in AllItems.Where(CanCheckAppHealth))
+		{
+			var newStatus = await CheckAppHealthStatusAsync(app, cancellationToken);
+			var key = GetAppUniqueKey(app);
+
+			if (!runtimeAppStatuses.TryGetValue(key, out var existingStatus) ||
+				!string.Equals(existingStatus, newStatus, StringComparison.OrdinalIgnoreCase))
+			{
+				runtimeAppStatuses[key] = newStatus;
+				statusChanged = true;
+			}
+		}
+
+		if (statusChanged && !_isDisposed)
+		{
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private async Task RefreshSingleAppStatusAsync(PortalApp app, bool shouldTriggerUiRefresh = true, CancellationToken cancellationToken = default)
+	{
+		if (!CanCheckAppHealth(app))
+			return;
+
+		var key = GetAppUniqueKey(app);
+		var newStatus = await CheckAppHealthStatusAsync(app, cancellationToken);
+
+		if (!runtimeAppStatuses.TryGetValue(key, out var existingStatus) ||
+			!string.Equals(existingStatus, newStatus, StringComparison.OrdinalIgnoreCase))
+		{
+			runtimeAppStatuses[key] = newStatus;
+
+			if (shouldTriggerUiRefresh && !_isDisposed)
+			{
+				await InvokeAsync(StateHasChanged);
+			}
+		}
+	}
+
+	private bool CanCheckAppHealth(PortalApp app)
+	{
+		if (app == null)
+			return false;
+
+		if (IsOtherLink(app))
+			return false;
+
+		var healthCheckUrl = GetHealthCheckUrl(app);
+		return Uri.TryCreate(healthCheckUrl, UriKind.Absolute, out var uri)
+						&& (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+	}
+
+	private string GetHealthCheckUrl(PortalApp app)
+	{
+		var explicitHealthCheckUrl =
+			ReadStringProperty(app, "HealthCheckUrl") ??
+			ReadStringProperty(app, "HealthUrl") ??
+			ReadStringProperty(app, "StatusCheckUrl");
+
+		var rawUrl = string.IsNullOrWhiteSpace(explicitHealthCheckUrl) ? app.Url : explicitHealthCheckUrl;
+
+		if (string.IsNullOrWhiteSpace(rawUrl))
+			return string.Empty;
+
+		if (!Uri.TryCreate(rawUrl, UriKind.Absolute, out var absoluteUri))
+			return rawUrl;
+
+		var builder = new UriBuilder(absoluteUri)
+		{
+			Query = string.Empty,
+			Fragment = string.Empty
+		};
+
+		return builder.Uri.ToString();
+	}
+
+	private async Task<string> CheckAppHealthStatusAsync(PortalApp app, CancellationToken cancellationToken = default)
+	{
+		try
+		{
+			var healthCheckUrl = GetHealthCheckUrl(app);
+
+			if (string.IsNullOrWhiteSpace(healthCheckUrl))
+				return "Maintenance";
+
+			using var request = new HttpRequestMessage(HttpMethod.Get, healthCheckUrl);
+			using var response = await _statusHttpClient.SendAsync(
+				request,
+				HttpCompletionOption.ResponseHeadersRead,
+				cancellationToken);
+
+			var statusCode = (int)response.StatusCode;
+
+			if (statusCode >= 200 && statusCode < 300)
+				return "Live";
+
+			if (statusCode >= 300 && statusCode < 500)
+				return "Maintenance";
+
+			return "Down";
+		}
+		catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+		{
+			return "Down";
+		}
+		catch (HttpRequestException)
+		{
+			return "Down";
+		}
+		catch
+		{
+			return "Down";
+		}
+	}
+
+	private async Task ToggleThemeAsync()
+	{
+		isDarkMode = await JS.InvokeAsync<bool>("themeManager.toggleTheme");
+	}
+
+	private void InitializeExpandedSectionsCollapsed()
+	{
+		expandedSections.Clear();
+
+		foreach (var groupName in apps
+			.Where(x => !string.IsNullOrWhiteSpace(x.ProductGroup))
+			.Select(x => x.ProductGroup)
+			.Distinct(StringComparer.OrdinalIgnoreCase))
+		{
+			expandedSections[groupName] = false;
+		}
+
+		expandedSections[OtherLinksSectionKey] = false;
+	}
+
+	private bool IsSectionExpanded(string applicationName)
+	{
+		if (string.IsNullOrWhiteSpace(applicationName))
+			return false;
+
+		if (expandedSections.TryGetValue(applicationName, out var isExpanded))
+			return isExpanded;
+
+		expandedSections[applicationName] = false;
+		return false;
+	}
+
+	private void ToggleSection(string applicationName)
+	{
+		if (string.IsNullOrWhiteSpace(applicationName))
+			return;
+
+		if (expandedSections.ContainsKey(applicationName))
+			expandedSections[applicationName] = !expandedSections[applicationName];
+		else
+			expandedSections[applicationName] = true;
+	}
+
+	private void HandleSectionHeaderKeyDown(KeyboardEventArgs e, string applicationName)
+	{
+		if (e.Key is "Enter" or " ")
+		{
+			ToggleSection(applicationName);
+		}
+	}
+
+	private void HandleFilterChange()
+	{
+		if (HasActiveFilters)
+			ExpandMatchingSections();
+		else
+			CollapseAllSections();
+	}
+
+	private void ExpandMatchingSections()
+	{
+		var matchingGroups = FilteredApps
+			.Where(x => !string.IsNullOrWhiteSpace(x.ProductGroup))
+			.Select(x => x.ProductGroup)
+			.Distinct(StringComparer.OrdinalIgnoreCase)
+			.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var key in expandedSections.Keys.ToList())
+		{
+			expandedSections[key] = matchingGroups.Contains(key);
+		}
+
+		foreach (var key in matchingGroups)
+		{
+			if (!expandedSections.ContainsKey(key))
+				expandedSections[key] = true;
+		}
+
+		if (FilteredOtherLinks.Any())
+		{
+			expandedSections[OtherLinksSectionKey] = true;
+		}
+	}
+
+	private void CollapseAllSections()
+	{
+		foreach (var key in expandedSections.Keys.ToList())
+		{
+			expandedSections[key] = false;
+		}
+	}
+
+	private void ClearAllFilters()
+	{
+		searchText = string.Empty;
+		selectedProductGroup = "All";
+		selectedEnvironment = "All";
+		isSearchFocused = false;
+		showSearchSuggestions = false;
+		CollapseAllSections();
+	}
+
+	private async Task TogglePinnedAppAsync(PortalApp app)
+	{
+		var key = GetAppUniqueKey(app);
+
+		if (pinnedAppKeys.Contains(key, StringComparer.OrdinalIgnoreCase))
+			pinnedAppKeys.RemoveAll(x => string.Equals(x, key, StringComparison.OrdinalIgnoreCase));
+		else
+			pinnedAppKeys.Add(key);
+
+		await SavePinnedAppsAsync();
+		StateHasChanged();
+	}
+
+	private bool IsPinned(PortalApp app)
+	{
+		return pinnedAppKeys.Contains(GetAppUniqueKey(app), StringComparer.OrdinalIgnoreCase);
+	}
+
+	private string GetAppUniqueKey(PortalApp app)
+	{
+		return $"{GetDisplayGroup(app)}||{GetDisplayEnvironment(app)}||{app.Name}||{app.Url}";
+	}
+
+	private PortalApp? FindAppByKey(string key)
+	{
+		return AllItems.FirstOrDefault(x => string.Equals(GetAppUniqueKey(x), key, StringComparison.OrdinalIgnoreCase));
+	}
+
+	private async Task LoadPinnedAppsAsync()
+	{
+		try
+		{
+			var json = await JS.InvokeAsync<string>("localStorage.getItem", PinnedAppsStorageKey);
+
+			if (string.IsNullOrWhiteSpace(json))
+			{
+				pinnedAppKeys = new List<string>();
+				return;
+			}
+
+			pinnedAppKeys = JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+		}
+		catch
+		{
+			pinnedAppKeys = new List<string>();
+		}
+	}
+
+	private async Task SavePinnedAppsAsync()
+	{
+		try
+		{
+			var distinctOrderedKeys = new List<string>();
+			var uniqueSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+			foreach (var key in pinnedAppKeys)
+			{
+				if (uniqueSet.Add(key))
+					distinctOrderedKeys.Add(key);
+			}
+
+			pinnedAppKeys = distinctOrderedKeys;
+
+			var json = JsonSerializer.Serialize(pinnedAppKeys);
+			await JS.InvokeVoidAsync("localStorage.setItem", PinnedAppsStorageKey, json);
+		}
+		catch
+		{
+		}
+	}
+
+	private void HandlePinnedDragStart(DragEventArgs _, PortalApp app)
+	{
+		activeDragPinnedKey = GetAppUniqueKey(app);
+	}
+
+	private async Task HandlePinnedDrop(PortalApp targetApp)
+	{
+		if (string.IsNullOrWhiteSpace(activeDragPinnedKey))
+			return;
+
+		var targetKey = GetAppUniqueKey(targetApp);
+
+		if (string.Equals(activeDragPinnedKey, targetKey, StringComparison.OrdinalIgnoreCase))
+		{
+			activeDragPinnedKey = null;
+			return;
+		}
+
+		var dragIndex = pinnedAppKeys.FindIndex(x => string.Equals(x, activeDragPinnedKey, StringComparison.OrdinalIgnoreCase));
+		var targetIndex = pinnedAppKeys.FindIndex(x => string.Equals(x, targetKey, StringComparison.OrdinalIgnoreCase));
+
+		if (dragIndex < 0 || targetIndex < 0)
+		{
+			activeDragPinnedKey = null;
+			return;
+		}
+
+		var draggedItem = pinnedAppKeys[dragIndex];
+		pinnedAppKeys.RemoveAt(dragIndex);
+
+		if (dragIndex < targetIndex)
+			targetIndex--;
+
+		pinnedAppKeys.Insert(targetIndex, draggedItem);
+
+		activeDragPinnedKey = null;
+		await SavePinnedAppsAsync();
+		StateHasChanged();
+	}
+
+	private void HandlePinnedDragEnd(DragEventArgs _)
+	{
+		activeDragPinnedKey = null;
+	}
+
+	private void HandleSearchFocus(FocusEventArgs _)
+	{
+		isSearchFocused = true;
+		UpdateSuggestionVisibility();
+	}
+
+	private async Task HandleSearchBlur(FocusEventArgs _)
+	{
+		await Task.Delay(120);
+		isSearchFocused = false;
+		showSearchSuggestions = false;
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private void SelectSuggestion(PortalApp app)
+	{
+		SearchText = app.Name;
+		isSearchFocused = false;
+		showSearchSuggestions = false;
+		ExpandMatchingSections();
+	}
+
+	private void HandleSuggestionKeyDown(KeyboardEventArgs e, PortalApp app)
+	{
+		if (e.Key is "Enter" or " ")
+		{
+			SelectSuggestion(app);
+		}
+	}
+
+	private void UpdateSuggestionVisibility()
+	{
+		showSearchSuggestions = isSearchFocused &&
+								!string.IsNullOrWhiteSpace(SearchText) &&
+								SearchSuggestions.Any();
+	}
+
+	private IEnumerable<PortalApp> GetSearchSuggestions()
+	{
+		if (string.IsNullOrWhiteSpace(SearchText))
+			return Enumerable.Empty<PortalApp>();
+
+		var term = SearchText.Trim();
+
+		return AllItems
+			.Where(app =>
+				app.IsActive &&
+				IsMatchByDropdowns(app) &&
+				(
+					(!string.IsNullOrWhiteSpace(app.Name) && app.Name.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+					(!string.IsNullOrWhiteSpace(app.ProductGroup) && app.ProductGroup.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+					(!string.IsNullOrWhiteSpace(app.Environment) && app.Environment.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+					(!string.IsNullOrWhiteSpace(app.Description) && app.Description.Contains(term, StringComparison.OrdinalIgnoreCase))
+				))
+			.OrderBy(app => !app.Name.Contains(term, StringComparison.OrdinalIgnoreCase))
+			.ThenBy(app => app.Name)
+			.ThenBy(app => app.ProductGroup)
+			.ThenBy(app => app.Environment)
+			.Take(MaxSuggestions);
+	}
+
+	private IEnumerable<PortalApp> GetLauncherResults()
+	{
+		IEnumerable<PortalApp> source = AllItems.Where(x => x.IsActive);
+
+		if (!string.IsNullOrWhiteSpace(LauncherSearchText))
+		{
+			var term = LauncherSearchText.Trim();
+
+			source = source.Where(app =>
+				(!string.IsNullOrWhiteSpace(app.Name) && app.Name.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+				(!string.IsNullOrWhiteSpace(app.ProductGroup) && app.ProductGroup.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+				(!string.IsNullOrWhiteSpace(app.Environment) && app.Environment.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+				(!string.IsNullOrWhiteSpace(app.Description) && app.Description.Contains(term, StringComparison.OrdinalIgnoreCase)));
+		}
+		else
+		{
+			source = source
+				.OrderByDescending(x => GetLaunchCount(x))
+				.ThenByDescending(x => IsPinned(x))
+				.ThenBy(x => x.ProductGroup)
+				.ThenBy(x => x.SortOrder)
+				.ThenBy(x => x.Name);
+		}
+
+		return source
+			.OrderByDescending(x => GetLaunchCount(x))
+			.ThenByDescending(x => IsPinned(x))
+			.ThenBy(x => GetDisplayGroup(x))
+			.ThenBy(x => AppHubHomeHelper.GetEnvironmentOrder(NormalizeEnvironmentForSorting(x.Environment)))
+			.ThenBy(x => x.SortOrder)
+			.ThenBy(x => x.Name)
+			.Take(MaxLauncherResults);
+	}
+
+	private async Task OpenLauncherAsync()
+	{
+		showLauncher = true;
+		LauncherSearchText = SearchText;
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private void CloseLauncher()
+	{
+		showLauncher = false;
+	}
+
+	[JSInvokable]
+	public async Task OpenLauncherFromHotkey()
+	{
+		showLauncher = true;
+		LauncherSearchText = string.IsNullOrWhiteSpace(SearchText) ? LauncherSearchText : SearchText;
+		await InvokeAsync(StateHasChanged);
+	}
+
+	[JSInvokable]
+	public async Task CloseLauncherFromHotkey()
+	{
+		if (!showLauncher)
+			return;
+
+		showLauncher = false;
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task HandleLauncherKeyDown(KeyboardEventArgs e)
+	{
+		if (e.Key == "Escape")
+		{
+			CloseLauncher();
+			await InvokeAsync(StateHasChanged);
+			return;
+		}
+
+		if (e.Key == "Enter")
+		{
+			var first = LauncherResults.FirstOrDefault();
+			if (first is not null)
+			{
+				await OpenFromLauncherAsync(first);
+			}
+		}
+	}
+
+	private async Task OpenFromLauncherAsync(PortalApp app)
+	{
+		showLauncher = false;
+		await TrackAppLaunchAsync(app);
+		await RefreshSingleAppStatusAsync(app);
+		await JS.InvokeVoidAsync("appHubHome.openApp", app.Url, app.OpenInNewTab);
+	}
+
+	private async Task OpenAppAsync(PortalApp app)
+	{
+		await TrackAppLaunchAsync(app);
+		await RefreshSingleAppStatusAsync(app);
+		await JS.InvokeVoidAsync("appHubHome.openApp", app.Url, app.OpenInNewTab);
+	}
+
+	private async Task TrackAppLaunchAsync(PortalApp app)
+	{
+		var key = GetAppUniqueKey(app);
+
+		if (appLaunchCounts.ContainsKey(key))
+			appLaunchCounts[key]++;
+		else
+			appLaunchCounts[key] = 1;
+
+		await SaveAppLaunchAnalyticsAsync();
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private int GetLaunchCount(PortalApp app)
+	{
+		var key = GetAppUniqueKey(app);
+		return appLaunchCounts.TryGetValue(key, out var count) ? count : 0;
+	}
+
+	private async Task LoadAppLaunchAnalyticsAsync()
+	{
+		try
+		{
+			var json = await JS.InvokeAsync<string>("localStorage.getItem", AppLaunchAnalyticsStorageKey);
+
+			if (string.IsNullOrWhiteSpace(json))
+			{
+				appLaunchCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+				return;
+			}
+
+			appLaunchCounts = JsonSerializer.Deserialize<Dictionary<string, int>>(json)
+							 ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+			appLaunchCounts = new Dictionary<string, int>(appLaunchCounts, StringComparer.OrdinalIgnoreCase);
+		}
+		catch
+		{
+			appLaunchCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+		}
+	}
+
+	private async Task SaveAppLaunchAnalyticsAsync()
+	{
+		try
+		{
+			var json = JsonSerializer.Serialize(appLaunchCounts);
+			await JS.InvokeVoidAsync("localStorage.setItem", AppLaunchAnalyticsStorageKey, json);
+		}
+		catch
+		{
+		}
+	}
+
+	private string GetAppStatus(PortalApp app)
+	{
+		if (app == null)
+			return "Live";
+
+		if (IsOtherLink(app))
+			return "Live";
+
+		var key = GetAppUniqueKey(app);
+		if (runtimeAppStatuses.TryGetValue(key, out var runtimeStatus) &&
+			!string.IsNullOrWhiteSpace(runtimeStatus))
+		{
+			return NormalizeStatus(runtimeStatus);
+		}
+
+		if (!string.IsNullOrWhiteSpace(app.Status))
+			return NormalizeStatus(app.Status);
+
+		if (ReadBoolProperty(app, "IsMaintenance"))
+			return "Maintenance";
+
+		if (ReadBoolProperty(app, "IsDown"))
+			return "Down";
+
+		if (ReadBoolProperty(app, "IsLive"))
+			return "Live";
+
+		if (!app.IsActive)
+			return "Down";
+
+		var description = app.Description ?? string.Empty;
+
+		if (description.Contains("maintenance", StringComparison.OrdinalIgnoreCase))
+			return "Maintenance";
+
+		if (description.Contains("down", StringComparison.OrdinalIgnoreCase) ||
+			description.Contains("offline", StringComparison.OrdinalIgnoreCase))
+			return "Down";
+
+		return "Live";
+	}
+
+	private string GetAppStatusCssClass(PortalApp app)
+	{
+		var status = GetAppStatus(app);
+
+		return status switch
+		{
+			"Down" => "status-down",
+			"Maintenance" => "status-maintenance",
+			_ => "status-live"
+		};
+	}
+
+	private string GetAppStatusIcon(PortalApp app)
+	{
+		var status = GetAppStatus(app);
+
+		return status switch
+		{
+			"Down" => "bi bi-x-octagon-fill",
+			"Maintenance" => "bi bi-wrench-adjustable-circle-fill",
+			_ => "bi bi-check-circle-fill"
+		};
+	}
+
+	private static string NormalizeStatus(string? status)
+	{
+		if (string.IsNullOrWhiteSpace(status))
+			return "Live";
+
+		var value = status.Trim();
+
+		if (value.Equals("down", StringComparison.OrdinalIgnoreCase) ||
+			value.Equals("offline", StringComparison.OrdinalIgnoreCase) ||
+			value.Equals("critical", StringComparison.OrdinalIgnoreCase))
+			return "Down";
+
+		if (value.Equals("maintenance", StringComparison.OrdinalIgnoreCase) ||
+			value.Equals("maint", StringComparison.OrdinalIgnoreCase) ||
+			value.Equals("warning", StringComparison.OrdinalIgnoreCase))
+			return "Maintenance";
+
+		return "Live";
+	}
+
+	private static string? ReadStringProperty(object obj, string propertyName)
+	{
+		var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+		if (prop is null)
+			return null;
+
+		var value = prop.GetValue(obj);
+		return value?.ToString();
+	}
+
+	private static bool ReadBoolProperty(object obj, string propertyName)
+	{
+		var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+		if (prop is null)
+			return false;
+
+		var value = prop.GetValue(obj);
+
+		if (value is bool boolValue)
+			return boolValue;
+
+		if (value is string str && bool.TryParse(str, out var parsed))
+			return parsed;
+
+		return false;
+	}
+
+	private string GetOpenButtonClass(string environment)
+	{
+		if (string.Equals(environment, "Production", StringComparison.OrdinalIgnoreCase))
+			return "btn-outline-success";
+
+		if (string.Equals(environment, "Staging", StringComparison.OrdinalIgnoreCase))
+			return "btn-outline-warning";
+
+		if (string.Equals(environment, "Reference", StringComparison.OrdinalIgnoreCase))
+			return "btn-outline-info";
+
+		return "btn-outline-primary";
+	}
+
+	private async Task ScrollToTopAsync()
+	{
+		await JS.InvokeVoidAsync("appHubScroll.scrollToTop");
+	}
+
+	[JSInvokable]
+	public async Task UpdateScrollToTopVisibility(bool visible)
+	{
+		if (showScrollToTop == visible)
+			return;
+
+		showScrollToTop = visible;
+		await InvokeAsync(StateHasChanged);
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		_isDisposed = true;
+
+		try
+		{
+			_statusMonitorCts?.Cancel();
+		}
+		catch
+		{
+		}
+
+		try
+		{
+			if (_statusMonitorTask is not null)
+			{
+				await _statusMonitorTask;
+			}
+		}
+		catch
+		{
+		}
+
+		try
+		{
+			_statusMonitorCts?.Dispose();
+		}
+		catch
+		{
+		}
+
+		try
+		{
+			if (scrollListenerRegistered)
+			{
+				await JS.InvokeVoidAsync("appHubScroll.unregisterScrollListener");
+			}
+		}
+		catch
+		{
+		}
+
+		try
+		{
+			if (hotkeysRegistered)
+			{
+				await JS.InvokeVoidAsync("appHubHome.unregisterHotkeys");
+			}
+		}
+		catch
+		{
+		}
+
+		try
+		{
+			_statusHttpClient.Dispose();
+		}
+		catch
+		{
+		}
+
+		dotNetRef?.Dispose();
+	}
+
+	private IEnumerable<PortalApp> FilterItems(IEnumerable<PortalApp> source, bool includeOtherLinksWhenEnvironmentFiltered)
+	{
+		var items = source ?? Enumerable.Empty<PortalApp>();
+
+		items = items.Where(x => x.IsActive);
+
+		if (!string.Equals(SelectedProductGroup, "All", StringComparison.OrdinalIgnoreCase))
+		{
+			items = items.Where(x => string.Equals(GetDisplayGroup(x), SelectedProductGroup, StringComparison.OrdinalIgnoreCase));
+		}
+
+		if (!string.Equals(SelectedEnvironment, "All", StringComparison.OrdinalIgnoreCase))
+		{
+			if (includeOtherLinksWhenEnvironmentFiltered)
+			{
+				items = items.Where(x =>
+					IsOtherLink(x) ||
+					string.Equals(GetDisplayEnvironment(x), SelectedEnvironment, StringComparison.OrdinalIgnoreCase));
+			}
+			else
+			{
+				items = items.Where(x => string.Equals(GetDisplayEnvironment(x), SelectedEnvironment, StringComparison.OrdinalIgnoreCase));
+			}
+		}
+
+		if (!string.IsNullOrWhiteSpace(SearchText))
+		{
+			var term = SearchText.Trim();
+
+			items = items.Where(app =>
+				(!string.IsNullOrWhiteSpace(app.Name) && app.Name.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+				(!string.IsNullOrWhiteSpace(GetDisplayGroup(app)) && GetDisplayGroup(app).Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+				(!string.IsNullOrWhiteSpace(GetDisplayEnvironment(app)) && GetDisplayEnvironment(app).Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+				(!string.IsNullOrWhiteSpace(app.Description) && app.Description.Contains(term, StringComparison.OrdinalIgnoreCase)));
+		}
+
+		return items;
+	}
+
+	private IEnumerable<PortalApp> FilterOtherLinks()
+	{
+		var items = otherLinks ?? Enumerable.Empty<PortalApp>();
+		items = items.Where(x => x.IsActive);
+		if (!string.Equals(SelectedProductGroup, "All", StringComparison.OrdinalIgnoreCase) &&
+			!string.Equals(SelectedProductGroup, "Other Links", StringComparison.OrdinalIgnoreCase))
+		{
+			return Enumerable.Empty<PortalApp>();
+		}
+
+		if (!string.Equals(SelectedEnvironment, "All", StringComparison.OrdinalIgnoreCase))
+		{
+			return Enumerable.Empty<PortalApp>();
+		}
+
+		if (!string.IsNullOrWhiteSpace(SearchText))
+		{
+			var term = SearchText.Trim();
+
+			items = items.Where(link =>
+				(!string.IsNullOrWhiteSpace(link.Name) && link.Name.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+				(!string.IsNullOrWhiteSpace(GetDisplayGroup(link)) && GetDisplayGroup(link).Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+				(!string.IsNullOrWhiteSpace(GetDisplayEnvironment(link)) && GetDisplayEnvironment(link).Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+				(!string.IsNullOrWhiteSpace(link.Description) && link.Description.Contains(term, StringComparison.OrdinalIgnoreCase)));
+		}
+
+		return items;
+	}
+
+	private bool IsMatchByDropdowns(PortalApp app)
+	{
+		var productGroupMatched =
+			string.Equals(SelectedProductGroup, "All", StringComparison.OrdinalIgnoreCase) ||
+			string.Equals(GetDisplayGroup(app), SelectedProductGroup, StringComparison.OrdinalIgnoreCase);
+
+		var environmentMatched =
+			string.Equals(SelectedEnvironment, "All", StringComparison.OrdinalIgnoreCase) ||
+			(!IsOtherLink(app) && string.Equals(GetDisplayEnvironment(app), SelectedEnvironment, StringComparison.OrdinalIgnoreCase));
+
+		if (IsOtherLink(app) && !string.Equals(SelectedEnvironment, "All", StringComparison.OrdinalIgnoreCase))
+		{
+			environmentMatched = false;
+		}
+
+		return productGroupMatched && environmentMatched;
+	}
+
+	private List<string> LoadProductGroups()
+	{
+		var groups = AppHubHomeHelper.LoadApplicationNamesFromJson(Env) ?? new List<string>();
+
+		if (!groups.Contains("All", StringComparer.OrdinalIgnoreCase))
+		{
+			groups.Insert(0, "All");
+		}
+
+		if (!groups.Contains("Other Links", StringComparer.OrdinalIgnoreCase))
+		{
+			groups.Add("Other Links");
+		}
+
+		return groups
+			.Distinct(StringComparer.OrdinalIgnoreCase)
+			.OrderBy(x => string.Equals(x, "All", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+			.ThenBy(x => x)
+			.ToList();
+	}
+
+	private bool IsOtherLink(PortalApp app)
+	{
+		return string.Equals(GetDisplayGroup(app), "Other Links", StringComparison.OrdinalIgnoreCase);
+	}
+
+	private string GetDisplayGroup(PortalApp app)
+	{
+		return string.IsNullOrWhiteSpace(app?.ProductGroup) ? "Other Links" : app.ProductGroup;
+	}
+
+	private string GetDisplayEnvironment(PortalApp app)
+	{
+		if (IsOtherLink(app))
+			return "Reference";
+
+		return string.IsNullOrWhiteSpace(app?.Environment) ? "General" : app.Environment;
+	}
+
+	private string GetSuggestionMeta(PortalApp app)
+	{
+		return $"{GetDisplayGroup(app)} • {GetDisplayEnvironment(app)}";
+	}
+
+	private string GetItemIconCss(PortalApp app)
+	{
+		return string.IsNullOrWhiteSpace(app?.IconCss) ? "bi bi-link-45deg" : app.IconCss;
+	}
+
+	private string GetPinnedGroupName(PortalApp app)
+	{
+		if (IsOtherLink(app))
+			return "Other Links";
+
+		return GetDisplayEnvironment(app);
+	}
+
+	private int GetPinnedGroupOrder(string groupName)
+	{
+		if (string.Equals(groupName, "Development", StringComparison.OrdinalIgnoreCase))
+			return 1;
+
+		if (string.Equals(groupName, "Staging", StringComparison.OrdinalIgnoreCase))
+			return 2;
+
+		if (string.Equals(groupName, "Production", StringComparison.OrdinalIgnoreCase))
+			return 3;
+
+		if (string.Equals(groupName, "Other Links", StringComparison.OrdinalIgnoreCase))
+			return 4;
+
+		return 99;
+	}
+
+	private string GetPinnedGroupHeaderClass(string groupName)
+	{
+		if (string.Equals(groupName, "Development", StringComparison.OrdinalIgnoreCase))
+			return "environment-column-header-dev";
+
+		if (string.Equals(groupName, "Staging", StringComparison.OrdinalIgnoreCase))
+			return "environment-column-header-stage";
+
+		if (string.Equals(groupName, "Production", StringComparison.OrdinalIgnoreCase))
+			return "environment-column-header-prod";
+
+		return "other-links-column-header";
+	}
+
+	private string GetPinnedGroupIcon(string groupName)
+	{
+		if (string.Equals(groupName, "Development", StringComparison.OrdinalIgnoreCase))
+			return "bi bi-code-slash";
+
+		if (string.Equals(groupName, "Staging", StringComparison.OrdinalIgnoreCase))
+			return "bi bi-bezier2";
+
+		if (string.Equals(groupName, "Production", StringComparison.OrdinalIgnoreCase))
+			return "bi bi-cloud-check";
+
+		return "bi bi-link-45deg";
+	}
+
+	private string NormalizeEnvironmentForSorting(string environment)
+	{
+		if (string.Equals(environment, "Reference", StringComparison.OrdinalIgnoreCase))
+			return "Production";
+
+		return environment;
+	}
+
+	private sealed class PinnedEnvironmentGroup
+	{
+		public string Environment { get; set; } = string.Empty;
+		public List<PortalApp> Apps { get; set; } = new();
+	}
+}

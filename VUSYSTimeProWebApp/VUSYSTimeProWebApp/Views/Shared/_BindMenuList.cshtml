@@ -1,0 +1,61 @@
+﻿@using Newtonsoft.Json;
+@using VUSYSTimeProWebApp.Models;
+
+@{
+
+	var value = Context.Session.GetString("UserMenuSession");
+
+	if (value != null)
+	{
+		var MenuList = JsonConvert.DeserializeObject<List<MainMenu>>(value);
+		var AllMenuList = MenuList.ToList();
+
+		<li class="nav-item">
+			<a href="@Url.Action("Home", "Home")" class="nav-link" style="color:#fff;">
+				<i class="nav-icon fas fa-home-alt"></i>
+				<p>Home</p>
+			</a>
+		</li>
+
+		@foreach (var MainList in (AllMenuList.Where(e => e.IsDisplayedInMenu == true).ToList()))
+		{
+			<li key="@MainList.Id" class="@MainList.MainMenuListClassName">
+				<a href="#" class="@MainList.MainMenuLinkClassName" style="color:#fff;">
+					<i class="@MainList.MainMenuIClassName"></i>
+					<p>@MainList.MainMenuDisplayText</p>
+					<i class="@MainList.MainMenuIClassNameDisplayText"></i>
+					<span class="@MainList.MainMenuSpanClass"></span>
+				</a>
+
+
+				<ul class="nav nav-treeview">
+					@foreach (var SubMenu in (MainList.SubMenuList.Where(s => Convert.ToInt32(s.MainMenuId) == MainList.Id).ToList()))
+					{
+						<li key="@SubMenu.Id" class="@SubMenu.MenuListClassName">
+							@{
+
+								string ActionName = SubMenu.Action;
+								string ControllerName = SubMenu.Controller.Replace("/", "");
+
+								<a href="@Url.Action(ActionName, ControllerName)" class="@SubMenu.MenuLinkClassName" style="color:#fff;">
+									<i class="@SubMenu.MenuIClassName"></i>
+									<p>@SubMenu.MenuDisplayText</p>
+								</a>
+							}
+						</li>
+					}
+				</ul>
+
+			</li>
+		}
+	}
+	else
+	{
+		<script type="text/javascript">
+			$(function () {
+				var url = '@Url.Action("UnExpectedError", "Error")';
+				window.location = url;
+			});
+		</script>
+	}
+}

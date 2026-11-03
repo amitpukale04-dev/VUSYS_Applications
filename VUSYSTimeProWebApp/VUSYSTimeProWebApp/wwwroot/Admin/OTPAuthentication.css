@@ -1,0 +1,54 @@
+﻿.customOtpBackgroundImage {
+    background-image: url('/Admin/dist/img/OTPAuthentication.png');
+    background-repeat: no-repeat;
+    background-size: contain; /* Fill screen with cropping */
+    background-position: center center;
+    background-attachment: fixed;
+    background-color: #0b2034; /* fallback color */
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow: hidden;
+}
+
+.login-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 360px;
+    width: 90%;
+    z-index: 10;
+}
+
+@media (max-width: 768px) {
+    .customOtpBackgroundImage {
+        background-image: url('/Admin/dist/img/OTPAuthenticationMobile.png'); /* Optional: use a mobile version */
+        background-size: contain; /* Show full image without cropping */
+        background-position: top center;
+        background-attachment: scroll;
+        align-items: flex-start;
+        padding-top: 120px;
+    }
+
+    .login-box {
+        top: 40%; /* move box slightly higher */
+        transform: translate(-50%, -40%);
+    }
+}
+
+.invalid {
+    border: 2px solid red; /* Red border for invalid input */
+}
+
+.valid {
+    border: 2px solid green; /* Green border for valid input */
+}
+
+.customAlignment {
+    justify-content: center;
+    align-items: center;
+}

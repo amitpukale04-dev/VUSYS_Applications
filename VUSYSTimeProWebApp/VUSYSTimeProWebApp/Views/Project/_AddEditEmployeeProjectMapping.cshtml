@@ -1,0 +1,61 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	TempData["ActionName"] = "GetAllEmployeeProjectMappingList";
+	TempData["ControllerName"] = "Project";
+}
+
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="employeeProjectMapping.EmployeeCode" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<select id="ddlProjectMappingEmployeeCode" asp-for="employeeProjectMapping.EmployeeCode" class="form-control" asp-items="@(new SelectList(ViewBag.EmployeeList,"Value","Text"))"></select>
+			<span asp-validation-for="employeeProjectMapping.EmployeeCode" class="text-danger"></span>
+		</div>
+	</div>
+
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="employeeProjectMapping.ProjectID" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<select id="ddlProjectMappingProjectList" asp-for="employeeProjectMapping.ProjectID" class="form-control" asp-items="@(new SelectList(ViewBag.ProjectList,"Value","Text"))" onchange="handleEmployeeProjectChange();"></select>
+			<span asp-validation-for="employeeProjectMapping.ProjectID" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-9">
+			<div class="custom-control custom-switch mandatory mt-4">
+				<input type="checkbox" class="custom-control-input" asp-for="employeeProjectMapping.IsNotifyToEmployee">
+				<label asp-for="employeeProjectMapping.IsNotifyToEmployee" class="custom-control-label"></label>
+				<span asp-validation-for="employeeProjectMapping.IsNotifyToEmployee" class="text-danger"></span>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<div class="col-sm-6 col-md-4 left">
+			<div class="col-sm-12 col-md-4">
+				<div class="custom-control custom-switch mandatory mt-4">
+					<input type="checkbox" class="custom-control-input" asp-for="employeeProjectMapping.IsDeleted">
+					<label asp-for="employeeProjectMapping.IsDeleted" class="custom-control-label"></label>
+					<span asp-validation-for="employeeProjectMapping.IsDeleted" class="text-danger"></span>
+				</div>
+			</div>
+		</div>
+	}
+</div>
+<div class="form-group">
+	<button type="button" id="btnAddEditEmployeeProjectMapping" class="btn btn-success btn-mgn VUSYSbg" onclick="fnSaveUpdate(this)"><i class="fas fa-save"></i> Save</button>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<button type="button" id="btnAddEditEmployeeProjectMappingClear" class="btn btn-secondary btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-reset"></i> Clear</button>
+	}
+	@await Html.PartialAsync("CommonControls/_CancelButton")
+</div>
+@await Html.PartialAsync("CommonControls/_BackToList")
+@await Html.PartialAsync("AlertNotification/_AlertNotification")

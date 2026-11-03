@@ -1,0 +1,4 @@
+
+select EmployeeCode, * from VUSYS_Users WHERE Username = 'Amit'
+
+select * from VUSYS_ProjectTimeSheetDetails WHERE ProjectTimeSheetID IN (SELECT Id FROM VUSYS_ProjectTimeSheet WHERE EmployeeCode = 'VUT003' AND TimeSheetMonth = 'September' AND TimeSheetYear = 2026) AND TaskDate = '2026-09-18'

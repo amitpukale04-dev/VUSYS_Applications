@@ -1,0 +1,86 @@
+﻿<div class="container">
+    <div style="width:100%; margin:0 auto;">
+        <table id="tblProjectAllocatedConsumedReportList" class="table table-striped table-bordered dt-responsive nowrap" width="100%" cellspacing="0">
+            <thead class="VUSYSTableHeader">
+                <tr>
+                    <th>SL No.</th>
+                    <th>Project Code</th>
+                    <th>Project Name</th>
+                    <th>Client Name</th>
+                    <th>Allocated Hours</th>
+                    <th>Consumed Hours</th>
+                    <th>Requirement Gathering & Analysis</th>
+                    <th>System Design</th>
+                    <th>Frontend Development</th>
+                    <th>Backend Development</th>
+                    <th>Code Review</th>
+                    <th>System Testing</th>
+                    <th>Project Management</th>
+                    <th>Deployment</th>
+                    <th>Post-Deployment Monitoring</th>
+                    <th>Fix Post-Release Bugs</th>
+                    <th>Maintenance</th>
+                    <th>Knowledge Transfer</th>
+                    <th>Learning</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        BindProjectAllocatedConsumedReportListGrid();
+    });
+
+    function BindProjectAllocatedConsumedReportListGrid() {
+        var ProjectID = $("#ddlProjectList").val();
+        var baseUrl = '@Url.Action("GetProjectAllocatedConsumedReportList", "Reports")';
+        // Dynamically append query parameters to the URL
+        var url = baseUrl + '?ProjectID=' + encodeURIComponent(ProjectID);
+
+        var rtable = $("#tblProjectAllocatedConsumedReportList").DataTable({
+            "processing": true, // for show progress bar
+            "serverSide": true, // for process server side
+            "filter": true, // this is for disable filter (search box)
+            "orderMulti": false, // for disable multiple column at once
+            "scrollX": true,
+            "scrollCollapse": true,
+            "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, 'All']],
+            "paging": true,
+            "ajax": {
+                "url": url,
+                "type": "POST",
+                "datatype": "json"
+            },
+            "language": {
+                "emptyTable": "No Record Found.",
+                "processing":
+                    '<i class="fa fa-spinner fa-spin fa-3x fa-fw" style="color:#2a2b2b;"></i><span class="sr-only">Loading...</span> '
+            },
+            "columns": [
+                { "data": "slNo", "name": "slNo", "width": "0%" },
+                { "data": "projectCode", "name": "projectCode", "width": "10%" },
+                { "data": "projectName", "name": "projectName", "width": "10%" },
+                { "data": "clientName", "name": "clientName", "width": "10%" },
+                { "data": "allocatedHours", "name": "allocatedHours", "width": "10%" },
+                { "data": "consumedHours", "name": "consumedHours", "width": "10%" },
+                { "data": "requirementGatheringAndAnalysis", "name": "requirementGatheringAndAnalysis", "width": "10%" },
+                { "data": "systemDesign", "name": "systemDesign", "width": "10%" },
+                { "data": "frontendDevelopment", "name": "frontendDevelopment", "width": "10%" },
+                { "data": "backendDevelopment", "name": "backendDevelopment", "width": "10%" },
+                { "data": "codeReview", "name": "codeReview", "width": "10%" },
+                { "data": "systemTesting", "name": "systemTesting", "width": "10%" },
+                { "data": "projectManagement", "name": "projectManagement", "width": "10%" },
+                { "data": "deployment", "name": "deployment", "width": "10%" },
+                { "data": "postDeploymentMonitoring", "name": "postDeploymentMonitoring", "width": "10%" },
+                { "data": "fixPostReleaseBugs", "name": "fixPostReleaseBugs", "width": "10%" },
+                { "data": "maintenance", "name": "maintenance", "width": "10%" },
+                { "data": "knowledgeTransfer", "name": "knowledgeTransfer", "width": "10%" },
+                { "data": "learning", "name": "learning", "width": "10%" }
+            ]
+
+        });
+    }
+</script>
+

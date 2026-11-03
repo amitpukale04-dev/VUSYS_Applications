@@ -1,0 +1,76 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel
+
+@{
+	ViewData["Title"] = "Leave Report List";
+	Layout = "_CommonNavLayout";
+}
+
+<form id="GetAllLeaveReportListForm" asp-action="GetAllLeaveReportList" method="post">
+	<section class="content">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-md-12">
+					<div class="card card-primary">
+						<div class="card-header VUSYSbg">
+							<h3 class="card-title divcustombold">Leave Report List</h3>
+						</div>
+						<div class="card-body" style="padding-left:10px;">
+							<div class="row form-group">
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6">
+										<label asp-for="leaveReportFilter.EmployeeCode" class="control-label"></label>
+									</div>
+									<div class="col-sm-12 col-md-10">
+										<select id="ddlEmployee" asp-for="leaveReportFilter.EmployeeCode" class="form-control" asp-items="@(new SelectList(ViewBag.EmployeeList, "Value", "Text"))"></select>
+									</div>
+								</div>
+
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6 mandatory">
+										<label asp-for="leaveReportFilter.TimesheetMonth" class="control-label"></label>
+									</div>
+									<div class="col-sm-12 col-md-10">
+										<select id="ddlMonth" asp-for="leaveReportFilter.TimesheetMonth" class="form-control" asp-items="@(new SelectList(ViewBag.MonthList, "Value", "Text"))"></select>
+										<span asp-validation-for="leaveReportFilter.TimesheetMonth" class="text-danger"></span>
+									</div>
+								</div>
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6 mandatory">
+										<label asp-for="leaveReportFilter.TimesheetYear" class="control-label"></label>
+									</div>
+									<div class="col-sm-12 col-md-10">
+										<select id="ddlYear" asp-for="leaveReportFilter.TimesheetYear" class="form-control" asp-items="@(new SelectList(ViewBag.YearList, "Value", "Text"))"></select>
+										<span asp-validation-for="leaveReportFilter.TimesheetYear" class="text-danger"></span>
+									</div>
+								</div>
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6">
+									</div>
+									<div class="col-sm-12 mt-4 col-md-12">
+										<button type="submit" id="btnSearchLeaveReportDetails" name="action" value="ByGetLeaveDetails" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-list"></i> Search</button>
+										<button type="submit" id="btnExportToExcelLeaveReportDetails" name="action" value="ExportToExcel" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-file-excel"></i> Export To Excel</button>
+										<button type="button" id="btnSearchLeaveReportDetailsClear" class="btn btn-success btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-sync"></i> Clear</button>
+									</div>
+								</div>
+							</div>
+							@{
+								if (ViewBag.DisplayGrid != null && ViewBag.DisplayGrid == true)
+								{
+									@await Html.PartialAsync("_GetLeaveReportList")
+								}
+							}
+							@await Html.PartialAsync("AlertNotification/_AlertNotification")
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+</form>
+<script type="text/javascript">
+	$(function () {
+		$("#ddlEmployee").select2();
+		$("#ddlMonth").select2();
+		$("#ddlYear").select2();
+	});
+</script>

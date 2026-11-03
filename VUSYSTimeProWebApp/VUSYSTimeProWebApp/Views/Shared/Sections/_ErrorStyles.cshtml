@@ -1,0 +1,14 @@
+<environment include="Development">
+
+	<!-- Theme style -->
+	<link href="~/Admin/admin-lte/css/adminlte.css" rel="stylesheet" />
+
+	<link href="~/Admin/CustomStyle.css" rel="stylesheet" />
+</environment>
+
+<environment exclude="Development">
+
+	<link href="~/Admin/admin-lte/css/adminlte.css" rel="stylesheet" asp-append-version="true" />
+
+	<link href="~/Admin/CustomStyle.css" rel="stylesheet" asp-append-version="true" />
+</environment>

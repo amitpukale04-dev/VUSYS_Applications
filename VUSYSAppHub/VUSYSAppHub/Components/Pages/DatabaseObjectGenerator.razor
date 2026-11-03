@@ -1,0 +1,2556 @@
+﻿@page "/database-object-generation"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+@inject IDatabaseObjectGeneratorService DatabaseObjectGeneratorService
+@inject IScriptHistoryStore ScriptHistoryStore
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+@using System.IO.Compression
+@using System.Security.Cryptography
+@using System.Text
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Web
+@using VUSYSAppHub.Contracts
+@using VUSYSAppHub.DACHelper
+@using VUSYSAppHub.Models
+
+<PageTitle>Database Object Generation</PageTitle>
+
+<div class="apphub-page @(isDarkMode ? "dark-mode" : "")" data-bs-theme="@(isDarkMode ? "dark" : "light")">
+    <div class="container-fluid px-3 px-md-4 px-lg-5 py-4 py-lg-5">
+        <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4 monitoring-page-header">
+            <div>
+                <h2 class="page-title mb-1">Database Object Generation</h2>
+                <div class="page-note">Dedicated page to connect, browse objects, filter, preview and generate scripts by application and environment.</div>
+            </div>
+
+            <div class="monitoring-header-actions">
+                <button type="button"
+                        class="btn btn-back-dashboard d-inline-flex align-items-center gap-2"
+                        @onclick="BackToHome">
+                    <i class="bi bi-arrow-left-circle-fill"></i>
+                    <span>Back to App Hub</span>
+                </button>
+
+                <button type="button"
+                        class="btn btn-theme d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                        style="width: 56px; height: 56px; padding: 0;"
+                        title="@(isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")"
+                        aria-label="@(isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")"
+                        @onclick="ToggleThemeAsync">
+                    <i class="bi @(isDarkMode ? "bi-sun-fill" : "bi-moon-stars-fill") fs-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4 monitoring-dashboard-card">
+            <div class="monitoring-dashboard-header">
+                <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="monitoring-dashboard-icon">
+                            <i class="bi bi-database-gear"></i>
+                        </div>
+                        <div>
+                            <h4 class="monitoring-dashboard-title mb-1">Database Object Generation</h4>
+                            <div class="monitoring-dashboard-subtitle">
+                                Manage connection details, filters and script generation options across supported environments.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="monitoring-dashboard-right">
+                        <div class="monitoring-refresh-pill @((isConnecting || isGenerating || isRefreshingDatabase || isPopupBusy) ? "refreshing" : "")">
+                            <span class="monitoring-refresh-dot"></span>
+                            <span>@GetActionStatusText()</span>
+                        </div>
+
+                        <div class="monitoring-last-refresh">
+                            <i class="bi bi-clock-history me-1"></i>
+                            @(lastActionAt.HasValue ? $"Last action: {lastActionAt.Value:dd-MMM-yyyy hh:mm:ss tt}" : "Last action: --")
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                @if (showConnectionAlert && !string.IsNullOrWhiteSpace(connectionMessage))
+                {
+                    <div class="alert @(isConnected ? "alert-success" : "alert-danger") mb-4" role="alert">
+                        <i class="bi @(isConnected ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill") me-2"></i>
+                        @connectionMessage
+                    </div>
+                }
+
+                <div class="database-section-title mb-3">
+                    <div class="w-100">
+                        <h3>Connection Section</h3>
+
+                        <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                <p class="mb-0">Select application and environment to connect.</p>
+
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="button"
+                                            class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                                            style="width: 42px; height: 42px; min-width: 42px; min-height: 42px; padding: 0;"
+                                            title="Clear"
+                                            aria-label="Clear"
+                                            @onclick="ClearSelections"
+                                            disabled="@(!CanClearSelections())">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+
+                                    <button type="button"
+                                            class="btn btn-outline-danger d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                                            style="width: 42px; height: 42px; min-width: 42px; min-height: 42px; padding: 0;"
+                                            title="Disconnect"
+                                            aria-label="Disconnect"
+                                            @onclick="DisconnectAsync"
+                                            disabled="@(!CanDisconnect())">
+                                        <i class="bi bi-plug"></i>
+                                    </button>
+
+                                    <button type="button"
+                                            class="btn btn-outline-primary d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                                            style="width: 42px; height: 42px; min-width: 42px; min-height: 42px; padding: 0;"
+                                            title="@(isConnecting ? "Connecting..." : "Connect")"
+                                            aria-label="Connect"
+                                            @onclick="OpenLoginPopupAsync"
+                                            disabled="@(!CanConnect())">
+                                        <i class="bi @(isConnecting ? "bi-arrow-repeat" : "bi-plug-fill")"></i>
+                                    </button>
+
+                                    <button type="button"
+                                            class="btn btn-outline-success d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                                            style="width: 42px; height: 42px; min-width: 42px; min-height: 42px; padding: 0;"
+                                            title="@(isRefreshingDatabase ? "Refreshing Database..." : "Refresh Database")"
+                                            aria-label="Refresh Database"
+                                            @onclick="RefreshDatabaseAsync"
+                                            disabled="@(!CanRefreshDatabase())">
+                                        <i class="bi @(isRefreshingDatabase ? "bi-arrow-repeat" : "bi-arrow-clockwise")"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="database-connection-status @(GetConnectionStatusCss()) flex-shrink-0">
+                                <i class="bi @(GetConnectionStatusIcon())"></i>
+                                <span>@GetConnectionStatusText()</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="filter-label">Application</label>
+                        <select class="form-select form-select-modern"
+                                value="@selectedApplication"
+                                @onchange="OnApplicationChanged"
+                                disabled="@(isConnecting || isConnected || isRefreshingDatabase || showLoginPopup || showOtpPopup || isPopupBusy)">
+                            <option value="">SELECT</option>
+                            @foreach (var app in applicationList)
+                            {
+                                <option value="@app">@app</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="filter-label">Environment</label>
+                        <select class="form-select form-select-modern"
+                                value="@selectedEnvironment"
+                                @onchange="OnEnvironmentChanged"
+                                disabled="@(!CanSelectEnvironment())">
+                            <option value="">SELECT</option>
+                            @foreach (var env in environmentList)
+                            {
+                                <option value="@env">@env</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="filter-label">Database Type</label>
+                        <input class="form-control form-select-modern" value="@currentConfig.DatabaseType" readonly />
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="filter-label">Server Name</label>
+                        <input class="form-control form-select-modern" value="@currentConfig.ServerName" readonly />
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="filter-label">Database Name</label>
+                        <input class="form-control form-select-modern" value="@currentConfig.DatabaseName" readonly />
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="filter-label">Authentication Type</label>
+                        <input class="form-control form-select-modern" value="@currentConfig.AuthenticationType" readonly />
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="filter-label">User Name</label>
+                        <input class="form-control form-select-modern" value="@currentConfig.UserName" readonly />
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label class="filter-label">Password</label>
+                        <input class="form-control form-select-modern" value="@passwordMask" readonly />
+                    </div>
+                </div>
+
+                <div class="monitoring-panel monitoring-panel-gradient mb-4">
+                    <div class="monitoring-panel-header-gradient">
+                        <div class="monitoring-panel-header-top">
+                            <div class="monitoring-panel-title-group">
+                                <div class="monitoring-dashboard-icon" style="width:48px;height:48px;font-size:1.15rem;">
+                                    <i class="bi bi-funnel-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="monitoring-panel-title-light">Filters</div>
+                                    <div class="monitoring-panel-subtitle-light">
+                                        Object Type Filter and Schema Filter
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="monitoring-panel-actions d-flex align-items-center gap-2">
+                                <button type="button"
+                                        class="database-btn-secondary"
+                                        title="Clear Filters"
+                                        aria-label="Clear Filters"
+                                        @onclick="ClearFilters"
+                                        disabled="@(!CanClearFilters())">
+                                    <i class="bi bi-eraser"></i>
+                                    <span>Clear Filters</span>
+                                </button>
+
+                                <button type="button"
+                                        class="monitoring-panel-toggle-btn monitoring-panel-toggle-btn-gradient"
+                                        @onclick="ToggleFiltersSection"
+                                        title="@(isFiltersExpanded ? "Collapse Filters" : "Expand Filters")"
+                                        aria-label="@(isFiltersExpanded ? "Collapse Filters" : "Expand Filters")">
+                                    <i class="bi @(isFiltersExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="monitoring-panel-content @(isFiltersExpanded ? "expanded" : "collapsed")">
+                        <div class="monitoring-panel-body-soft p-4">
+                            <div class="row g-4">
+                                <div class="col-12 col-lg-6">
+                                    <label class="filter-label">Object Type Filter</label>
+                                    <select class="form-select form-select-modern"
+                                            value="@objectTypeFilter"
+                                            @onchange="OnObjectTypeFilterChanged">
+                                        <option value="All">All</option>
+                                        <option value="Table">Tables</option>
+                                        <option value="View">Views</option>
+                                        <option value="Procedure">Procedures</option>
+                                        <option value="Function">Functions</option>
+                                        <option value="ForeignKey">Foreign Key Constraints</option>
+                                        <option value="Index">Indexes</option>
+                                        <option value="Trigger">Triggers</option>
+                                        <option value="DataScript">DataScripts</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-12 col-lg-6">
+                                    <label class="filter-label">Schema Filter</label>
+                                    <select class="form-select form-select-modern"
+                                            value="@schemaFilter"
+                                            @onchange="OnSchemaFilterChanged">
+                                        <option value="All">All</option>
+                                        @foreach (var schema in schemaList)
+                                        {
+                                            <option value="@schema">@schema</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="monitoring-panel monitoring-panel-gradient">
+                    <div class="monitoring-panel-header-gradient">
+                        <div class="monitoring-panel-header-top">
+                            <div class="monitoring-panel-title-group">
+                                <div class="monitoring-dashboard-icon" style="width:48px;height:48px;font-size:1.15rem;">
+                                    <i class="bi bi-sliders"></i>
+                                </div>
+                                <div>
+                                    <div class="monitoring-panel-title-light">Script Options</div>
+                                    <div class="monitoring-panel-subtitle-light">
+                                        Control generated script format and ordering
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="monitoring-panel-actions d-flex align-items-center gap-2">
+                                <button type="button"
+                                        class="database-btn-secondary"
+                                        title="Clear Script Options"
+                                        aria-label="Clear Script Options"
+                                        @onclick="ClearScriptOptions"
+                                        disabled="@(!CanClearScriptOptions())">
+                                    <i class="bi bi-eraser"></i>
+                                    <span>Clear Script Options</span>
+                                </button>
+
+                                <button type="button"
+                                        class="monitoring-panel-toggle-btn monitoring-panel-toggle-btn-gradient"
+                                        @onclick="ToggleScriptOptionsSection"
+                                        title="@(isScriptOptionsExpanded ? "Collapse Script Options" : "Expand Script Options")"
+                                        aria-label="@(isScriptOptionsExpanded ? "Collapse Script Options" : "Expand Script Options")">
+                                    <i class="bi @(isScriptOptionsExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="monitoring-panel-content @(isScriptOptionsExpanded ? "expanded" : "collapsed")">
+                        <div class="monitoring-panel-body-soft p-4">
+                            <div class="database-option-pills">
+
+                                <label class="database-option-pill">
+                                    <input type="checkbox" @bind="scriptOptions.GenerateInDependencyOrder" />
+                                    <span>Generate object in dependency order</span>
+                                </label>
+
+                                @if (objectTypeFilter == "DataScript")
+                                {
+                                    <label class="database-option-pill">
+                                        <input type="checkbox" @bind="dataScriptGenerateInsert" />
+                                        <span>Insert</span>
+                                    </label>
+
+                                    <label class="database-option-pill">
+                                        <input type="checkbox" @bind="dataScriptGenerateUpdate" />
+                                        <span>Update</span>
+                                    </label>
+
+                                    <label class="database-option-pill">
+                                        <input type="checkbox" @bind="dataScriptGenerateDelete" />
+                                        <span>Delete</span>
+                                    </label>
+                                }
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4 monitoring-dashboard-card">
+            <div class="monitoring-dashboard-header">
+                <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="monitoring-dashboard-icon">
+                            <i class="bi bi-diagram-3-fill"></i>
+                        </div>
+                        <div>
+                            <h4 class="monitoring-dashboard-title mb-1">Object Explorer</h4>
+                            <div class="monitoring-dashboard-subtitle">
+                                Browse and select Tables, Views, Procedures, Functions, Indexes, Foreign Keys, Triggers and DataScript.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="monitoring-dashboard-right d-flex flex-column flex-xl-row align-items-stretch align-items-xl-center gap-2 position-relative">
+                        <div class="database-object-search-shell">
+                            <i class="bi bi-search search-icon"></i>
+
+                            <input class="form-control form-select-modern search-input"
+                                   placeholder="Search objects..."
+                                   value="@objectSearchText"
+                                   @oninput="OnObjectSearchInputChanged"
+                                   @onfocus="OnObjectSearchFocus"
+                                   @onblur="OnObjectSearchBlurAsync" />
+
+                            @if (!string.IsNullOrWhiteSpace(objectSearchText))
+                            {
+                                <button type="button"
+                                        class="search-clear-btn"
+                                        title="Clear search"
+                                        aria-label="Clear search"
+                                        @onclick="ClearObjectSearch">
+                                    <i class="bi bi-x-circle-fill"></i>
+                                </button>
+                            }
+
+                            @if (showSearchSuggestions && searchSuggestions.Count > 0)
+                            {
+                                <div class="database-object-search-dropdown">
+                                    @foreach (var suggestion in searchSuggestions)
+                                    {
+                                        <button type="button"
+                                                class="database-object-search-item"
+                                                @onmousedown='async () => await SelectSuggestionAsync(suggestion)'>
+                                            <div class="database-object-search-name">@suggestion.ObjectName</div>
+                                            <div class="database-object-search-meta">@suggestion.SchemaName / @suggestion.ObjectType</div>
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <div class="monitoring-refresh-pill d-inline-flex align-items-center" style="white-space: nowrap">
+                            <span class="monitoring-refresh-dot me-1"></span>
+                            <span>@VisibleObjectCount&nbsp;visible objects</span>
+                        </div>
+
+                        <div class="monitoring-last-refresh d-inline-flex align-items-center" style="white-space: nowrap">
+                            <i class="bi bi-check2-square me-1"></i>
+                            Selected: @SelectedObjectCount
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="database-summary-card-grid mb-4">
+                    <div class="database-summary-card">
+                        <div class="database-summary-label">Visible Objects</div>
+                        <div class="database-summary-value">@VisibleObjectCount</div>
+                        <div class="database-summary-meta">Based on current filters</div>
+                    </div>
+
+                    <div class="database-summary-card">
+                        <div class="database-summary-label">Selected Objects</div>
+                        <div class="database-summary-value">@SelectedObjectCount</div>
+                        <div class="database-summary-meta">Ready for generation</div>
+                    </div>
+
+                    <div class="database-summary-card">
+                        <div class="database-summary-label">Schemas</div>
+                        <div class="database-summary-value">@VisibleSchemaCount</div>
+                        <div class="database-summary-meta">Within filtered objects</div>
+                    </div>
+                </div>
+
+                <div class="database-tree-shell fill-height">
+                    <div class="monitoring-dashboard-header">
+                        <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div>
+                                    <h4 class="monitoring-dashboard-title mb-1" style="font-size:1.05rem;">Searchable Object List</h4>
+                                    <div class="monitoring-dashboard-subtitle">
+                                        Browse filtered objects and manage selection in one place.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="database-tree-actions">
+                                <span class="database-selection-summary">
+                                    <i class="bi bi-check2-all"></i>
+                                    <span>@SelectedObjectCount selected</span>
+                                </span>
+
+                                <button type="button"
+                                        class="database-btn-secondary"
+                                        @onclick="ToggleSelectAllVisible"
+                                        disabled="@(!filteredGroups.Any())">
+                                    <i class="bi @(AreAllVisibleItemsSelected() ? "bi-square" : "bi-check2-square")"></i>
+                                    <span>@(AreAllVisibleItemsSelected() ? "Deselect All" : "Select All")</span>
+                                </button>
+
+                                <button type="button"
+                                        class="database-btn-secondary"
+                                        @onclick="ToggleExpandAllVisible"
+                                        disabled="@(!filteredGroups.Any())">
+                                    <i class="bi @(AreAllVisibleGroupsExpanded() ? "bi-arrows-collapse" : "bi-arrows-expand")"></i>
+                                    <span>@(AreAllVisibleGroupsExpanded() ? "Collapse All" : "Expand All")</span>
+                                </button>
+
+                                <button type="button"
+                                        class="database-btn-secondary"
+                                        @onclick="ClearSelectionAndSearch"
+                                        disabled="@(!CanClearSelectionAndSearch())">
+                                    <i class="bi bi-eraser"></i>
+                                    <span>Clear Selection</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="database-tree-scroll">
+                        @if (!isConnected)
+                        {
+                            <div class="database-empty-state">
+                                <div>
+                                    <i class="bi bi-database"></i>
+                                    <div>Connect to a database to load objects.</div>
+                                </div>
+                            </div>
+                        }
+                        else if (filteredGroups.Count == 0)
+                        {
+                            <div class="database-empty-state">
+                                <div>
+                                    <i class="bi bi-funnel"></i>
+                                    <div>No objects found for the current filters.</div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <ul class="database-tree-list">
+                                @foreach (var group in filteredGroups)
+                                {
+                                    <li class="database-tree-node">
+                                        <div class="database-tree-item @(AreAllGroupItemsSelected(group) ? "selected" : "")">
+                                            <button type="button"
+                                                    class="database-tree-toggle"
+                                                    @onclick="() => group.IsExpanded = !group.IsExpanded">
+                                                <i class="bi @(group.IsExpanded ? "bi-chevron-down" : "bi-chevron-right")"></i>
+                                            </button>
+
+                                            <input class="database-tree-check"
+                                                   type="checkbox"
+                                                   checked="@AreAllGroupItemsSelected(group)"
+                                                   @onchange="(e) => ToggleGroupSelection(group, e.Value is bool val && val)" />
+
+                                            <div class="database-tree-content">
+                                                <div class="database-tree-title">
+                                                    <span class="database-tree-name">@group.ObjectType</span>
+                                                </div>
+
+                                                <div class="database-tree-meta">
+                                                    <span class="database-tree-badge type">@group.ObjectType</span>
+                                                    <span class="database-tree-badge count">@group.Items.Count objects</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        @if (group.IsExpanded)
+                                        {
+                                            <ul class="database-tree-children">
+                                                @foreach (var item in group.Items)
+                                                {
+                                                    <li class="database-tree-node">
+                                                        <div class="database-tree-item @(item.IsSelected ? "selected" : "")">
+                                                            <span class="database-tree-toggle" style="visibility:hidden;">
+                                                                <i class="bi bi-chevron-right"></i>
+                                                            </span>
+
+                                                            <input class="database-tree-check" type="checkbox" @bind="item.IsSelected" />
+
+                                                            <div class="database-tree-content">
+                                                                <div class="database-tree-title">
+                                                                    <span class="database-tree-name">@item.ObjectName</span>
+                                                                </div>
+
+                                                                <div class="database-tree-meta">
+                                                                    <span class="database-tree-badge schema">@item.SchemaName</span>
+                                                                    <span class="database-tree-badge type">@item.ObjectType</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4 monitoring-dashboard-card">
+            <div class="monitoring-dashboard-header">
+                <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="monitoring-dashboard-icon">
+                            <i class="bi bi-file-earmark-code-fill"></i>
+                        </div>
+                        <div>
+                            <h4 class="monitoring-dashboard-title mb-1">Output Section</h4>
+                            <div class="monitoring-dashboard-subtitle">
+                                Preview generated script, download SQL and ZIP, and review history.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="monitoring-dashboard-right">
+                        <div class="monitoring-refresh-pill @(isGenerating ? "refreshing" : "")">
+                            <span class="monitoring-refresh-dot"></span>
+                            <span>@(isGenerating ? "Generating script..." : "Ready for generation")</span>
+                        </div>
+
+                        <div class="monitoring-last-refresh">
+                            <i class="bi bi-filetype-sql me-1"></i>
+                            Preview and download
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="database-preview-shell fill-height position-relative">
+                    @if (isGenerating)
+                    {
+                        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                             style="background: rgba(255,255,255,0.72); z-index: 20; border-radius: 1.25rem; backdrop-filter: blur(2px);">
+                            <div class="text-center px-4 py-4">
+                                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                                    <span class="visually-hidden">Generating...</span>
+                                </div>
+                                <div class="fw-semibold fs-5">Generating script...</div>
+                                <div class="text-muted mt-1">Please wait until the preview is fully loaded.</div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="database-preview-toolbar">
+                        <div class="database-preview-summary">
+                            <span class="database-chip @(isConnected ? "active" : "")">
+                                <i class="bi bi-link-45deg"></i>
+                                <span>@(isConnected ? "Connected" : "Not Connected")</span>
+                            </span>
+
+                            <span class="database-chip @(SelectedObjectCount > 0 ? "active" : "")">
+                                <i class="bi bi-layers-fill"></i>
+                                <span>@SelectedObjectCount selected</span>
+                            </span>
+                        </div>
+
+                        <div class="database-history-actions">
+                            <button type="button"
+                                    class="btn btn-monitoring-dashboard d-inline-flex align-items-center gap-2"
+                                    @onclick="GenerateScriptAsync"
+                                    disabled="@(!isConnected || !GetSelectedItems().Any() || isGenerating)">
+                                <i class="bi bi-gear-wide-connected"></i>
+                                <span>@(isGenerating ? "Generating..." : "Generate")</span>
+                            </button>
+
+                            @if (!string.IsNullOrWhiteSpace(downloadHref))
+                            {
+                                <a class="database-btn-secondary database-download-link @(isGenerating ? "disabled pe-none opacity-50" : "")"
+                                   href="@downloadHref"
+                                   download="@downloadFileName">
+                                    <i class="bi bi-download"></i>
+                                    <span>Download</span>
+                                </a>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(zipDownloadHref))
+                            {
+                                <a class="database-btn-secondary database-download-link @(isGenerating ? "disabled pe-none opacity-50" : "")"
+                                   href="@zipDownloadHref"
+                                   download="@zipDownloadFileName">
+                                    <i class="bi bi-file-earmark-zip-fill"></i>
+                                    <span>ZIP Download</span>
+                                </a>
+                            }
+                        </div>
+                    </div>
+
+                    @if (string.IsNullOrWhiteSpace(previewScript))
+                    {
+                        <div class="database-preview-empty">
+                            <div>
+                                <i class="bi bi-file-earmark-text"></i>
+                                <div>Generated SQL preview will appear here.</div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="database-code-view">
+                            <pre>@previewScript</pre>
+                        </div>
+                    }
+
+                    <div class="database-section-divider mt-4 mb-4"></div>
+
+                    <div class="database-section-title">
+                        <div>
+                            <h3>Script History</h3>
+                            <p>In-memory generated script history.</p>
+                        </div>
+
+                        <div class="database-history-actions">
+                            <button type="button"
+                                    class="database-btn-danger-soft"
+                                    @onclick="ClearHistory"
+                                    disabled="@(historyEntries.Count == 0 || isGenerating)">
+                                <i class="bi bi-trash3"></i>
+                                <span>Clear</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="database-history-scroll">
+                        @if (historyEntries.Count == 0)
+                        {
+                            <div class="database-empty-state">
+                                <div>
+                                    <i class="bi bi-clock-history"></i>
+                                    <div>No history available.</div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="database-history-list">
+                                @foreach (var entry in historyEntries)
+                                {
+                                    <div class="database-history-item">
+                                        <div class="database-history-top">
+                                            <div class="database-ellipsis">
+                                                <div class="database-history-title">@entry.FileName</div>
+                                                <div class="database-history-meta">
+                                                    <span>@entry.ApplicationName</span>
+                                                    <span>/</span>
+                                                    <span>@entry.EnvironmentName</span>
+                                                    <span>/</span>
+                                                    <span>@entry.ObjectCount objects</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="database-history-meta mt-2">
+                                            <span>@entry.GeneratedOn.ToString("dd-MMM-yyyy hh:mm tt")</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button type="button"
+                class="scroll-to-top-btn @(showScrollToTop ? "show" : "")"
+                title="Scroll to top"
+                aria-label="Scroll to top"
+                @onclick="ScrollToTopAsync">
+            <i class="bi bi-chevron-up"></i>
+        </button>
+    </div>
+</div>
+
+@if (showLoginPopup)
+{
+    <div class="apphub-modal-overlay">
+        <div class="apphub-modal-card monitoring-dashboard-card shadow-lg" @onclick:stopPropagation="true">
+            <div class="monitoring-dashboard-header apphub-modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="monitoring-dashboard-icon">
+                        <i class="bi bi-person-badge-fill"></i>
+                    </div>
+                    <div>
+                        <h4 class="monitoring-dashboard-title mb-1">
+                            @(selectedApplication?.Equals("TimePro", StringComparison.OrdinalIgnoreCase) == true
+                                                    ? "Email ID Verification"
+                                                    : "Login ID Verification")
+                    </h4>
+                        <div class="monitoring-dashboard-subtitle">
+                            @(selectedApplication?.Equals("TimePro", StringComparison.OrdinalIgnoreCase) == true
+                                                    ? "Enter your Email ID to receive OTP for database connection"
+                                                    : "Enter your Login ID to receive OTP for database connection")
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4 apphub-modal-body">
+                @if (!string.IsNullOrWhiteSpace(loginPopupErrorMessage))
+                {
+                    <div class="alert alert-danger mb-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        @loginPopupErrorMessage
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(loginPopupInfoMessage))
+                {
+                    <div class="alert alert-info mb-3" role="alert">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        @loginPopupInfoMessage
+                    </div>
+                }
+
+                <div class="row g-4">
+                    <div class="col-12">
+                    <label class="filter-label">
+                        @(selectedApplication?.Equals("TimePro", StringComparison.OrdinalIgnoreCase) == true
+                                                ? "Email ID"
+                                                : "Login ID")
+                    </label>
+                    <input type="text"
+                           class="form-control form-select-modern"
+                           @bind="loginIdInput"
+                           @bind:event="oninput"
+                           @onkeydown="HandleLoginIdKeyDownAsync"
+                           placeholder="@(selectedApplication?.Equals("TimePro", StringComparison.OrdinalIgnoreCase) == true
+                                                  ? "Enter Email ID"
+                                                  : "Enter Login ID")"
+                           maxlength="100"
+                           disabled="@isPopupBusy" />
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap justify-content-end gap-3 mt-4">
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-launcher d-inline-flex align-items-center gap-2"
+                            @onclick="CloseLoginPopup"
+                            disabled="@isPopupBusy">
+                        <i class="bi bi-x-circle"></i>
+                        <span>Cancel</span>
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-monitoring-dashboard d-inline-flex align-items-center gap-2"
+                            @onclick="ValidateLoginAndSendOtpAsync"
+                            disabled="@isPopupBusy">
+                        <i class="bi bi-envelope-check-fill"></i>
+                        <span>@(isPopupBusy && currentPopupAction == "send-otp" ? "Sending OTP..." : "Send OTP")</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showOtpPopup)
+{
+    <div class="apphub-modal-overlay">
+        <div class="apphub-modal-card monitoring-dashboard-card shadow-lg" @onclick:stopPropagation="true">
+            <div class="monitoring-dashboard-header apphub-modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="monitoring-dashboard-icon">
+                        <i class="bi bi-shield-lock-fill"></i>
+                    </div>
+                    <div>
+                        <h4 class="monitoring-dashboard-title mb-1">OTP Verification</h4>
+                        <div class="monitoring-dashboard-subtitle">
+                            Enter the 6-digit OTP sent to your registered email address
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4 apphub-modal-body">
+                <div class="apphub-otp-user-summary mb-3">
+                    <div><strong>Login ID:</strong> @validatedEmployee.LoginId</div>
+                    <div><strong>Employee Name:</strong> @validatedEmployee.EmployeeName</div>
+                    <div><strong>Email ID:</strong> @validatedEmployee.EmailId</div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(otpPopupErrorMessage))
+                {
+                    <div class="alert alert-danger mb-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        @otpPopupErrorMessage
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(otpPopupInfoMessage))
+                {
+                    <div class="alert alert-info mb-3" role="alert">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        @otpPopupInfoMessage
+                    </div>
+                }
+
+                <div class="apphub-otp-label mb-2">Enter OTP</div>
+
+                <div class="apphub-otp-input-wrapper mb-3">
+                    @for (int i = 0; i < otpDigits.Length; i++)
+                    {
+                        var index = i;
+                        <input id="@($"db-otp-box-{index}")"
+                               class="apphub-otp-input"
+                               type="text"
+                               inputmode="numeric"
+                               autocomplete="one-time-code"
+                               maxlength="1"
+                               value="@otpDigits[index]"
+                               @oninput="async e => await OnOtpInputAsync(index, e)"
+                               @onkeydown="async e => await OnOtpKeyDownAsync(index, e)"
+                               @onpaste="async e => await OnOtpPasteAsync(index, e)"
+                               @onpaste:preventDefault="true"
+                               disabled="@isPopupBusy" />
+                    }
+                </div>
+
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                    <button type="button"
+                            class="btn btn-link apphub-resend-link p-0 text-decoration-none"
+                            @onclick="ResendOtpAsync"
+                            disabled="@isPopupBusy">
+                        <i class="bi bi-arrow-repeat me-1"></i>
+                        <span>@(isPopupBusy && currentPopupAction == "resend-otp" ? "Resending OTP..." : "Resend OTP")</span>
+                    </button>
+
+                    <div class="d-flex flex-wrap justify-content-end gap-3">
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-launcher d-inline-flex align-items-center gap-2"
+                                @onclick="CloseOtpPopup"
+                                disabled="@isPopupBusy">
+                            <i class="bi bi-x-circle"></i>
+                            <span>Cancel</span>
+                        </button>
+
+                        <button type="button"
+                                class="btn btn-monitoring-dashboard d-inline-flex align-items-center gap-2"
+                                @onclick="VerifyOtpAndConnectAsync"
+                                disabled="@isPopupBusy">
+                            <i class="bi bi-patch-check-fill"></i>
+                            <span>@(isPopupBusy && currentPopupAction == "verify-otp" ? "Verifying..." : "Verify")</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+    window.appHubOtp = window.appHubOtp || {};
+    window.appHubToast = window.appHubToast || {};
+
+    window.appHubOtp.focusOtpBox = window.appHubOtp.focusOtpBox || function (elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.focus();
+            element.select();
+        }
+    };
+
+    window.appHubOtp.getClipboardText = window.appHubOtp.getClipboardText || async function () {
+        try {
+            if (navigator.clipboard && navigator.clipboard.readText) {
+                return await navigator.clipboard.readText();
+            }
+        } catch (e) {
+        }
+        return "";
+    };
+
+    window.appHubOtp.storeOtp = window.appHubOtp.storeOtp || function (key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+    };
+
+    window.appHubOtp.getOtp = window.appHubOtp.getOtp || function (key) {
+        const value = localStorage.getItem(key);
+        return value ? JSON.parse(value) : null;
+    };
+
+    window.appHubOtp.removeOtp = window.appHubOtp.removeOtp || function (key) {
+        localStorage.removeItem(key);
+    };
+
+    window.appHubToast.show = function (message, type) {
+        if (!message) return;
+
+        let toast = document.getElementById("appHubPwaToast");
+
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.id = "appHubPwaToast";
+            document.body.appendChild(toast);
+        }
+
+        const toastType = type || "info";
+
+        let iconClass = "bi-info-circle-fill";
+
+        if (toastType === "success") iconClass = "bi-check-circle-fill";
+        if (toastType === "error") iconClass = "bi-x-circle-fill";
+        if (toastType === "warning") iconClass = "bi-exclamation-triangle-fill";
+
+        toast.className = `apphub-pwa-toast ${toastType}`;
+        toast.innerHTML = `<i class="bi ${iconClass}"></i><span>${message}</span>`;
+
+        clearTimeout(window.appHubToastTimer);
+
+        requestAnimationFrame(() => {
+            toast.classList.add("show");
+        });
+
+        window.appHubToastTimer = setTimeout(() => {
+            toast.classList.remove("show");
+        }, 3200);
+    };
+</script>
+
+@code {
+    private const string OtpStorageKey = "apphub.database.object.generator.otp";
+
+    private bool isDarkMode;
+    private bool isConnected;
+    private bool isConnecting;
+    private bool isGenerating;
+    private bool isRefreshingDatabase;
+    private bool showConnectionAlert;
+
+    private bool isFiltersExpanded = true;
+    private bool isScriptOptionsExpanded = true;
+    private bool showScrollToTop = false;
+    private bool showSearchSuggestions = false;
+
+    private bool showLoginPopup = false;
+    private bool showOtpPopup = false;
+    private bool isPopupBusy = false;
+    private bool focusFirstOtpBoxPending = false;
+
+    private bool dataScriptGenerateInsert = true;
+    private bool dataScriptGenerateUpdate = false;
+    private bool dataScriptGenerateDelete = false;
+
+    private string selectedApplication = string.Empty;
+    private string selectedEnvironment = string.Empty;
+    private string objectTypeFilter = "All";
+    private string schemaFilter = "All";
+    private string objectSearchText = string.Empty;
+
+    private string connectionMessage = string.Empty;
+    private string previewScript = string.Empty;
+
+    private string downloadHref = string.Empty;
+    private string downloadFileName = "database-objects.sql";
+
+    private string zipDownloadHref = string.Empty;
+    private string zipDownloadFileName = "database-objects.zip";
+
+    private string loginIdInput = string.Empty;
+    private string loginPopupErrorMessage = string.Empty;
+    private string loginPopupInfoMessage = string.Empty;
+    private string otpPopupErrorMessage = string.Empty;
+    private string otpPopupInfoMessage = string.Empty;
+    private string currentPopupAction = string.Empty;
+    private string[] otpDigits = new string[6] { "", "", "", "", "", "" };
+    private bool isAutoVerifyingOtp = false;
+
+    private DateTime? lastActionAt;
+
+    private DbGeneratorConnectionConfig currentConfig = new();
+    private ScriptGenerationOptions scriptOptions = new();
+    private EmployeeLoginValidationResultModel validatedEmployee = new();
+
+    private List<DbGeneratorConnectionConfig> allConnections = new();
+    private List<string> applicationList = new();
+    private List<string> environmentList = new();
+    private List<string> schemaList = new();
+
+    private List<DbObjectItem> allObjects = new();
+    private List<DbObjectGroup> allGroups = new();
+    private List<DbObjectGroup> filteredGroups = new();
+    private List<DbObjectItem> searchSuggestions = new();
+
+    private List<ScriptHistoryEntry> historyEntries = new();
+
+    private DotNetObjectReference<DatabaseObjectGenerator>? dotNetRef;
+    private CancellationTokenSource? alertCancellationTokenSource;
+    private CancellationTokenSource? searchBlurCancellationTokenSource;
+    private bool scrollListenerRegistered = false;
+
+
+    private string passwordMask => string.IsNullOrWhiteSpace(currentConfig.Password)
+        ? string.Empty
+        : new string('*', Math.Min(currentConfig.Password.Length, 8));
+
+    private int SelectedObjectCount => allObjects.Count(x => x.IsSelected);
+    private int VisibleObjectCount => filteredGroups.Sum(x => x.Items.Count);
+    private int VisibleSchemaCount => filteredGroups
+        .SelectMany(x => x.Items)
+        .Select(x => x.SchemaName)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .Count();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await LoadConnectionMasterDataAsync();
+            historyEntries = ScriptHistoryStore.GetAll();
+        }
+        catch (Exception ex)
+        {
+            isConnected = false;
+            connectionMessage = ex.Message;
+            await ShowConnectionAlertAsync();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isDarkMode = await JS.InvokeAsync<bool>("themeManager.getCurrentThemeIsDark");
+
+            dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("appHubScroll.registerScrollListener", dotNetRef);
+            scrollListenerRegistered = true;
+
+            StateHasChanged();
+        }
+
+        if (focusFirstOtpBoxPending && showOtpPopup)
+        {
+            focusFirstOtpBoxPending = false;
+            await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", "db-otp-box-0");
+        }
+    }
+
+    private async Task LoadConnectionMasterDataAsync()
+    {
+        try
+        {
+            allConnections = await DatabaseObjectGeneratorService.GetConnectionConfigurationsAsync();
+
+            var configuredApplications = allConnections
+                .Select(x => x.ApplicationName)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var applicationNamesFromJson = await DatabaseObjectGeneratorService.GetApplicationNamesAsync();
+
+            applicationList = applicationNamesFromJson
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x)
+                .ToList();
+
+            if (applicationList.Count == 0)
+            {
+                applicationList = configuredApplications
+                    .OrderBy(x => x)
+                    .ToList();
+            }
+            else
+            {
+                foreach (var configuredApp in configuredApplications)
+                {
+                    if (!applicationList.Contains(configuredApp, StringComparer.OrdinalIgnoreCase))
+                    {
+                        applicationList.Add(configuredApp);
+                    }
+                }
+
+                applicationList = applicationList
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(x => x)
+                    .ToList();
+            }
+        }
+        catch
+        {
+            throw;
+        }
+    }
+
+    private void BackToHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task ToggleThemeAsync()
+    {
+        isDarkMode = await JS.InvokeAsync<bool>("themeManager.toggleTheme");
+    }
+
+    private void ToggleFiltersSection()
+    {
+        isFiltersExpanded = !isFiltersExpanded;
+    }
+
+    private void ToggleScriptOptionsSection()
+    {
+        isScriptOptionsExpanded = !isScriptOptionsExpanded;
+    }
+
+    private async Task ScrollToTopAsync()
+    {
+        await JS.InvokeVoidAsync("appHubScroll.scrollToTop");
+    }
+
+    [JSInvokable]
+    public async Task UpdateScrollToTopVisibility(bool visible)
+    {
+        if (showScrollToTop == visible)
+            return;
+
+        showScrollToTop = visible;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private string GetActionStatusText()
+    {
+        if (isConnecting)
+            return "Connecting";
+
+        if (isRefreshingDatabase)
+            return "Refreshing database...";
+
+        if (isGenerating)
+            return "Generating script...";
+
+        if (isPopupBusy && currentPopupAction == "send-otp")
+            return "Sending OTP...";
+
+        if (isPopupBusy && currentPopupAction == "resend-otp")
+            return "Resending OTP...";
+
+        if (isPopupBusy && currentPopupAction == "verify-otp")
+            return "Verifying OTP...";
+
+        if (showLoginPopup || showOtpPopup)
+            return "Waiting for OTP verification";
+
+        if (isConnected)
+            return "Connected";
+
+        return "Waiting for database connection";
+    }
+
+    private Task OnApplicationChanged(ChangeEventArgs args)
+    {
+        selectedApplication = args.Value?.ToString()?.Trim() ?? string.Empty;
+
+        ResetEnvironmentAndConnectionDetails();
+
+        var filterApplication = selectedApplication.Equals("Sharpply PWA", StringComparison.OrdinalIgnoreCase) ? "Sharpply" : selectedApplication;
+
+        environmentList = allConnections
+            .Where(x => x.ApplicationName.Equals(filterApplication, StringComparison.OrdinalIgnoreCase))
+            .Select(x => x.EnvironmentName)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnEnvironmentChanged(ChangeEventArgs args)
+    {
+        selectedEnvironment = args.Value?.ToString()?.Trim() ?? string.Empty;
+
+        var filterApplication = selectedApplication.Equals("Sharpply PWA", StringComparison.OrdinalIgnoreCase) ? "Sharpply" : selectedApplication;
+
+        currentConfig = allConnections.FirstOrDefault(x =>
+            x.ApplicationName.Equals(filterApplication, StringComparison.OrdinalIgnoreCase) &&
+            x.EnvironmentName.Equals(selectedEnvironment, StringComparison.OrdinalIgnoreCase))
+            ?? CreateEmptyConnectionConfig(filterApplication, selectedEnvironment);
+
+        ResetConnectedState(keepSelectionValues: true, clearMessage: true);
+        return Task.CompletedTask;
+    }
+
+    private Task OnObjectTypeFilterChanged(ChangeEventArgs args)
+    {
+        objectTypeFilter = args.Value?.ToString() ?? "All";
+
+        if (!string.Equals(objectTypeFilter, "DataScript", StringComparison.OrdinalIgnoreCase))
+        {
+            dataScriptGenerateInsert = false;
+            dataScriptGenerateUpdate = false;
+            dataScriptGenerateDelete = false;
+
+            scriptOptions.IncludeInsert = false;
+            scriptOptions.IncludeUpdate = false;
+            scriptOptions.IncludeDelete = false;
+        }
+
+        ApplyFilters();
+        return Task.CompletedTask;
+    }
+
+    private Task OnSchemaFilterChanged(ChangeEventArgs args)
+    {
+        schemaFilter = args.Value?.ToString() ?? "All";
+        ApplyFilters();
+        return Task.CompletedTask;
+    }
+
+    private async Task OpenLoginPopupAsync()
+    {
+        try
+        {
+            if (!CanConnect())
+            {
+                connectionMessage = "Please select Application and Environment.";
+                isConnected = false;
+                await ShowConnectionAlertAsync();
+                return;
+            }
+
+            await JS.InvokeVoidAsync("appHubOtp.removeOtp", OtpStorageKey);
+
+            loginIdInput = string.Empty;
+            loginPopupErrorMessage = string.Empty;
+            loginPopupInfoMessage = string.Empty;
+            otpPopupErrorMessage = string.Empty;
+            otpPopupInfoMessage = string.Empty;
+            validatedEmployee = new EmployeeLoginValidationResultModel();
+            ClearOtpInputs();
+
+            showLoginPopup = true;
+            showOtpPopup = false;
+        }
+        catch (Exception ex)
+        {
+            connectionMessage = ex.Message;
+            await ShowConnectionAlertAsync();
+        }
+    }
+
+    private async Task ValidateLoginAndSendOtpAsync()
+    {
+        try
+        {
+            loginPopupErrorMessage = string.Empty;
+            loginPopupInfoMessage = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(selectedApplication) || string.IsNullOrWhiteSpace(selectedEnvironment))
+            {
+                loginPopupErrorMessage = "Please select Application and Environment.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(loginIdInput))
+            {
+                loginPopupErrorMessage = selectedApplication?.Equals("TimePro", StringComparison.OrdinalIgnoreCase) == true
+                    ? "Please enter Email ID."
+                    : "Please enter Login ID.";
+                return;
+            }
+
+            if (selectedApplication?.Equals("TimePro", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                if (!loginIdInput.Contains("@") || !loginIdInput.Contains("."))
+                {
+                    loginPopupErrorMessage = "Please enter valid Email ID.";
+                    return;
+                }
+            }
+
+            isPopupBusy = true;
+            currentPopupAction = "send-otp";
+
+            var objEmployeeLoginValidationRequestModel = new EmployeeLoginValidationRequestModel
+            {
+                ApplicationName = selectedApplication,
+                EnvironmentName = selectedEnvironment,
+                LoginID = loginIdInput
+            };
+
+            var validationResult = await DatabaseObjectGeneratorService.ValidateLoginIdAsync(objEmployeeLoginValidationRequestModel);
+
+            bool isTimePro = selectedApplication?.Equals("TimePro", StringComparison.OrdinalIgnoreCase) == true;
+
+            if (!validationResult.IsValid)
+            {
+                loginPopupErrorMessage = string.IsNullOrWhiteSpace(validationResult.ErrorMessage)
+                    ? (isTimePro ? "Invalid Email ID." : "Invalid Login ID.")
+                    : validationResult.ErrorMessage;
+                await ShowAppHubToastAsync(loginPopupErrorMessage, "error");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(validationResult.EmailId))
+            {
+                loginPopupErrorMessage = "Email ID is not configured for this Login ID.";
+                await ShowAppHubToastAsync(loginPopupErrorMessage, "error");
+                return;
+            }
+
+            validatedEmployee = validationResult;
+
+            var otpSendMessage = await SendAndStoreOtpAsync(false);
+
+            showLoginPopup = false;
+            showOtpPopup = true;
+            otpPopupErrorMessage = string.Empty;
+            otpPopupInfoMessage = string.IsNullOrWhiteSpace(otpSendMessage)
+                ? $"OTP has been sent to {validatedEmployee.EmailId}."
+                : otpSendMessage;
+            ClearOtpInputs();
+            focusFirstOtpBoxPending = true;
+        }
+        catch (Exception ex)
+        {
+            loginPopupErrorMessage = ex.Message;
+            await ShowAppHubToastAsync(loginPopupErrorMessage, "error");
+        }
+        finally
+        {
+            isPopupBusy = false;
+            currentPopupAction = string.Empty;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ResendOtpAsync()
+    {
+        try
+        {
+            otpPopupErrorMessage = string.Empty;
+            otpPopupInfoMessage = string.Empty;
+            if (!validatedEmployee.IsValid || string.IsNullOrWhiteSpace(validatedEmployee.LoginId) || string.IsNullOrWhiteSpace(validatedEmployee.EmailId))
+            {
+                otpPopupErrorMessage = "Validated employee details not found. Please start the process again.";
+                await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+                return;
+            }
+
+            isPopupBusy = true;
+            currentPopupAction = "resend-otp";
+
+            var otpSendMessage = await SendAndStoreOtpAsync(true);
+
+            otpPopupInfoMessage = string.IsNullOrWhiteSpace(otpSendMessage) ? $"A New OTP has been sent to {validatedEmployee.EmailId}." : otpSendMessage;
+            await ShowAppHubToastAsync(otpPopupInfoMessage, "success");
+            ClearOtpInputs();
+            focusFirstOtpBoxPending = true;
+        }
+        catch (Exception ex)
+        {
+            otpPopupErrorMessage = ex.Message;
+            await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+        }
+        finally
+        {
+            isPopupBusy = false;
+            currentPopupAction = string.Empty;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task<string> SendAndStoreOtpAsync(bool isResend)
+    {
+        var otp = GenerateSixDigitOtp();
+        var expiryMinutes = Convert.ToInt32(CommonHelper.KeyOption.OTPExpiryInMinutes);
+        var expiryUtc = DateTime.UtcNow.AddMinutes(expiryMinutes);
+
+        var sendOtpModel = new DeploymentSendOtpModel
+        {
+            LoginId = validatedEmployee.LoginId,
+            EmployeeName = validatedEmployee.EmployeeName,
+            EmailId = validatedEmployee.EmailId,
+            ApplicationName = selectedApplication,
+            Environment = selectedEnvironment,
+            NewVersion = "Database Object Generation Connection",
+            Otp = otp,
+            ExpiryInMinutes = expiryMinutes.ToString()
+        };
+
+        var sendOtpResponse = await DatabaseObjectGeneratorService.SendDatabaseObjectGenerationOtpAsync(sendOtpModel);
+
+        var storageModel = new DeploymentVersionOtpStorageModel
+        {
+            LoginId = validatedEmployee.LoginId,
+            EmployeeName = validatedEmployee.EmployeeName,
+            EmailId = validatedEmployee.EmailId,
+            Otp = otp,
+            ExpiryUtc = expiryUtc,
+            ApplicationName = selectedApplication,
+            Environment = selectedEnvironment,
+            NewVersion = "Database Object Generation Connection"
+        };
+
+        await JS.InvokeVoidAsync("appHubOtp.storeOtp", OtpStorageKey, storageModel);
+
+        return sendOtpResponse;
+    }
+
+    private async Task VerifyOtpAndConnectAsync()
+    {
+        try
+        {
+            otpPopupErrorMessage = string.Empty;
+            otpPopupInfoMessage = string.Empty;
+
+            var enteredOtp = string.Concat(otpDigits);
+
+            if (string.IsNullOrWhiteSpace(enteredOtp) || enteredOtp.Length != 6 || enteredOtp.Any(x => !char.IsDigit(x)))
+            {
+                otpPopupErrorMessage = "Please enter valid 6-digit OTP.";
+                return;
+            }
+
+            isPopupBusy = true;
+            currentPopupAction = "verify-otp";
+
+            var storedOtp = await JS.InvokeAsync<DeploymentVersionOtpStorageModel?>("appHubOtp.getOtp", OtpStorageKey);
+
+            if (storedOtp == null)
+            {
+                otpPopupErrorMessage = "OTP not found. Please request OTP again.";
+                await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+                return;
+            }
+
+            if (storedOtp.ExpiryUtc <= DateTime.UtcNow)
+            {
+                await JS.InvokeVoidAsync("appHubOtp.removeOtp", OtpStorageKey);
+                otpPopupErrorMessage = "OTP has expired. Please click Resend OTP.";
+                await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+                return;
+            }
+
+            if (!string.Equals(storedOtp.ApplicationName, selectedApplication, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(storedOtp.Environment, selectedEnvironment, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(storedOtp.LoginId, validatedEmployee.LoginId, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(storedOtp.EmailId, validatedEmployee.EmailId, StringComparison.OrdinalIgnoreCase))
+            {
+                await JS.InvokeVoidAsync("appHubOtp.removeOtp", OtpStorageKey);
+                otpPopupErrorMessage = "OTP session is invalid. Please start again.";
+                await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+                return;
+            }
+
+            if (!string.Equals(storedOtp.Otp, enteredOtp, StringComparison.Ordinal))
+            {
+                otpPopupErrorMessage = "OTP is not valid.";
+                await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+                return;
+            }
+
+            await JS.InvokeVoidAsync("appHubOtp.removeOtp", OtpStorageKey);
+
+            showOtpPopup = false;
+            showLoginPopup = false;
+
+            await PerformDatabaseConnectionAsync();
+        }
+        catch (Exception ex)
+        {
+            otpPopupErrorMessage = ex.Message;
+            await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+        }
+        finally
+        {
+            isPopupBusy = false;
+            currentPopupAction = string.Empty;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task HandleLoginIdKeyDownAsync(KeyboardEventArgs e)
+    {
+        if (e.Key != "Enter")
+            return;
+
+        if (isPopupBusy)
+            return;
+
+        await ValidateLoginAndSendOtpAsync();
+    }
+
+    private async Task PerformDatabaseConnectionAsync()
+    {
+        if (string.IsNullOrWhiteSpace(selectedApplication) ||
+            string.IsNullOrWhiteSpace(selectedEnvironment) ||
+            string.IsNullOrWhiteSpace(currentConfig.ApplicationName) ||
+            string.IsNullOrWhiteSpace(currentConfig.EnvironmentName))
+        {
+            connectionMessage = "Please select Application and Environment.";
+            isConnected = false;
+            await ShowConnectionAlertAsync();
+            return;
+        }
+
+        isConnecting = true;
+        connectionMessage = string.Empty;
+
+        try
+        {
+            var result = await DatabaseObjectGeneratorService.TestConnectionAsync(currentConfig);
+            isConnected = result.Success;
+            connectionMessage = result.Message;
+            lastActionAt = DateTime.Now;
+
+            if (result.Success)
+            {
+                allObjects = await DatabaseObjectGeneratorService.GetDatabaseObjectsAsync(currentConfig);
+                schemaList = allObjects
+                    .Select(x => x.SchemaName)
+                    .Where(x => !string.IsNullOrWhiteSpace(x) &&
+                                x.Equals("DBA", StringComparison.OrdinalIgnoreCase))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(x => x)
+                    .ToList();
+
+                BuildGroups();
+                ApplyFilters();
+            }
+            else
+            {
+                ClearLoadedObjects();
+                ApplyFilters();
+            }
+            if (isConnected)
+            {
+                await ShowAppHubToastAsync(connectionMessage, "success");
+            }
+            else
+            {
+                await ShowAppHubToastAsync(connectionMessage, "error");
+            }
+
+            await ShowConnectionAlertAsync();
+
+        }
+        catch (Exception ex)
+        {
+            isConnected = false;
+            connectionMessage = ex.Message;
+            ClearLoadedObjects();
+            ApplyFilters();
+            await ShowConnectionAlertAsync();
+        }
+        finally
+        {
+            isConnecting = false;
+        }
+    }
+
+    private async Task RefreshDatabaseAsync()
+    {
+        if (!CanRefreshDatabase())
+        {
+            return;
+        }
+
+        isRefreshingDatabase = true;
+        connectionMessage = string.Empty;
+
+        try
+        {
+            allObjects = await DatabaseObjectGeneratorService.GetDatabaseObjectsAsync(currentConfig);
+            schemaList = allObjects
+                .Select(x => x.SchemaName)
+                .Where(x => !string.IsNullOrWhiteSpace(x) &&
+                            x.Equals("DBA", StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x)
+                .ToList();
+
+            BuildGroups();
+            ApplyFilters();
+
+            connectionMessage = "Database Refreshed Successfully !!!";
+            lastActionAt = DateTime.Now;
+            await ShowAppHubToastAsync(connectionMessage, "success");
+            await ShowConnectionAlertAsync();
+        }
+        catch (Exception ex)
+        {
+            isConnected = false;
+            connectionMessage = ex.Message;
+            await ShowAppHubToastAsync(connectionMessage, "error");
+            await ShowConnectionAlertAsync();
+        }
+        finally
+        {
+            isRefreshingDatabase = false;
+        }
+    }
+
+    private async Task ShowAppHubToastAsync(string message, string type = "info")
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return;
+
+        await JS.InvokeVoidAsync("appHubToast.show", message, type);
+    }
+
+    private async Task DisconnectAsync()
+    {
+        if (!CanDisconnect())
+        {
+            return;
+        }
+
+        ResetConnectedState(keepSelectionValues: true, clearMessage: false);
+        connectionMessage = "Database Disconnected Successfully !!!";
+        lastActionAt = DateTime.Now;
+
+        try
+        {
+            await ShowAppHubToastAsync(connectionMessage, "success");
+            await JS.InvokeVoidAsync("appHubOtp.removeOtp", OtpStorageKey);
+        }
+        catch
+        {
+        }
+
+        await ShowConnectionAlertAsync();
+    }
+
+    private void BuildGroups()
+    {
+        allGroups = allObjects
+            .GroupBy(x => x.ObjectType)
+            .OrderBy(g => GetGroupOrder(g.Key))
+            .Select(g => new DbObjectGroup
+            {
+                ObjectType = g.Key,
+                IsExpanded = true,
+                Items = g.OrderBy(x => x.SchemaName).ThenBy(x => x.ObjectName).ToList()
+            })
+            .ToList();
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<DbObjectItem> filtered = allObjects;
+
+        if (!string.Equals(objectTypeFilter, "All", StringComparison.OrdinalIgnoreCase))
+        {
+            filtered = filtered.Where(x => x.ObjectType.Equals(objectTypeFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.Equals(schemaFilter, "All", StringComparison.OrdinalIgnoreCase))
+        {
+            filtered = filtered.Where(x => x.SchemaName.Equals(schemaFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var currentExpansion = filteredGroups.Any()
+            ? filteredGroups.ToDictionary(x => x.ObjectType, x => x.IsExpanded)
+            : allGroups.ToDictionary(x => x.ObjectType, x => x.IsExpanded);
+
+        filteredGroups = filtered
+            .GroupBy(x => x.ObjectType)
+            .OrderBy(g => GetGroupOrder(g.Key))
+            .Select(g => new DbObjectGroup
+            {
+                ObjectType = g.Key,
+                IsExpanded = currentExpansion.TryGetValue(g.Key, out var expanded) ? expanded : true,
+                Items = g.OrderBy(x => x.SchemaName).ThenBy(x => x.ObjectName).ToList()
+            })
+            .ToList();
+
+        UpdateSearchSuggestions();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateSearchSuggestions()
+    {
+        if (!isConnected || string.IsNullOrWhiteSpace(objectSearchText))
+        {
+            searchSuggestions.Clear();
+            showSearchSuggestions = false;
+            return;
+        }
+
+        var search = objectSearchText.Trim();
+
+        var suggestionSource = filteredGroups
+            .SelectMany(x => x.Items)
+            .ToList();
+
+        searchSuggestions = suggestionSource
+            .Where(x =>
+                x.ObjectName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                x.SchemaName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                x.ObjectType.Contains(search, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(x => x.ObjectName.Equals(search, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(x => x.ObjectName.StartsWith(search, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(x => GetObjectTypeSearchPriority(x.ObjectType))
+            .ThenBy(x => x.ObjectName)
+            .ThenBy(x => x.SchemaName)
+            .Take(20)
+            .ToList();
+
+        showSearchSuggestions = searchSuggestions.Count > 0;
+    }
+
+    private static int GetObjectTypeSearchPriority(string objectType)
+    {
+        return objectType switch
+        {
+            "Table" => 1,
+            "View" => 2,
+            "Procedure" => 3,
+            "Function" => 4,
+            "ForeignKey" => 5,
+            "Index" => 6,
+            "Trigger" => 7,
+            "DataScript" => 8,
+            _ => 99
+        };
+    }
+
+    private Task OnObjectSearchInputChanged(ChangeEventArgs args)
+    {
+        objectSearchText = args.Value?.ToString() ?? string.Empty;
+        searchBlurCancellationTokenSource?.Cancel();
+        UpdateSearchSuggestions();
+        return Task.CompletedTask;
+    }
+
+    private Task OnObjectSearchFocus(FocusEventArgs _)
+    {
+        searchBlurCancellationTokenSource?.Cancel();
+        UpdateSearchSuggestions();
+        return Task.CompletedTask;
+    }
+
+    private async Task OnObjectSearchBlurAsync(FocusEventArgs _)
+    {
+        searchBlurCancellationTokenSource?.Cancel();
+        searchBlurCancellationTokenSource = new CancellationTokenSource();
+        var token = searchBlurCancellationTokenSource.Token;
+
+        try
+        {
+            await Task.Delay(220, token);
+            showSearchSuggestions = false;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private void ClearObjectSearch()
+    {
+        searchBlurCancellationTokenSource?.Cancel();
+        objectSearchText = string.Empty;
+        showSearchSuggestions = false;
+        searchSuggestions.Clear();
+    }
+
+    private async Task SelectSuggestionAsync(DbObjectItem suggestion)
+    {
+        searchBlurCancellationTokenSource?.Cancel();
+
+        var matched = allObjects.FirstOrDefault(x =>
+            x.ObjectName.Equals(suggestion.ObjectName, StringComparison.OrdinalIgnoreCase) &&
+            x.SchemaName.Equals(suggestion.SchemaName, StringComparison.OrdinalIgnoreCase) &&
+            x.ObjectType.Equals(suggestion.ObjectType, StringComparison.OrdinalIgnoreCase));
+
+        if (matched != null)
+        {
+            matched.IsSelected = true;
+        }
+
+        foreach (var group in filteredGroups.Where(x =>
+                     x.ObjectType.Equals(suggestion.ObjectType, StringComparison.OrdinalIgnoreCase)))
+        {
+            group.IsExpanded = true;
+        }
+
+        objectSearchText = suggestion.ObjectName;
+        UpdateSearchSuggestions();
+        showSearchSuggestions = false;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ShowConnectionAlertAsync()
+    {
+        showConnectionAlert = !string.IsNullOrWhiteSpace(connectionMessage);
+
+        if (!showConnectionAlert)
+        {
+            return;
+        }
+
+        await InvokeAsync(StateHasChanged);
+
+        alertCancellationTokenSource?.Cancel();
+        alertCancellationTokenSource?.Dispose();
+        alertCancellationTokenSource = new CancellationTokenSource();
+        var token = alertCancellationTokenSource.Token;
+
+        try
+        {
+            await Task.Delay(4000, token);
+            showConnectionAlert = false;
+            connectionMessage = string.Empty;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private static int GetGroupOrder(string type)
+    {
+        return type switch
+        {
+            "Table" => 1,
+            "View" => 2,
+            "Function" => 3,
+            "Procedure" => 4,
+            "ForeignKey" => 5,
+            "Index" => 6,
+            "Trigger" => 7,
+            "DataScript" => 8,
+            _ => 99
+        };
+    }
+
+    private void ToggleGroupSelection(DbObjectGroup group, bool selected)
+    {
+        foreach (var item in group.Items)
+        {
+            item.IsSelected = selected;
+        }
+    }
+
+    private bool AreAllGroupItemsSelected(DbObjectGroup group)
+    {
+        return group.Items.Count > 0 && group.Items.All(x => x.IsSelected);
+    }
+
+    private bool AreAllVisibleItemsSelected()
+    {
+        return filteredGroups.Count > 0
+               && filteredGroups.SelectMany(x => x.Items).Any()
+               && filteredGroups.SelectMany(x => x.Items).All(x => x.IsSelected);
+    }
+
+    private bool AreAllVisibleGroupsExpanded()
+    {
+        return filteredGroups.Count > 0 && filteredGroups.All(x => x.IsExpanded);
+    }
+
+    private void ToggleSelectAllVisible()
+    {
+        if (AreAllVisibleItemsSelected())
+        {
+            DeselectAllVisible();
+        }
+        else
+        {
+            SelectAllVisible();
+        }
+    }
+
+    private void ToggleExpandAllVisible()
+    {
+        if (AreAllVisibleGroupsExpanded())
+        {
+            CollapseAll();
+        }
+        else
+        {
+            ExpandAll();
+        }
+    }
+
+    private void SelectAllVisible()
+    {
+        foreach (var group in filteredGroups)
+        {
+            foreach (var item in group.Items)
+            {
+                item.IsSelected = true;
+            }
+        }
+    }
+
+    private void DeselectAllVisible()
+    {
+        foreach (var group in filteredGroups)
+        {
+            foreach (var item in group.Items)
+            {
+                item.IsSelected = false;
+            }
+        }
+    }
+
+    private void ExpandAll()
+    {
+        foreach (var group in filteredGroups)
+        {
+            group.IsExpanded = true;
+        }
+    }
+
+    private void CollapseAll()
+    {
+        foreach (var group in filteredGroups)
+        {
+            group.IsExpanded = false;
+        }
+    }
+
+    private void ClearFilters()
+    {
+        objectTypeFilter = "All";
+        schemaFilter = "All";
+        ApplyFilters();
+    }
+
+    private void ClearScriptOptions()
+    {
+        scriptOptions.GenerateInDependencyOrder = false;
+
+        dataScriptGenerateInsert = false;
+        dataScriptGenerateUpdate = false;
+        dataScriptGenerateDelete = false;
+
+        scriptOptions.IncludeInsert = false;
+        scriptOptions.IncludeUpdate = false;
+        scriptOptions.IncludeDelete = false;
+    }
+
+    private void ClearSelectionAndSearch()
+    {
+        DeselectAllObjects();
+        ClearObjectSearch();
+        ApplyFilters();
+    }
+
+    private void DeselectAllObjects()
+    {
+        foreach (var item in allObjects)
+        {
+            item.IsSelected = false;
+        }
+    }
+
+    private void ClearSelections()
+    {
+        selectedApplication = string.Empty;
+        ResetEnvironmentAndConnectionDetails();
+
+        objectTypeFilter = "All";
+        schemaFilter = "All";
+        objectSearchText = string.Empty;
+        searchSuggestions.Clear();
+        showSearchSuggestions = false;
+
+        dataScriptGenerateInsert = true;
+        dataScriptGenerateUpdate = false;
+        dataScriptGenerateDelete = false;
+
+        scriptOptions = new ScriptGenerationOptions();
+
+        loginIdInput = string.Empty;
+        loginPopupErrorMessage = string.Empty;
+        loginPopupInfoMessage = string.Empty;
+        otpPopupErrorMessage = string.Empty;
+        otpPopupInfoMessage = string.Empty;
+        validatedEmployee = new EmployeeLoginValidationResultModel();
+        ClearOtpInputs();
+        showLoginPopup = false;
+        showOtpPopup = false;
+
+        connectionMessage = string.Empty;
+        showConnectionAlert = false;
+        previewScript = string.Empty;
+        downloadHref = string.Empty;
+        zipDownloadHref = string.Empty;
+        lastActionAt = null;
+    }
+
+    private void ResetEnvironmentAndConnectionDetails()
+    {
+        selectedEnvironment = string.Empty;
+        currentConfig = CreateEmptyConnectionConfig(selectedApplication, string.Empty);
+        isConnected = false;
+        isConnecting = false;
+        isGenerating = false;
+        isRefreshingDatabase = false;
+
+        loginIdInput = string.Empty;
+        validatedEmployee = new EmployeeLoginValidationResultModel();
+        showLoginPopup = false;
+        showOtpPopup = false;
+        ClearOtpInputs();
+
+        environmentList.Clear();
+        ClearLoadedObjects();
+        ApplyFilters();
+    }
+
+    private void ResetConnectedState(bool keepSelectionValues, bool clearMessage)
+    {
+        isConnected = false;
+        isConnecting = false;
+        isGenerating = false;
+        isRefreshingDatabase = false;
+
+        if (clearMessage)
+        {
+            connectionMessage = string.Empty;
+            showConnectionAlert = false;
+        }
+
+        previewScript = string.Empty;
+        downloadHref = string.Empty;
+        downloadFileName = "database-objects.sql";
+        zipDownloadHref = string.Empty;
+        zipDownloadFileName = "database-objects.zip";
+
+        ClearLoadedObjects();
+
+        if (!keepSelectionValues)
+        {
+            selectedApplication = string.Empty;
+            selectedEnvironment = string.Empty;
+            currentConfig = CreateEmptyConnectionConfig(string.Empty, string.Empty);
+        }
+    }
+
+    private void ClearLoadedObjects()
+    {
+        schemaList.Clear();
+        allObjects.Clear();
+        allGroups.Clear();
+        filteredGroups.Clear();
+        searchSuggestions.Clear();
+        showSearchSuggestions = false;
+        objectSearchText = string.Empty;
+    }
+
+    private static DbGeneratorConnectionConfig CreateEmptyConnectionConfig(string applicationName, string environmentName)
+    {
+        return new DbGeneratorConnectionConfig
+        {
+            ApplicationName = applicationName ?? string.Empty,
+            EnvironmentName = environmentName ?? string.Empty
+        };
+    }
+
+    private bool CanSelectEnvironment()
+    {
+        return !string.IsNullOrWhiteSpace(selectedApplication)
+               && environmentList.Count > 0
+               && !isConnecting
+               && !isConnected
+               && !isRefreshingDatabase
+               && !showLoginPopup
+               && !showOtpPopup
+               && !isPopupBusy;
+    }
+
+    private bool CanConnect()
+    {
+        return !isConnected
+               && !isConnecting
+               && !isGenerating
+               && !isRefreshingDatabase
+               && !showLoginPopup
+               && !showOtpPopup
+               && !isPopupBusy
+               && !string.IsNullOrWhiteSpace(selectedApplication)
+               && !string.IsNullOrWhiteSpace(selectedEnvironment)
+               && !string.IsNullOrWhiteSpace(currentConfig.ApplicationName)
+               && !string.IsNullOrWhiteSpace(currentConfig.EnvironmentName);
+    }
+
+    private bool CanRefreshDatabase()
+    {
+        return isConnected && !isConnecting && !isGenerating && !isRefreshingDatabase && !showLoginPopup && !showOtpPopup && !isPopupBusy;
+    }
+
+    private bool CanDisconnect()
+    {
+        return isConnected && !isConnecting && !isGenerating && !isRefreshingDatabase && !showLoginPopup && !showOtpPopup && !isPopupBusy;
+    }
+
+    private bool CanClearSelections()
+    {
+        return !string.IsNullOrWhiteSpace(selectedApplication)
+               || !string.IsNullOrWhiteSpace(selectedEnvironment)
+               || !string.IsNullOrWhiteSpace(objectSearchText)
+               || allObjects.Count > 0
+               || !string.IsNullOrWhiteSpace(previewScript);
+    }
+
+    private bool CanClearFilters()
+    {
+        return !string.Equals(objectTypeFilter, "All", StringComparison.OrdinalIgnoreCase)
+               || !string.Equals(schemaFilter, "All", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool CanClearScriptOptions()
+    {
+        return scriptOptions.GenerateInDependencyOrder
+               || dataScriptGenerateInsert
+               || dataScriptGenerateUpdate
+               || dataScriptGenerateDelete
+               || scriptOptions.IncludeInsert
+               || scriptOptions.IncludeUpdate
+               || scriptOptions.IncludeDelete;
+    }
+
+    private bool CanClearSelectionAndSearch()
+    {
+        return SelectedObjectCount > 0 || !string.IsNullOrWhiteSpace(objectSearchText);
+    }
+
+    private List<DbObjectItem> GetSelectedItems()
+    {
+        return allObjects.Where(x => x.IsSelected).ToList();
+    }
+
+    private bool HasAnyDataScriptOperationSelected()
+    {
+        return dataScriptGenerateInsert || dataScriptGenerateUpdate || dataScriptGenerateDelete;
+    }
+
+    private List<DbObjectItem> BuildItemsForGeneration(List<DbObjectItem> selectedItems)
+    {
+        var resolvedDataScriptType = BuildResolvedDataScriptObjectType();
+
+        return selectedItems
+            .Select(item => new DbObjectItem
+            {
+                SchemaName = item.SchemaName,
+                ObjectName = item.ObjectName,
+                ObjectType = item.ObjectType.Equals("DataScript", StringComparison.OrdinalIgnoreCase)
+                    ? resolvedDataScriptType
+                    : item.ObjectType,
+                IsSelected = item.IsSelected
+            })
+            .ToList();
+    }
+
+    private string BuildResolvedDataScriptObjectType()
+    {
+        var operations = new List<string>();
+
+        if (dataScriptGenerateInsert)
+            operations.Add("Insert");
+
+        if (dataScriptGenerateUpdate)
+            operations.Add("Update");
+
+        if (dataScriptGenerateDelete)
+            operations.Add("Delete");
+
+        if (operations.Count == 0)
+            return "DataScript";
+
+        return $"DataScript|{string.Join("|", operations)}";
+    }
+
+    private async Task GenerateScriptAsync()
+    {
+        try
+        {
+            scriptOptions.IncludeInsert = dataScriptGenerateInsert;
+            scriptOptions.IncludeUpdate = dataScriptGenerateUpdate;
+            scriptOptions.IncludeDelete = dataScriptGenerateDelete;
+
+            var selectedItems = GetSelectedItems();
+            if (!selectedItems.Any())
+            {
+                previewScript = "-- Please select at least one object.";
+                connectionMessage = previewScript;
+                isConnected = false;
+                await ShowConnectionAlertAsync();
+                return;
+            }
+
+            var selectedDataScriptItems = selectedItems
+                .Where(x => x.ObjectType.Equals("DataScript", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (selectedDataScriptItems.Count > 0 && !HasAnyDataScriptOperationSelected())
+            {
+                previewScript = "-- Please select at least one DataScript option: Insert, Update or Delete.";
+                connectionMessage = previewScript;
+                isConnected = false;
+                await ShowConnectionAlertAsync();
+                return;
+            }
+
+            isGenerating = true;
+            connectionMessage = string.Empty;
+
+            await InvokeAsync(StateHasChanged);
+            await Task.Yield();
+
+            var itemsForGeneration = BuildItemsForGeneration(selectedItems);
+
+            previewScript = await DatabaseObjectGeneratorService.GenerateScriptAsync(currentConfig, itemsForGeneration, scriptOptions);
+            lastActionAt = DateTime.Now;
+
+            var sqlBytes = Encoding.UTF8.GetBytes(previewScript);
+            downloadFileName = $"DbObjects_{currentConfig.ApplicationName}_{currentConfig.EnvironmentName}_{DateTime.Now:yyyyMMdd_HHmmss}.sql";
+            downloadHref = $"data:text/plain;base64,{Convert.ToBase64String(sqlBytes)}";
+
+            using var memoryStream = new MemoryStream();
+            using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+            {
+                var entry = archive.CreateEntry(downloadFileName, CompressionLevel.Fastest);
+                await using var entryStream = entry.Open();
+                await entryStream.WriteAsync(sqlBytes, 0, sqlBytes.Length);
+            }
+
+            zipDownloadFileName = $"DbObjects_{currentConfig.ApplicationName}_{currentConfig.EnvironmentName}_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
+            zipDownloadHref = $"data:application/zip;base64,{Convert.ToBase64String(memoryStream.ToArray())}";
+
+            ScriptHistoryStore.Add(new ScriptHistoryEntry
+            {
+                GeneratedOn = DateTime.Now,
+                ApplicationName = currentConfig.ApplicationName,
+                EnvironmentName = currentConfig.EnvironmentName,
+                ObjectCount = selectedItems.Count,
+                FileName = downloadFileName,
+                PreviewText = previewScript.Length > 500 ? previewScript[..500] : previewScript
+            });
+
+            historyEntries = ScriptHistoryStore.GetAll();
+        }
+        catch (Exception ex)
+        {
+            previewScript = $"-- Error: {ex.Message}";
+            connectionMessage = ex.Message;
+            isConnected = false;
+            await ShowConnectionAlertAsync();
+        }
+        finally
+        {
+            isGenerating = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void ClearHistory()
+    {
+        ScriptHistoryStore.Clear();
+        historyEntries = ScriptHistoryStore.GetAll();
+    }
+
+    private string GetConnectionStatusCss()
+    {
+        if (isConnecting || isRefreshingDatabase)
+            return "testing";
+
+        return isConnected ? "connected" : "disconnected";
+    }
+
+    private string GetConnectionStatusIcon()
+    {
+        if (isConnecting || isRefreshingDatabase)
+            return "bi-arrow-repeat";
+
+        return isConnected ? "bi-check-circle-fill" : "bi-x-circle-fill";
+    }
+
+    private string GetConnectionStatusText()
+    {
+        if (isConnecting)
+            return "Connecting...";
+
+        if (isRefreshingDatabase)
+            return "Refreshing...";
+
+        return isConnected ? "Connected" : "Not Connected";
+    }
+
+    private void CloseLoginPopup()
+    {
+        if (isPopupBusy)
+            return;
+
+        showLoginPopup = false;
+        loginPopupErrorMessage = string.Empty;
+        loginPopupInfoMessage = string.Empty;
+    }
+
+    private void CloseOtpPopup()
+    {
+        if (isPopupBusy)
+            return;
+
+        showOtpPopup = false;
+        otpPopupErrorMessage = string.Empty;
+        otpPopupInfoMessage = string.Empty;
+        ClearOtpInputs();
+    }
+
+    private void ClearOtpInputs()
+    {
+        otpDigits = new string[6] { "", "", "", "", "", "" };
+    }
+
+    private async Task OnOtpInputAsync(int index, ChangeEventArgs e)
+    {
+        var input = Convert.ToString(e.Value)?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            otpDigits[index] = string.Empty;
+            return;
+        }
+
+        var digit = input.LastOrDefault(char.IsDigit);
+
+        if (digit == default)
+        {
+            otpDigits[index] = string.Empty;
+            return;
+        }
+
+        otpDigits[index] = digit.ToString();
+
+        if (index < otpDigits.Length - 1)
+        {
+            await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", $"db-otp-box-{index + 1}");
+        }
+
+        await AutoVerifyOtpIfCompletedAsync();
+    }
+
+    private async Task OnOtpPasteAsync(int startIndex, ClipboardEventArgs e)
+    {
+        try
+        {
+            otpPopupErrorMessage = string.Empty;
+
+            var clipboardText = await JS.InvokeAsync<string>("appHubOtp.getClipboardText");
+            if (string.IsNullOrWhiteSpace(clipboardText))
+                return;
+
+            var digitsOnly = new string(clipboardText.Where(char.IsDigit).ToArray());
+            if (string.IsNullOrWhiteSpace(digitsOnly))
+                return;
+
+            var targetIndex = startIndex;
+
+            for (int i = 0; i < digitsOnly.Length && targetIndex < otpDigits.Length; i++, targetIndex++)
+            {
+                otpDigits[targetIndex] = digitsOnly[i].ToString();
+            }
+
+            await InvokeAsync(StateHasChanged);
+
+            var nextFocusIndex = Array.FindIndex(otpDigits, startIndex, value => string.IsNullOrWhiteSpace(value));
+            if (nextFocusIndex >= 0)
+            {
+                await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", $"db-otp-box-{nextFocusIndex}");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", $"db-otp-box-{otpDigits.Length - 1}");
+            }
+
+            await AutoVerifyOtpIfCompletedAsync();
+        }
+        catch (Exception ex)
+        {
+            otpPopupErrorMessage = ex.Message;
+        }
+    }
+
+    private async Task AutoVerifyOtpIfCompletedAsync()
+    {
+        if (isPopupBusy || isAutoVerifyingOtp)
+            return;
+
+        var enteredOtp = string.Concat(otpDigits);
+
+        if (string.IsNullOrWhiteSpace(enteredOtp) || enteredOtp.Length != 6 || enteredOtp.Any(x => !char.IsDigit(x)))
+            return;
+
+        isAutoVerifyingOtp = true;
+        isPopupBusy = true;
+        currentPopupAction = "verify-otp";
+
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await Task.Delay(150);
+
+            isPopupBusy = false;
+            currentPopupAction = string.Empty;
+
+            await VerifyOtpAndConnectAsync();
+        }
+        finally
+        {
+            isAutoVerifyingOtp = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task OnOtpKeyDownAsync(int index, KeyboardEventArgs e)
+    {
+        if (e.Key == "Backspace")
+        {
+            if (string.IsNullOrWhiteSpace(otpDigits[index]))
+            {
+                if (index > 0)
+                {
+                    otpDigits[index - 1] = string.Empty;
+                    await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", $"db-otp-box-{index - 1}");
+                }
+            }
+            else
+            {
+                otpDigits[index] = string.Empty;
+            }
+        }
+        else if (e.Key == "ArrowLeft" && index > 0)
+        {
+            await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", $"db-otp-box-{index - 1}");
+        }
+        else if (e.Key == "ArrowRight" && index < otpDigits.Length - 1)
+        {
+            await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", $"db-otp-box-{index + 1}");
+        }
+    }
+
+    private static string GenerateSixDigitOtp()
+    {
+        var otpNumber = RandomNumberGenerator.GetInt32(100000, 1000000);
+        return otpNumber.ToString();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (scrollListenerRegistered)
+                await JS.InvokeVoidAsync("appHubScroll.unregisterScrollListener");
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            alertCancellationTokenSource?.Cancel();
+            alertCancellationTokenSource?.Dispose();
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            searchBlurCancellationTokenSource?.Cancel();
+            searchBlurCancellationTokenSource?.Dispose();
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("appHubOtp.removeOtp", OtpStorageKey);
+        }
+        catch
+        {
+        }
+
+        dotNetRef?.Dispose();
+    }
+}

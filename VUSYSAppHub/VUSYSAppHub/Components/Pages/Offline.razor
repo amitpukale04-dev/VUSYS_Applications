@@ -1,0 +1,23 @@
+﻿@page "/offline"
+
+<PageTitle>Offline - App Hub</PageTitle>
+
+<div class="offline-page-wrapper">
+    <div class="offline-card">
+        <div class="offline-icon">
+            <i class="bi bi-wifi-off"></i>
+        </div>
+
+        <h1>You are offline</h1>
+
+        <p>
+            App Hub needs an internet/server connection to continue.
+            Please check your connection and try again.
+        </p>
+
+        <button class="offline-retry-btn" onclick="window.location.reload();">
+            <i class="bi bi-arrow-clockwise"></i>
+            Retry
+        </button>
+    </div>
+</div>

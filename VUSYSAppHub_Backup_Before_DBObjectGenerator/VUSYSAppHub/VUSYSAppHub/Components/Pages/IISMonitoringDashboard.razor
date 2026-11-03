@@ -1,0 +1,1108 @@
+﻿@page "/iis-monitoring-dashboard"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject IPortalAppService PortalAppService
+@inject IJSRuntime JS
+@inject IWebHostEnvironment Env
+@inject NavigationManager Navigation
+
+@using System.Reflection
+@using System.Text.Json
+@using System.Diagnostics
+@using VUSYSAppHub.Models
+@using VUSYSAppHub.AppHubHelper
+
+<PageTitle>Real Time IIS Monitoring Dashboard</PageTitle>
+
+<div class="apphub-page @(isDarkMode ? "dark-mode" : "")">
+    <div class="container-fluid px-3 px-md-4 px-lg-5 py-4 py-lg-5">
+        <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
+            <div>
+                <h2 class="page-title mb-1">Real Time IIS Monitoring Dashboard</h2>
+                <div class="page-note">Dedicated monitoring page for live IIS style overview.</div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="button"
+                        class="btn btn-back-dashboard d-inline-flex align-items-center gap-2"
+                        @onclick="GoBackToHome">
+                    <i class="bi bi-arrow-left-circle-fill"></i>
+                    <span>Back to App Hub</span>
+                </button>
+
+                <button type="button"
+                        class="btn btn-theme d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                        style="width: 56px; height: 56px; padding: 0;"
+                        title="@(isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")"
+                        aria-label="@(isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")"
+                        @onclick="ToggleThemeAsync">
+                    <i class="bi @(isDarkMode ? "bi-sun-fill" : "bi-moon-stars-fill") fs-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4 monitoring-dashboard-card">
+            <div class="monitoring-dashboard-header">
+                <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="monitoring-dashboard-icon">
+                            <i class="bi bi-hdd-network-fill"></i>
+                        </div>
+                        <div>
+                            <h4 class="monitoring-dashboard-title mb-1">Real-time IIS Monitoring Dashboard</h4>
+                            <div class="monitoring-dashboard-subtitle">
+                                Live overview for application health, app pools and uptime
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="monitoring-dashboard-right">
+                        <div class="monitoring-refresh-pill @(isStatusRefreshing ? "refreshing" : "")">
+                            <span class="monitoring-refresh-dot"></span>
+                            <span>@(isStatusRefreshing ? "Refreshing..." : $"Auto refresh every {StatusRefreshIntervalSeconds} sec")</span>
+                        </div>
+
+                        <div class="monitoring-last-refresh">
+                            <i class="bi bi-clock-history me-1"></i>
+                            @(lastStatusRefreshAt.HasValue ? $"Last refresh: {lastStatusRefreshAt.Value:dd-MMM-yyyy hh:mm:ss tt}" : "Last refresh: --")
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="monitoring-kpi-grid mb-4">
+                    <div class="monitoring-kpi-card monitoring-kpi-overall">
+                        <div class="monitoring-kpi-top">
+                            <div class="monitoring-kpi-label">Overall Status</div>
+                            <span class="monitoring-traffic-light @GetDashboardStatusCssClass()">
+                                <i class="bi @GetDashboardStatusIcon()"></i>
+                                @GetDashboardOverallStatus()
+                            </span>
+                        </div>
+                        <div class="monitoring-kpi-value">@TotalMonitoredApps</div>
+                        <div class="monitoring-kpi-meta">Monitored applications</div>
+                    </div>
+
+                    <div class="monitoring-kpi-card monitoring-kpi-live">
+                        <div class="monitoring-kpi-top">
+                            <div class="monitoring-kpi-label">Healthy</div>
+                            <span class="monitoring-dot-indicator green"></span>
+                        </div>
+                        <div class="monitoring-kpi-value">@LiveAppsCount</div>
+                        <div class="monitoring-kpi-meta">Green status applications</div>
+                    </div>
+
+                    <div class="monitoring-kpi-card monitoring-kpi-warning">
+                        <div class="monitoring-kpi-top">
+                            <div class="monitoring-kpi-label">Warning</div>
+                            <span class="monitoring-dot-indicator yellow"></span>
+                        </div>
+                        <div class="monitoring-kpi-value">@MaintenanceAppsCount</div>
+                        <div class="monitoring-kpi-meta">Yellow status applications</div>
+                    </div>
+
+                    <div class="monitoring-kpi-card monitoring-kpi-down">
+                        <div class="monitoring-kpi-top">
+                            <div class="monitoring-kpi-label">Critical</div>
+                            <span class="monitoring-dot-indicator red"></span>
+                        </div>
+                        <div class="monitoring-kpi-value">@DownAppsCount</div>
+                        <div class="monitoring-kpi-meta">Red status applications</div>
+                    </div>
+
+                    <div class="monitoring-kpi-card monitoring-kpi-pools">
+                        <div class="monitoring-kpi-top">
+                            <div class="monitoring-kpi-label">App Pools</div>
+                            <i class="bi bi-diagram-3-fill"></i>
+                        </div>
+                        <div class="monitoring-kpi-value">@AppPoolDashboardItems.Count</div>
+                        <div class="monitoring-kpi-meta">Detected / grouped pools</div>
+                    </div>
+
+                    <div class="monitoring-kpi-card monitoring-kpi-uptime">
+                        <div class="monitoring-kpi-top">
+                            <div class="monitoring-kpi-label">Server Uptime</div>
+                            <i class="bi bi-server"></i>
+                        </div>
+                        <div class="monitoring-kpi-value monitoring-kpi-value-uptime">@ServerUptimeDisplay</div>
+                        <div class="monitoring-kpi-meta">@ServerMachineDisplay</div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-12">
+                        <div class="monitoring-panel monitoring-panel-gradient">
+                            <div class="monitoring-panel-header monitoring-panel-header-gradient">
+                                <div class="monitoring-panel-header-top">
+                                    <div class="monitoring-panel-title-group">
+                                        <button type="button"
+                                                class="monitoring-panel-toggle-btn monitoring-panel-toggle-btn-gradient"
+                                                title="@(isAppHealthExpanded ? "Collapse section" : "Expand section")"
+                                                aria-label="@(isAppHealthExpanded ? "Collapse section" : "Expand section")"
+                                                @onclick="ToggleAppHealthSection">
+                                            <i class="bi @(isAppHealthExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                                        </button>
+
+                                        <div class="monitoring-panel-title-wrap">
+                                            <div class="monitoring-panel-title monitoring-panel-title-light">
+                                                IIS Application Health
+                                            </div>
+                                            <div class="monitoring-panel-subtitle monitoring-panel-subtitle-light">
+                                                Live status grouped from configured application endpoints
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="monitoring-panel-actions">
+                                        <div class="monitoring-section-search search-box">
+                                            <i class="bi bi-search search-icon"></i>
+                                            <input type="text"
+                                                   class="form-control search-input monitoring-section-search-input monitoring-section-search-input-light @(HasAppHealthSearch ? "with-clear-btn" : "")"
+                                                   placeholder="Search application health..."
+                                                   autocomplete="off"
+                                                   value="@appHealthSearchText"
+                                                   @oninput="OnAppHealthSearchInput"
+                                                   @onfocus="ShowAppHealthSuggestions"
+                                                   @onblur="HideAppHealthSuggestionsDelayed" />
+
+                                            @if (HasAppHealthSearch)
+                                            {
+                                                <button type="button"
+                                                        class="search-clear-btn monitoring-search-clear-btn-light"
+                                                        title="Clear search"
+                                                        aria-label="Clear search"
+                                                        @onclick="ClearAppHealthSearch">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            }
+
+                                            @if (ShowAppHealthSuggestionDropdown)
+                                            {
+                                                <div class="search-suggestion-dropdown monitoring-section-suggestion-dropdown">
+                                                    @foreach (var suggestion in AppHealthSuggestions)
+                                                    {
+                                                        <button type="button"
+                                                                class="search-suggestion-item"
+                                                                @onmousedown="() => SelectAppHealthSuggestion(suggestion)">
+                                                            <div class="search-suggestion-top-row">
+                                                                <div class="search-suggestion-main">@suggestion.Title</div>
+                                                                <span class="monitoring-traffic-light @GetMonitoringTrafficCss(suggestion.Status)">
+                                                                    <i class="bi @GetMonitoringStatusIcon(suggestion.Status)"></i>
+                                                                    @suggestion.Status
+                                                                </span>
+                                                            </div>
+                                                            <div class="search-suggestion-meta">
+                                                                @suggestion.Meta
+                                                            </div>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="monitoring-panel-summary-row monitoring-panel-summary-row-light">
+                                    <div class="monitoring-panel-summary-text monitoring-panel-summary-text-light">
+                                        Showing <strong>@FilteredMonitoringAppCards.Count</strong> of <strong>@MonitoringAppCards.Count</strong> applications
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="monitoring-panel-content @(IsAppHealthExpandedEffective ? "expanded" : "collapsed")">
+                                @if (FilteredMonitoringAppCards.Any())
+                                {
+                                    <div class="monitoring-app-grid monitoring-panel-body-soft">
+                                        @foreach (var item in FilteredMonitoringAppCards)
+                                        {
+                                            <div class="monitoring-app-card @GetMonitoringCardCss(item.Status)">
+                                                <div class="monitoring-app-card-top">
+                                                    <div class="monitoring-app-icon">
+                                                        <i class="@item.IconCss"></i>
+                                                    </div>
+
+                                                    <div class="monitoring-app-content">
+                                                        <div class="monitoring-app-title-row">
+                                                            <div class="monitoring-app-title">@item.Name</div>
+                                                            <span class="monitoring-traffic-light @GetMonitoringTrafficCss(item.Status)">
+                                                                <i class="bi @GetMonitoringStatusIcon(item.Status)"></i>
+                                                                @item.Status
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="monitoring-app-meta">
+                                                            @item.ProductGroup • @item.Environment
+                                                        </div>
+
+                                                        @if (!string.IsNullOrWhiteSpace(item.Url))
+                                                        {
+                                                            <div class="monitoring-app-url text-truncate">@item.Url</div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="monitoring-empty-state monitoring-panel-body-soft">
+                                        <i class="bi bi-search"></i>
+                                        <div>No applications found for the entered search.</div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="monitoring-panel monitoring-panel-gradient">
+                            <div class="monitoring-panel-header monitoring-panel-header-gradient">
+                                <div class="monitoring-panel-header-top">
+                                    <div class="monitoring-panel-title-group">
+                                        <button type="button"
+                                                class="monitoring-panel-toggle-btn monitoring-panel-toggle-btn-gradient"
+                                                title="@(isAppPoolExpanded ? "Collapse section" : "Expand section")"
+                                                aria-label="@(isAppPoolExpanded ? "Collapse section" : "Expand section")"
+                                                @onclick="ToggleAppPoolSection">
+                                            <i class="bi @(isAppPoolExpanded ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                                        </button>
+
+                                        <div class="monitoring-panel-title-wrap">
+                                            <div class="monitoring-panel-title monitoring-panel-title-light">
+                                                App Pool Monitoring
+                                            </div>
+                                            <div class="monitoring-panel-subtitle monitoring-panel-subtitle-light">
+                                                Group-wise view based on AppPool/AppPoolName metadata when available
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="monitoring-panel-actions">
+                                        <div class="monitoring-section-search search-box">
+                                            <i class="bi bi-search search-icon"></i>
+                                            <input type="text"
+                                                   class="form-control search-input monitoring-section-search-input monitoring-section-search-input-light @(HasAppPoolSearch ? "with-clear-btn" : "")"
+                                                   placeholder="Search app pools..."
+                                                   autocomplete="off"
+                                                   value="@appPoolSearchText"
+                                                   @oninput="OnAppPoolSearchInput"
+                                                   @onfocus="ShowAppPoolSuggestions"
+                                                   @onblur="HideAppPoolSuggestionsDelayed" />
+
+                                            @if (HasAppPoolSearch)
+                                            {
+                                                <button type="button"
+                                                        class="search-clear-btn monitoring-search-clear-btn-light"
+                                                        title="Clear search"
+                                                        aria-label="Clear search"
+                                                        @onclick="ClearAppPoolSearch">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            }
+
+                                            @if (ShowAppPoolSuggestionDropdown)
+                                            {
+                                                <div class="search-suggestion-dropdown monitoring-section-suggestion-dropdown">
+                                                    @foreach (var suggestion in AppPoolSuggestions)
+                                                    {
+                                                        <button type="button"
+                                                                class="search-suggestion-item"
+                                                                @onmousedown="() => SelectAppPoolSuggestion(suggestion)">
+                                                            <div class="search-suggestion-top-row">
+                                                                <div class="search-suggestion-main">@suggestion.Title</div>
+                                                                <span class="monitoring-traffic-light @GetMonitoringTrafficCss(suggestion.Status)">
+                                                                    <i class="bi @GetMonitoringStatusIcon(suggestion.Status)"></i>
+                                                                    @suggestion.Status
+                                                                </span>
+                                                            </div>
+                                                            <div class="search-suggestion-meta">
+                                                                @suggestion.Meta
+                                                            </div>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="monitoring-panel-summary-row monitoring-panel-summary-row-light">
+                                    <div class="monitoring-panel-summary-text monitoring-panel-summary-text-light">
+                                        Showing <strong>@FilteredAppPoolDashboardItems.Count</strong> of <strong>@AppPoolDashboardItems.Count</strong> app pools
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="monitoring-panel-content @(IsAppPoolExpandedEffective ? "expanded" : "collapsed")">
+                                @if (FilteredAppPoolDashboardItems.Any())
+                                {
+                                    <div class="monitoring-pool-list monitoring-panel-body-soft">
+                                        @foreach (var pool in FilteredAppPoolDashboardItems)
+                                        {
+                                            <div class="monitoring-pool-item">
+                                                <div class="monitoring-pool-left">
+                                                    <div class="monitoring-pool-title-row">
+                                                        <div class="monitoring-pool-title">@pool.Name</div>
+                                                        <span class="monitoring-traffic-light @GetMonitoringTrafficCss(pool.Status)">
+                                                            <i class="bi @GetMonitoringStatusIcon(pool.Status)"></i>
+                                                            @pool.Status
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="monitoring-pool-meta">
+                                                        @pool.Environment • Server: @pool.ServerName
+                                                    </div>
+                                                </div>
+
+                                                <div class="monitoring-pool-count-wrap">
+                                                    <div class="monitoring-pool-count">@pool.AppCount</div>
+                                                    <div class="monitoring-pool-count-label">Apps</div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="monitoring-empty-state monitoring-panel-body-soft">
+                                        <i class="bi bi-diagram-3"></i>
+                                        <div>No app pool metadata found for the entered search.</div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button type="button"
+                class="scroll-to-top-btn @(showScrollToTop ? "show" : "")"
+                title="Scroll to top"
+                aria-label="Scroll to top"
+                @onclick="ScrollToTopAsync">
+            <i class="bi bi-chevron-up"></i>
+        </button>
+    </div>
+</div>
+
+@code {
+    private const int StatusRefreshIntervalSeconds = 10;
+    private static readonly TimeSpan StatusRequestTimeout = TimeSpan.FromSeconds(5);
+
+    private bool isDarkMode = false;
+    private bool showScrollToTop = false;
+    private bool isStatusRefreshing = false;
+    private DateTime? lastStatusRefreshAt;
+
+    private bool isAppHealthExpanded = true;
+    private bool isAppPoolExpanded = true;
+
+    private string appHealthSearchText = string.Empty;
+    private string appPoolSearchText = string.Empty;
+
+    private bool showAppHealthSuggestions = false;
+    private bool showAppPoolSuggestions = false;
+
+    private readonly DateTime serverProcessStartTime = Process.GetCurrentProcess().StartTime.ToLocalTime();
+
+    private IReadOnlyList<PortalApp> apps = new List<PortalApp>();
+    private readonly Dictionary<string, string> runtimeAppStatuses = new(StringComparer.OrdinalIgnoreCase);
+
+    private DotNetObjectReference<IISMonitoringDashboard>? dotNetRef;
+    private bool scrollListenerRegistered = false;
+
+    private readonly HttpClient _statusHttpClient = new(new HttpClientHandler
+    {
+        AllowAutoRedirect = false
+    })
+    {
+        Timeout = StatusRequestTimeout
+    };
+
+    private CancellationTokenSource? _statusMonitorCts;
+    private Task? _statusMonitorTask;
+    private bool _isStatusMonitorStarted = false;
+    private bool _isDisposed = false;
+
+    private int TotalMonitoredApps =>
+        apps.Count(x => CanCheckAppHealth(x));
+
+    private int LiveAppsCount =>
+        apps.Count(x => CanCheckAppHealth(x) && string.Equals(GetAppStatus(x), "Live", StringComparison.OrdinalIgnoreCase));
+
+    private int MaintenanceAppsCount =>
+        apps.Count(x => CanCheckAppHealth(x) && string.Equals(GetAppStatus(x), "Maintenance", StringComparison.OrdinalIgnoreCase));
+
+    private int DownAppsCount =>
+        apps.Count(x => CanCheckAppHealth(x) && string.Equals(GetAppStatus(x), "Down", StringComparison.OrdinalIgnoreCase));
+
+    private bool HasAppHealthSearch => !string.IsNullOrWhiteSpace(appHealthSearchText);
+    private bool HasAppPoolSearch => !string.IsNullOrWhiteSpace(appPoolSearchText);
+
+    private bool IsAppHealthExpandedEffective => isAppHealthExpanded || HasAppHealthSearch;
+    private bool IsAppPoolExpandedEffective => isAppPoolExpanded || HasAppPoolSearch;
+
+    private bool ShowAppHealthSuggestionDropdown =>
+        showAppHealthSuggestions && HasAppHealthSearch && AppHealthSuggestions.Any();
+
+    private bool ShowAppPoolSuggestionDropdown =>
+        showAppPoolSuggestions && HasAppPoolSearch && AppPoolSuggestions.Any();
+
+    private string ServerMachineDisplay => $"Machine: {Environment.MachineName}";
+
+    private string ServerUptimeDisplay
+    {
+        get
+        {
+            var uptime = DateTime.Now - serverProcessStartTime;
+            var days = Math.Max(0, uptime.Days);
+            return $"{days}d {uptime.Hours}h {uptime.Minutes}m";
+        }
+    }
+
+    private List<MonitoringAppItem> MonitoringAppCards =>
+        apps
+            .Where(CanCheckAppHealth)
+            .OrderBy(x => AppHubHomeHelper.GetEnvironmentOrder(x.Environment))
+            .ThenBy(x => x.ProductGroup)
+            .ThenBy(x => x.SortOrder)
+            .ThenBy(x => x.Name)
+            .Select(x => new MonitoringAppItem
+            {
+                Name = x.Name ?? string.Empty,
+                ProductGroup = x.ProductGroup ?? string.Empty,
+                Environment = x.Environment ?? string.Empty,
+                IconCss = string.IsNullOrWhiteSpace(x.IconCss) ? "bi bi-grid-fill" : x.IconCss,
+                Status = GetAppStatus(x),
+                Url = x.Url ?? string.Empty
+            })
+            .ToList();
+
+    private List<MonitoringAppItem> FilteredMonitoringAppCards =>
+        MonitoringAppCards
+            .Where(x => MatchesAppHealthSearch(x, appHealthSearchText))
+            .ToList();
+
+    private List<SearchSuggestionItem> AppHealthSuggestions =>
+        MonitoringAppCards
+            .Where(x => MatchesAppHealthSearch(x, appHealthSearchText))
+            .Select(x => new SearchSuggestionItem
+            {
+                Title = x.Name,
+                Meta = $"{x.ProductGroup} • {x.Environment}" + (string.IsNullOrWhiteSpace(x.Url) ? string.Empty : $" • {x.Url}"),
+                Status = x.Status
+            })
+            .DistinctBy(x => $"{x.Title}||{x.Meta}")
+            .Take(8)
+            .ToList();
+
+    private List<AppPoolDashboardItem> AppPoolDashboardItems =>
+        apps
+            .GroupBy(app => new
+            {
+                Name = GetAppPoolName(app),
+                Environment = string.IsNullOrWhiteSpace(app.Environment) ? "Unknown" : app.Environment,
+                Server = GetServerName(app)
+            })
+            .OrderBy(g => AppHubHomeHelper.GetEnvironmentOrder(g.Key.Environment))
+            .ThenBy(g => g.Key.Name)
+            .Select(g => new AppPoolDashboardItem
+            {
+                Name = g.Key.Name,
+                Environment = g.Key.Environment,
+                ServerName = g.Key.Server,
+                AppCount = g.Count(),
+                Status = ResolveAggregateStatus(g.Select(GetAppStatus))
+            })
+            .ToList();
+
+    private List<AppPoolDashboardItem> FilteredAppPoolDashboardItems =>
+        AppPoolDashboardItems
+            .Where(x => MatchesAppPoolSearch(x, appPoolSearchText))
+            .ToList();
+
+    private List<SearchSuggestionItem> AppPoolSuggestions =>
+        AppPoolDashboardItems
+            .Where(x => MatchesAppPoolSearch(x, appPoolSearchText))
+            .Select(x => new SearchSuggestionItem
+            {
+                Title = x.Name,
+                Meta = $"{x.Environment} • Server: {x.ServerName} • {x.AppCount} Apps",
+                Status = x.Status
+            })
+            .DistinctBy(x => $"{x.Title}||{x.Meta}")
+            .Take(8)
+            .ToList();
+
+    protected override Task OnInitializedAsync()
+    {
+        apps = AppHubHomeHelper.LoadPortalApplicationsFromJson(Env, PortalAppService);
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isDarkMode = await JS.InvokeAsync<bool>("themeManager.getCurrentThemeIsDark");
+
+            dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("appHubScroll.registerScrollListener", dotNetRef);
+            scrollListenerRegistered = true;
+
+            await RefreshAllAppStatusesAsync();
+            StartStatusMonitor();
+
+            StateHasChanged();
+        }
+    }
+
+    private void GoBackToHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private void ToggleAppHealthSection()
+    {
+        if (HasAppHealthSearch)
+            return;
+
+        isAppHealthExpanded = !isAppHealthExpanded;
+    }
+
+    private void ToggleAppPoolSection()
+    {
+        if (HasAppPoolSearch)
+            return;
+
+        isAppPoolExpanded = !isAppPoolExpanded;
+    }
+
+    private void OnAppHealthSearchInput(ChangeEventArgs e)
+    {
+        appHealthSearchText = e.Value?.ToString() ?? string.Empty;
+        showAppHealthSuggestions = true;
+
+        if (HasAppHealthSearch)
+            isAppHealthExpanded = true;
+    }
+
+    private void OnAppPoolSearchInput(ChangeEventArgs e)
+    {
+        appPoolSearchText = e.Value?.ToString() ?? string.Empty;
+        showAppPoolSuggestions = true;
+
+        if (HasAppPoolSearch)
+            isAppPoolExpanded = true;
+    }
+
+    private void ShowAppHealthSuggestions(FocusEventArgs _)
+    {
+        showAppHealthSuggestions = true;
+
+        if (HasAppHealthSearch)
+            isAppHealthExpanded = true;
+    }
+
+    private void ShowAppPoolSuggestions(FocusEventArgs _)
+    {
+        showAppPoolSuggestions = true;
+
+        if (HasAppPoolSearch)
+            isAppPoolExpanded = true;
+    }
+
+    private async Task HideAppHealthSuggestionsDelayed(FocusEventArgs _)
+    {
+        await Task.Delay(150);
+        showAppHealthSuggestions = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HideAppPoolSuggestionsDelayed(FocusEventArgs _)
+    {
+        await Task.Delay(150);
+        showAppPoolSuggestions = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void SelectAppHealthSuggestion(SearchSuggestionItem suggestion)
+    {
+        appHealthSearchText = suggestion.Title;
+        showAppHealthSuggestions = false;
+        isAppHealthExpanded = true;
+    }
+
+    private void SelectAppPoolSuggestion(SearchSuggestionItem suggestion)
+    {
+        appPoolSearchText = suggestion.Title;
+        showAppPoolSuggestions = false;
+        isAppPoolExpanded = true;
+    }
+
+    private void ClearAppHealthSearch()
+    {
+        appHealthSearchText = string.Empty;
+        showAppHealthSuggestions = false;
+    }
+
+    private void ClearAppPoolSearch()
+    {
+        appPoolSearchText = string.Empty;
+        showAppPoolSuggestions = false;
+    }
+
+    private void StartStatusMonitor()
+    {
+        if (_isStatusMonitorStarted || _isDisposed)
+            return;
+
+        _isStatusMonitorStarted = true;
+        _statusMonitorCts = new CancellationTokenSource();
+        _statusMonitorTask = RunStatusMonitorAsync(_statusMonitorCts.Token);
+    }
+
+    private async Task RunStatusMonitorAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(StatusRefreshIntervalSeconds));
+
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await RefreshAllAppStatusesAsync(cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch
+        {
+        }
+    }
+
+    private async Task RefreshAllAppStatusesAsync(CancellationToken cancellationToken = default)
+    {
+        var statusChanged = false;
+
+        if (!_isDisposed)
+        {
+            isStatusRefreshing = true;
+            await InvokeAsync(StateHasChanged);
+        }
+
+        try
+        {
+            foreach (var app in apps.Where(CanCheckAppHealth))
+            {
+                var newStatus = await CheckAppHealthStatusAsync(app, cancellationToken);
+                var key = GetAppUniqueKey(app);
+
+                if (!runtimeAppStatuses.TryGetValue(key, out var existingStatus) ||
+                    !string.Equals(existingStatus, newStatus, StringComparison.OrdinalIgnoreCase))
+                {
+                    runtimeAppStatuses[key] = newStatus;
+                    statusChanged = true;
+                }
+            }
+
+            lastStatusRefreshAt = DateTime.Now;
+        }
+        finally
+        {
+            isStatusRefreshing = false;
+        }
+
+        if (!_isDisposed && (statusChanged || lastStatusRefreshAt.HasValue))
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private bool CanCheckAppHealth(PortalApp app)
+    {
+        if (app == null)
+            return false;
+
+        var healthCheckUrl = GetHealthCheckUrl(app);
+        return Uri.TryCreate(healthCheckUrl, UriKind.Absolute, out var uri)
+               && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+    }
+
+    private string GetHealthCheckUrl(PortalApp app)
+    {
+        var explicitHealthCheckUrl =
+            ReadStringProperty(app, "HealthCheckUrl") ??
+            ReadStringProperty(app, "HealthUrl") ??
+            ReadStringProperty(app, "StatusCheckUrl");
+
+        var rawUrl = string.IsNullOrWhiteSpace(explicitHealthCheckUrl) ? app.Url : explicitHealthCheckUrl;
+
+        if (string.IsNullOrWhiteSpace(rawUrl))
+            return string.Empty;
+
+        if (!Uri.TryCreate(rawUrl, UriKind.Absolute, out var absoluteUri))
+            return rawUrl;
+
+        var builder = new UriBuilder(absoluteUri)
+        {
+            Query = string.Empty,
+            Fragment = string.Empty
+        };
+
+        return builder.Uri.ToString();
+    }
+
+    private async Task<string> CheckAppHealthStatusAsync(PortalApp app, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var healthCheckUrl = GetHealthCheckUrl(app);
+
+            if (string.IsNullOrWhiteSpace(healthCheckUrl))
+                return "Maintenance";
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, healthCheckUrl);
+            using var response = await _statusHttpClient.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken);
+
+            var statusCode = (int)response.StatusCode;
+
+            if (statusCode >= 200 && statusCode < 300)
+                return "Live";
+
+            if (statusCode >= 300 && statusCode < 500)
+                return "Maintenance";
+
+            return "Down";
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return "Down";
+        }
+        catch (HttpRequestException)
+        {
+            return "Down";
+        }
+        catch
+        {
+            return "Down";
+        }
+    }
+
+    private string GetAppStatus(PortalApp app)
+    {
+        var key = GetAppUniqueKey(app);
+
+        if (runtimeAppStatuses.TryGetValue(key, out var runtimeStatus) &&
+            !string.IsNullOrWhiteSpace(runtimeStatus))
+        {
+            return NormalizeStatus(runtimeStatus);
+        }
+
+        if (!string.IsNullOrWhiteSpace(app.Status))
+            return NormalizeStatus(app.Status);
+
+        if (ReadBoolProperty(app, "IsMaintenance"))
+            return "Maintenance";
+
+        if (ReadBoolProperty(app, "IsDown"))
+            return "Down";
+
+        if (ReadBoolProperty(app, "IsLive"))
+            return "Live";
+
+        if (!app.IsActive)
+            return "Down";
+
+        return "Live";
+    }
+
+    private string GetDashboardOverallStatus()
+    {
+        if (DownAppsCount > 0)
+            return "Critical";
+
+        if (MaintenanceAppsCount > 0)
+            return "Warning";
+
+        return "Healthy";
+    }
+
+    private string GetDashboardStatusCssClass()
+    {
+        var status = GetDashboardOverallStatus();
+
+        return status switch
+        {
+            "Critical" => "traffic-red",
+            "Warning" => "traffic-yellow",
+            _ => "traffic-green"
+        };
+    }
+
+    private string GetDashboardStatusIcon()
+    {
+        var status = GetDashboardOverallStatus();
+
+        return status switch
+        {
+            "Critical" => "bi-x-octagon-fill",
+            "Warning" => "bi-exclamation-triangle-fill",
+            _ => "bi-check-circle-fill"
+        };
+    }
+
+    private string GetMonitoringTrafficCss(string status)
+    {
+        status = NormalizeStatus(status);
+
+        return status switch
+        {
+            "Down" => "traffic-red",
+            "Maintenance" => "traffic-yellow",
+            _ => "traffic-green"
+        };
+    }
+
+    private string GetMonitoringStatusIcon(string status)
+    {
+        status = NormalizeStatus(status);
+
+        return status switch
+        {
+            "Down" => "bi-x-octagon-fill",
+            "Maintenance" => "bi-exclamation-triangle-fill",
+            _ => "bi-check-circle-fill"
+        };
+    }
+
+    private string GetMonitoringCardCss(string status)
+    {
+        status = NormalizeStatus(status);
+
+        return status switch
+        {
+            "Down" => "monitoring-app-card-red",
+            "Maintenance" => "monitoring-app-card-yellow",
+            _ => "monitoring-app-card-green"
+        };
+    }
+
+    private string GetAppPoolName(PortalApp app)
+    {
+        return
+            ReadStringProperty(app, "AppPoolName") ??
+            ReadStringProperty(app, "AppPool") ??
+            ReadStringProperty(app, "PoolName") ??
+            $"{app.ProductGroup}-{app.Environment}";
+    }
+
+    private string GetServerName(PortalApp app)
+    {
+        return
+            ReadStringProperty(app, "ServerName") ??
+            ReadStringProperty(app, "MachineName") ??
+            ReadStringProperty(app, "HostServer") ??
+            Environment.MachineName;
+    }
+
+    private string ResolveAggregateStatus(IEnumerable<string> statuses)
+    {
+        var normalized = statuses.Select(NormalizeStatus).ToList();
+
+        if (normalized.Any(x => string.Equals(x, "Down", StringComparison.OrdinalIgnoreCase)))
+            return "Down";
+
+        if (normalized.Any(x => string.Equals(x, "Maintenance", StringComparison.OrdinalIgnoreCase)))
+            return "Maintenance";
+
+        return "Live";
+    }
+
+    private string GetAppUniqueKey(PortalApp app)
+    {
+        return $"{app.ProductGroup}||{app.Environment}||{app.Name}||{app.Url}";
+    }
+
+    private bool MatchesAppHealthSearch(MonitoringAppItem item, string? searchText)
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+            return true;
+
+        var term = searchText.Trim();
+
+        return ContainsIgnoreCase(item.Name, term)
+               || ContainsIgnoreCase(item.ProductGroup, term)
+               || ContainsIgnoreCase(item.Environment, term)
+               || ContainsIgnoreCase(item.Status, term)
+               || ContainsIgnoreCase(item.Url, term);
+    }
+
+    private bool MatchesAppPoolSearch(AppPoolDashboardItem item, string? searchText)
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+            return true;
+
+        var term = searchText.Trim();
+
+        return ContainsIgnoreCase(item.Name, term)
+               || ContainsIgnoreCase(item.Environment, term)
+               || ContainsIgnoreCase(item.ServerName, term)
+               || ContainsIgnoreCase(item.Status, term)
+               || item.AppCount.ToString().Contains(term, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ContainsIgnoreCase(string? source, string value)
+    {
+        return !string.IsNullOrWhiteSpace(source)
+               && source.Contains(value, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeStatus(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status))
+            return "Live";
+
+        var value = status.Trim();
+
+        if (value.Equals("down", StringComparison.OrdinalIgnoreCase) ||
+            value.Equals("offline", StringComparison.OrdinalIgnoreCase) ||
+            value.Equals("critical", StringComparison.OrdinalIgnoreCase))
+            return "Down";
+
+        if (value.Equals("maintenance", StringComparison.OrdinalIgnoreCase) ||
+            value.Equals("maint", StringComparison.OrdinalIgnoreCase) ||
+            value.Equals("warning", StringComparison.OrdinalIgnoreCase))
+            return "Maintenance";
+
+        return "Live";
+    }
+
+    private static string? ReadStringProperty(object obj, string propertyName)
+    {
+        var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+        if (prop is null)
+            return null;
+
+        var value = prop.GetValue(obj);
+        return value?.ToString();
+    }
+
+    private static bool ReadBoolProperty(object obj, string propertyName)
+    {
+        var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+        if (prop is null)
+            return false;
+
+        var value = prop.GetValue(obj);
+
+        if (value is bool boolValue)
+            return boolValue;
+
+        if (value is string str && bool.TryParse(str, out var parsed))
+            return parsed;
+
+        return false;
+    }
+
+    private async Task ToggleThemeAsync()
+    {
+        isDarkMode = await JS.InvokeAsync<bool>("themeManager.toggleTheme");
+    }
+
+    private async Task ScrollToTopAsync()
+    {
+        await JS.InvokeVoidAsync("appHubScroll.scrollToTop");
+    }
+
+    [JSInvokable]
+    public async Task UpdateScrollToTopVisibility(bool visible)
+    {
+        if (showScrollToTop == visible)
+            return;
+
+        showScrollToTop = visible;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _isDisposed = true;
+
+        try
+        {
+            _statusMonitorCts?.Cancel();
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            if (_statusMonitorTask is not null)
+                await _statusMonitorTask;
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            _statusMonitorCts?.Dispose();
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            if (scrollListenerRegistered)
+                await JS.InvokeVoidAsync("appHubScroll.unregisterScrollListener");
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            _statusHttpClient.Dispose();
+        }
+        catch
+        {
+        }
+
+        dotNetRef?.Dispose();
+    }
+
+    private sealed class MonitoringAppItem
+    {
+        public string Name { get; set; } = string.Empty;
+        public string ProductGroup { get; set; } = string.Empty;
+        public string Environment { get; set; } = string.Empty;
+        public string IconCss { get; set; } = "bi bi-grid-fill";
+        public string Status { get; set; } = "Live";
+        public string Url { get; set; } = string.Empty;
+    }
+
+    private sealed class AppPoolDashboardItem
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Environment { get; set; } = string.Empty;
+        public string ServerName { get; set; } = string.Empty;
+        public int AppCount { get; set; }
+        public string Status { get; set; } = "Live";
+    }
+
+    private sealed class SearchSuggestionItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Meta { get; set; } = string.Empty;
+        public string Status { get; set; } = "Live";
+    }
+}

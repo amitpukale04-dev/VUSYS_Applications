@@ -1,0 +1,563 @@
+
+now we will integrate Log Timesheet with API Integration under Manage Timesheet Menu. Shall share i my existing latest complete project code and API Details?
+
+
+I have attached my existing latest completed project code. Modify and Provide me full updated project code.
+
+I have attached screen screenshots for your reference. But you should follow our UI/UX and architecture standards. As per this application standards.
+
+First screenshot is from Log Timesheet List
+
+Create/Add Mode (Before Saving)
+1. Second screenshot is from when we click on Add Timesheet from Log Timesheet List
+2. third screenshot is from when we enter the task details and before click on Add Button.
+3. Fourth screenshot is from in Add Timesheet Mode and When we select Project as timeway and Activity Dropdown is binded and Task Description Text Editor is disabled and populated the text.
+4. fifth screenshot is from when we enter the task details and after clicking on Add Button.
+5. sixth screenshot is from when we edit the task details from Task Table and Populate into respective fields.
+
+View/Edit Mode (After Saving)
+1. seventh screenshot is from when we click on edit Timesheet from Log Timesheet List
+2. eight screenshot is from when Edit Timesheet and Bind Task Table.
+
+This is similar to Employee Master 
+
+I have attached my existing latest completed project code. Modify and Provide me full updated project code.
+
+In Log Timesheet (Create/Edit/View) Below controls
+
+--First Row (3 Controls)
+
+1. Project - Dropdown
+2. Activity - Dropdown
+3. Task Date - DatePicker
+--Second Row (2 Controls)
+4. No. of Hours  - Textbox (It should accept Number and Decimal)
+5. Is On Leave - Toggle Switch (It Should be always Disabled and Unchecked. It Should Check only when we select Timeway from the Project Dropdown)
+--Third Row (3 Controls)
+6. Task Description - TextEditor (It Should be Disabled only when we when we select Timeway from the Project Dropdown)
+7. In tp-form-page-heading-actions it should have Add Button icon, Save Icon, Cancel Icon and Back To Log Timesheet List.
+8. Add Button Flow
+   - When the User Select Project, Activity, Task Date, No of Hours and Task Description and Click on Add Button.
+   - It Should add those into the SortTable Table (Task Table) which includes the Columns 
+      1. Actions (Edit and Delete)
+	     - Edit -> When we click on Edit then it should take that particular row data and populate in respective controls.
+		 - Delete -> When we click on Delete it should show confirm Modal. when we click on Yes, Confirm then for that particular row should set IsDeleted = true and delete that particular row from the Task Table.
+	  2. SL No.
+	  3. Project 
+	  4. Activity
+	  5. Date
+	  6. Description
+	  7. On Leave (The Value should be based on Is On Leave toggle switch checked and unchecked. If it is unchecked then the value should be No. If it is checked then value should be Yes)
+	  8. No. of Hours Worked
+9. When We click on Save Button icon it should take the data from the Task Table and send it to API.
+	  
+
+In Log Timesheet List Below Columns
+Use Sortable Table Like Employee Master and Call the /api/Timesheet/GetLogTimesheetList API
+
+In tp-form-page-heading-actions it should have Refresh Grid Icon, Add Icon, search Timesheet Icon and cancel icon
+
+Important Note: In Log Timesheet List When the Page is loaded dont show the error message. Show when we click on search Timesheet Icon then from the API if we get error message then only show
+
+--First Row (2 Controls) All are Mandatory Fields
+
+1. From Date - DatePicker - It should display First Day of the Current Month
+2. To Date - DatePicker - It should display Last Day of the Current Month
+
+Add The Validation To Date Should Be Greater Than From Date.
+
+
+1. Actions (Same Like Employee Master) - it should have only Edit Icon and when we click on Edit Icon it should call /api/Timesheet/GetTimesheetDetails API and Bind Task Table.
+2. SL No
+3. Client Name
+4. Project Name
+5. Task Date
+6. No. of Hours Worked
+7. Project Status
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Dropdown API
+
+--Project
+
+/api/Master/GetDropdownItems
+
+Important Note: For argumentValue the value should be passed as User LoggedIn Employee Code.
+
+Request Payload
+
+{
+  "sourceTable": "ProjectBasedOnEmployeeCode",
+  "argumentValue": "VUT001",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ValueText": "1",
+        "DisplayText": "Sharpply"
+      },
+      {
+        "ValueText": "2",
+        "DisplayText": "Stylebox"
+      },
+      {
+        "ValueText": "4",
+        "DisplayText": "Timeaway"
+      },
+      {
+        "ValueText": "3",
+        "DisplayText": "Timesheet Management"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+
+/api/Master/GetDropdownItems
+
+--Activity Dropdown
+
+Important Note: When we select the Project Dropdown if the Project is selected as timeaway then for Activity Dropdown u need to pass source table as ProjectActivityForLeave other wise pass source table as ProjectActivity
+
+Request Payload
+
+{
+  "sourceTable": "ProjectActivity",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ValueText": 4,
+        "DisplayText": "Backend Development"
+      },
+      {
+        "ValueText": 5,
+        "DisplayText": "Code Review"
+      },
+      {
+        "ValueText": 16,
+        "DisplayText": "COMPOFF"
+      },
+      {
+        "ValueText": 17,
+        "DisplayText": "DEMO1"
+      },
+      {
+        "ValueText": 8,
+        "DisplayText": "Deployment"
+      },
+      {
+        "ValueText": 10,
+        "DisplayText": "Fix Post-Release Bugs"
+      },
+      {
+        "ValueText": 3,
+        "DisplayText": "Frontend Development"
+      },
+      {
+        "ValueText": 15,
+        "DisplayText": "HOLIDAY"
+      },
+      {
+        "ValueText": 12,
+        "DisplayText": "Knowledge Transfer"
+      },
+      {
+        "ValueText": 13,
+        "DisplayText": "Learning"
+      },
+      {
+        "ValueText": 11,
+        "DisplayText": "Maintenance"
+      },
+      {
+        "ValueText": 14,
+        "DisplayText": "ON LEAVE"
+      },
+      {
+        "ValueText": 9,
+        "DisplayText": "Post-Deployment Monitoring"
+      },
+      {
+        "ValueText": 7,
+        "DisplayText": "Project Management"
+      },
+      {
+        "ValueText": 1,
+        "DisplayText": "Requirement Gathering & Analysis"
+      },
+      {
+        "ValueText": 2,
+        "DisplayText": "System Design"
+      },
+      {
+        "ValueText": 6,
+        "DisplayText": "System Testing"
+      },
+      {
+        "ValueText": 18,
+        "DisplayText": "TEST"
+      }
+    ]
+  }
+}
+
+
+/api/Master/GetDropdownItems
+
+Activity Dropdown
+
+Request Payload
+
+{
+  "sourceTable": "ProjectActivityForLeave",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+	  {
+        "ValueText": 14,
+        "DisplayText": "ON LEAVE"
+      },
+	  {
+        "ValueText": 15,
+        "DisplayText": "HOLIDAY"
+      },
+      {
+        "ValueText": 16,
+        "DisplayText": "COMPOFF"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+/api/Timesheet/SaveAndUpdateTimesheetDetails
+
+Important Note: For employeeCode the value should be passed as User LoggedIn Employee Code.
+
+Request Body
+
+[
+  {
+    "projectTimeSheetID": 1006,
+    "projectTimeSheetDetailID": 1015,
+    "employeeCode": "VUT001",
+    "projectID": 1,
+    "projectActivityID": 4,
+    "taskDate": "2026-08-27",
+    "taskDescription": "1. Developed the API - Completed",
+    "taskDescriptionRaw": "<ol><li>&nbsp;Developed the API - Completed</li></ol>",
+    "noofHoursWorked": "8",
+    "isOnLeave": false,
+    "isDeleted": false,
+    "createdBy": 0,
+    "updatedBy": 1
+  },
+  {
+    "projectTimeSheetID": 1006,
+    "projectTimeSheetDetailID": 0,
+    "employeeCode": "VUT001",
+    "projectID": 1,
+    "projectActivityID": 4,
+    "taskDate": "2026-08-24",
+    "taskDescription": "1. Implemented Login API - Completed",
+    "taskDescriptionRaw": "<ol><li>&nbsp;Implemented Login API - Completed</li></ol>",
+    "noofHoursWorked": "8",
+    "isOnLeave": false,
+    "isDeleted": false,
+    "createdBy": 1,
+    "updatedBy": 0
+  }
+]
+
+
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "TIMESHEET_SAVE_RESPONSE": [
+      {
+        "Message": "Your Timesheet Saved Successfully."
+      }
+    ]
+  }
+}
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "TIMESHEET_SAVE_RESPONSE": [
+      {
+        "Message": "Failed To Save Your Timesheet."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "[0].ProjectID",
+        "Message": "Project ID Should Be Greater Than 0."
+      },
+      {
+        "Key": "[0].EmployeeCode",
+        "Message": "Enter The Employee Code."
+      },
+      {
+        "Key": "[0].TaskDescription",
+        "Message": "Enter The Task Description."
+      },
+      {
+        "Key": "[0].ProjectActivityID",
+        "Message": "Project ID Should Be Greater Than 0."
+      },
+      {
+        "Key": "[0].TaskDescriptionRaw",
+        "Message": "Enter The Task Description Raw."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------
+/api/Timesheet/GetTimesheetDetails
+
+Important Note: For employeeCode the value should be passed as User LoggedIn Employee Code.
+For timesheetMonth the value should be Task Date Month.
+For timesheetYear the value should be Task Date Year.
+
+Bind this to Task Task Table
+
+Request Body
+
+{
+  "projectTimeSheetID": 1006,
+  "employeeCode": "VUT001",
+  "taskDate": "2026-08-21",
+  "timesheetMonth": "August",
+  "timesheetYear": 2026
+}
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "TIMESHEET_DETAILS_RESPONSE": [
+      {
+        "ProjectTimeSheetID": 1006,
+        "EmployeeCode": "VUT001",
+        "ProjectTimeSheetDetailID": 1020,
+        "ProjectID": 1,
+        "ProjectName": "Sharpply",
+        "ProjectActivityID": 4,
+        "ActivityName": "Backend Development",
+        "TaskDate": "2026-08-21T00:00:00",
+        "TaskDescription": "1. Implemented Email Functionality - Completed\n\n2. Unit Testing of APIs - Completed\n\n",
+        "TaskDescriptionRaw": "<ol><li>&nbsp;Implemented Email Functionality - Completed</li><li>&nbsp;Unit Testing of APIs - Completed</li></ol>",
+        "NoofHoursWorked": "5.00",
+        "IsOnLeave": false,
+        "IsSentForApproval": false
+      },
+      {
+        "ProjectTimeSheetID": 1006,
+        "EmployeeCode": "VUT001",
+        "ProjectTimeSheetDetailID": 1023,
+        "ProjectID": 2,
+        "ProjectName": "Stylebox",
+        "ProjectActivityID": 5,
+        "ActivityName": "Code Review",
+        "TaskDate": "2026-08-21T00:00:00",
+        "TaskDescription": "1. Code Review - Completed\n\n",
+        "TaskDescriptionRaw": "<ol><li>&nbsp;Code Review - Completed</li></ol>",
+        "NoofHoursWorked": "3.00",
+        "IsOnLeave": false,
+        "IsSentForApproval": false
+      }
+    ]
+  }
+}
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "TIMESHEET_DETAILS_RESPONSE": [
+      {
+        "Message": "You Cannot Edit The Timesheet. Since Timesheet is Already Approved for the Month of August - 2026 !!!"
+      }
+    ]
+  }
+}
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "TIMESHEET_DETAILS_RESPONSE": [
+      {
+        "Message": "You Cannot Edit The Timesheet. Since Timesheet is Already Sent for Approval for the Month of August - 2026 !!!"
+      }
+    ]
+  }
+}
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "TIMESHEET_DETAILS_RESPONSE": [
+      {
+        "Message": "Timesheet Details Not Found."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Timesheet/GetLogTimesheetList
+
+Important Note: For employeeCode the value should be passed as User LoggedIn Employee Code
+
+{
+  "projectTimeSheetID": 0,
+  "employeeCode": "VUT001",
+  "fromDate": "2026-08-01",
+  "toDate": "2026-08-27"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "LOG_TIMESHEET_LIST_RESPONSE": [
+      {
+        "SLNo": 1,
+        "ProjectTimeSheetID": 1006,
+        "EmployeeCode": "VUT001",
+        "TimeSheetMonth": "August",
+        "TimeSheetYear": 2026,
+        "IsApproved": false,
+        "FullName": "Amit P Pukale",
+        "EmailID": "test@gmail.com",
+        "TaskDate": "2026-08-27T00:00:00",
+        "ProjectStatus": "In Progress",
+        "ClientName": "Sharpply",
+        "ProjectName": "Sharpply",
+        "TaskDescription": "1. Developed the APIs - Completed\n\n",
+        "ActivityName": "Backend Development",
+        "TotalHoursWorked": 8,
+        "DisplayTaskDate": "27-Aug-2026"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "LOG_TIMESHEET_LIST_RESPONSE": [
+      {
+        "Message": "Timesheet Not Found For The Selected From Date and To Date."
+      }
+    ]
+  }
+}
+
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "ToDate",
+        "Message": "To Date Should Be Greater Than Start Date."
+      },
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      }
+    ]
+  }
+}

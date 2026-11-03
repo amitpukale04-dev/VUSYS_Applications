@@ -1,0 +1,127 @@
+
+Important Note1: After Login it should call the /api/FrontEndUserTabs/GetUserTabList only once.
+Important Note2: Once the UserTab is Saved (Success or Error) then dont show any Toast Notification. It should be Handled Silently
+Important Note3: If we get any error from the Below API Response dont show any toast Notification. It should show Default Homepage.
+
+-----------------------------------------------------------------------------------------------------------------
+
+/api/FrontEndUserTabs/SaveAndUpdateUserTabs
+
+HTTP Post:
+
+Here for userId Pass the Loggedin UserId
+Here for roleId Pass the Loggedin RoleId
+
+Request Payload
+
+{
+  "userId": 1,
+  "roleId": 1,
+  "tabs": [
+    {
+      "path": "/",
+      "label": "Home",
+      "svgIcon": "home",
+      "tone": "indigo",
+      "closable": false
+    },
+    {
+      "path": "/employees",
+      "label": "Employee List",
+      "svgIcon": "employees",
+      "tone": "rose",
+      "closable": true
+    }
+  ]
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "USER_TAB_SAVED_RESPONSE": [
+      {
+        "ID": 1,
+        "Message": "User Tabs Saved Successfully."
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "USER_TAB_SAVED_RESPONSE": [
+      {
+        "Message": "Existing User Tabs JSON Is Corrupted. File Was Not Overwritten."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+/api/FrontEndUserTabs/GetUserTabList
+
+HTTP Post:
+
+Here for userId Pass the Loggedin UserId
+Here for roleId Pass the Loggedin RoleId
+
+Request Payload
+
+{
+  "userId": 1,
+  "roleId": 1
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "USER_TAB_RESPONSE": [
+      {
+        "UserId": 1,
+        "Path": "/",
+        "Label": "Home",
+        "SvgIcon": "home",
+        "Tone": "indigo",
+        "Closable": false
+      },
+      {
+        "UserId": 1,
+        "Path": "/employees",
+        "Label": "Employee List",
+        "SvgIcon": "employees",
+        "Tone": "rose",
+        "Closable": true
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "USER_TAB_RESPONSE": [
+      {
+        "Message": "Stored User Tabs JSON Is Corrupted. File Was Not Modified."
+      }
+    ]
+  }
+}

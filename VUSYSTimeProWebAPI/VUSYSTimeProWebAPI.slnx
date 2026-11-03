@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="VUSYSTimeProWebAPI.Api/VUSYSTimeProWebAPI.Api.csproj" />
+  <Project Path="VUSYSTimeProWebAPI.Application/VUSYSTimeProWebAPI.Application.csproj" />
+  <Project Path="VUSYSTimeProWebAPI.Domain/VUSYSTimeProWebAPI.Domain.csproj" />
+  <Project Path="VUSYSTimeProWebAPI.Infrastructure/VUSYSTimeProWebAPI.Infrastructure.csproj" />
+</Solution>

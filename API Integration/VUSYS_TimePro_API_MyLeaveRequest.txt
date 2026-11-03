@@ -1,0 +1,475 @@
+
+now we will integrate My Leave Request with API Integration under Manage Leave Management Menu. Shall share i my existing latest complete project code and API Details?
+
+
+I have attached my existing latest complete project code. Modify and Provide me full updated project code.
+
+I have attached screen screenshots for your reference. But you should follow code Pattern, Indentation, code comments As per this application standards.
+
+In My Leave Request (Create/Edit/View) Below controls
+
+First screenshot is the reference from Log Timesheet List
+
+Create/Add Mode (Before Saving)
+1. Second screenshot is from when we click on Apply Leave from My Leave Request List (Second Screenshot is the reference from Add Timesheet)
+
+
+In Apply Leave (Create/View) Below controls 
+ 
+Important Note: In Apply Leave Screen there should no Edit Mode.
+
+--First Row (3 Controls)
+1. Employee Code - Textbox (Mandatory Field) (Always Readonly) - It should display Loggedin User Employee Code
+2. Leave Type - Dropdown (Mandatory Field) - On Dropdown change call the /api/LeaveManagement/GetCurrentYearLeaveBalanceBasedOnLeaveType to get the current leave balance
+3. Current Leave Balance - It should display based on Leave Type Dropdown Change
+--Second Row (3 Controls)
+4. From Date - DatePicker (Mandatory Field)
+5. To Date - DatePicker (Mandatory Field) also it Should have The Validation To Date Should Be Greater Than From Date.
+6. Half Day  - Toggle Switch
+--Third Row (3 Controls)
+7. TotalLeaveDays - Calculate Based on FromDate, ToDate and Half Day if it is checked
+8. Leave Reason - Textarea (Mandatory)
+	  
+
+In My Leave Request List (First screenshot is the reference from Log Timesheet List) Below Columns 
+Use Sortable Table Like Log Timesheet and Call the /api/LeaveManagement/GetLeaveRequestList API
+
+In tp-form-page-heading-actions it should have Refresh Grid Icon, Apply Leave Icon and cancel icon
+
+1. Actions (Same Like Employee Leave Balance List) - 
+    - It should have View Icon
+	- Cancel Leave Request Flow
+	  1. It Should Visible if IsShowCancelLeaveRequest is true else dont show from /api/LeaveManagement/GetLeaveRequestList for that particular row
+	  2. On Click of Cancel Leave Request Button it should Open a Popup and in that Popup it should display 
+	     Labels - Leave Type, From Date and To Date, Total No of Leave Days (Labels), 
+		 Textarea - for Cancellation Reason and it should be mandatory.
+		 Buttons - Cancel Leave Button and Cancel Button with Icon
+	  3. On Click of Cancel Leave Button It should display ConfirmModal and message should be "Are You Sure You Want To Cancel This Leave Request ?"
+	     If i on click on Yes, Confirm then call the API /api/LeaveManagement/ApproveOrRejectOrCancelLeaveRequest for that particular row
+	  4. If i click on Cancel Button then it should close the Popup.
+	  
+2. SL No
+3. Leave Type
+4. From Date
+5. To Date
+6. Total No of Leave Days
+7. Leave Status (Map LeaveStatusText Column)
+8. Approved/Rejected Details - Display View Details Link Button if ApprovedOrRejectedReason is not null and empty from /api/LeaveManagement/GetLeaveRequestList for that particular row
+    - On click of that Link Button Open a Popup to Show the Details like ApprovedOrRejectedByUser, ApprovedOrRejectedDateTime and ApprovedOrRejectedReason
+	  See attached Third Screenshot
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Dropdown API
+
+--Leave Type
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "LeaveType",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ValueText": 2,
+        "DisplayText": "COMPOFF"
+      },
+      {
+        "ValueText": 1,
+        "DisplayText": "Sick Leave/Casual Leave"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+--Current Leave Balance
+
+/api/LeaveManagement/GetCurrentYearLeaveBalanceBasedOnLeaveType
+
+In leaveYear pass the current year
+
+Request Payload
+
+{
+  "employeeCode": "VUT002",
+  "leaveTypeID": 1,
+  "leaveYear": 2026
+}
+
+
+Success Response if the AvailableBalance is Greater Than 0
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_LEAVE_BALANCE_AVAILABLE": [
+      {
+        "LeaveTypeID": "1",
+        "EmployeeCode": "VUT002",
+        "AvailableBalance": "10.00",
+        "Message": "Employee Balance Available."
+      }
+    ]
+  }
+}
+
+Success Response if the AvailableBalance is 0
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_LEAVE_BALANCE_AVAILABLE": [
+      {
+        "LeaveTypeID": "1",
+        "EmployeeCode": "VUT002",
+        "AvailableBalance": "0",
+        "Message": "Employee Balance Available."
+      }
+    ]
+  }
+}
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+/api/LeaveManagement/SaveAndUpdateLeaveRequestDetails
+
+Important Note: For employeeCode the value should be passed as User LoggedIn Employee Code.
+
+Request Body
+
+{
+  "id": 0,
+  "employeeCode": "VUT002",
+  "leaveTypeID": 1,
+  "fromDate": "2026-10-16",
+  "toDate": "2026-10-17",
+  "isHalfDay": false,
+  "reason": "Travelling Out of Station",
+  "isDeleted": false,
+  "createdBy": 1,
+  "updatedBy": 0
+}
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "LEAVE_REQUEST_RESPONSE": [
+      {
+        "Message": "Leave Request Submitted Successfully, and an Email Notification Has Been Sent to the Approver !!!"
+      }
+    ]
+  }
+}
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "LEAVE_REQUEST_RESPONSE": [
+      {
+        "Message": "Leave Request Already Exists For The Selected Date Range."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "Reason",
+        "Message": "Enter The Reason."
+      },
+      {
+        "Key": "ToDate",
+        "Message": "Enter The To Date."
+      },
+      {
+        "Key": "FromDate",
+        "Message": "Enter The From Date."
+      },
+      {
+        "Key": "LeaveTypeID",
+        "Message": "Leave Type Id Should Be Greater Than 0."
+      },
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------
+/api/LeaveManagement/GetLeaveRequestDetails
+
+Important Note: For employeeCode don't pass anything. It should be empty.
+
+Bind this to Task Task Table
+
+Request Body
+
+{
+  "id": 2,
+  "employeeCode": ""
+}
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "LEAVE_REQUEST_DETAILS_RESPONSE": [
+      {
+        "SLNo": 1,
+        "Id": 2,
+        "EmployeeCode": "VUT002",
+        "EmployeeName": "Pooja",
+        "LeaveTypeID": 1,
+        "LeaveType": "Sick Leave/Casual Leave",
+        "LeaveTypeCode": "SL/CL",
+        "FromDate": "2026-10-01T00:00:00",
+        "ToDate": "2026-10-05T00:00:00",
+        "TotalLeaveDays": 2,
+        "IsHalfDay": false,
+        "HalfDayType": null,
+        "Reason": "As I need to Attend Family Function.",
+        "LeaveStatus": 2,
+        "ApproverEmployeeCode": "VUT001",
+        "ApprovedOrRejectedBy": 1,
+        "ApprovedOrRejectedDate": "2026-10-12T10:46:26",
+        "ApprovedOrRejectedRemarks": "Approved the Request",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      }
+    ]
+  }
+}
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "LEAVE_REQUEST_DETAILS_RESPONSE": [
+      {
+        "Message": "Leave Request Details Not Found."
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+/api/LeaveManagement/GetLeaveRequestList
+
+Important Note: For employeeCode the value should be passed as User LoggedIn Employee Code
+
+{
+  "id": 0,
+  "employeeCode": "VUT002"
+}
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "MY_LEAVE_REQUEST_LIST_RESPONSE": [
+      {
+        "SLNo": 1,
+        "Id": 1,
+        "EmployeeCode": "VUT002",
+        "EmployeeName": "Pooja",
+        "LeaveTypeID": 1,
+        "LeaveType": "Sick Leave/Casual Leave",
+        "LeaveTypeCode": "SL/CL",
+        "FromDate": "01-Oct-2026",
+        "ToDate": "05-Oct-2026",
+        "TotalLeaveDays": 2,
+        "IsHalfDay": false,
+        "Reason": "As I need to Attend Family Function.",
+        "LeaveStatus": 4,
+        "LeaveStatusText": "Cancelled",
+        "IsShowCancelLeaveRequest": false,
+        "ApproverEmployeeCode": null,
+        "ApprovedOrRejectedBy": null,
+        "ApprovedOrRejectedByUser": "",
+        "ApprovedOrRejectedDateTime": null,
+        "ApprovedOrRejectedReason": "",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 2,
+        "Id": 2,
+        "EmployeeCode": "VUT002",
+        "EmployeeName": "Pooja",
+        "LeaveTypeID": 1,
+        "LeaveType": "Sick Leave/Casual Leave",
+        "LeaveTypeCode": "SL/CL",
+        "FromDate": "01-Oct-2026",
+        "ToDate": "05-Oct-2026",
+        "TotalLeaveDays": 2,
+        "IsHalfDay": false,
+        "Reason": "As I need to Attend Family Function.",
+        "LeaveStatus": 2,
+        "LeaveStatusText": "Approved",
+        "IsShowCancelLeaveRequest": true,
+        "ApproverEmployeeCode": "VUT001",
+        "ApprovedOrRejectedBy": 1,
+        "ApprovedOrRejectedByUser": "Amit P Pukale",
+        "ApprovedOrRejectedDateTime": "12-Oct-2026 10:46:26 AM",
+        "ApprovedOrRejectedReason": "Approved the Request",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "MY_LEAVE_REQUEST_LIST_RESPONSE": [
+      {
+        "Message": "Employee Leave Request List Not Found"
+      }
+    ]
+  }
+}
+
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+/api/LeaveManagement/ApproveOrRejectOrCancelLeaveRequest
+
+Important Note: For employeeCode the value should be passed as User LoggedIn Employee Code.
+Here actionType should be CANCEL
+
+Request Body
+
+{
+  "id": 3,
+  "employeeCode": "VUT002",
+  "actionType": "CANCEL",
+  "actionBy": 2,
+  "remarks": "Cancelling the Leave Request. As it is Postponded"
+}
+
+
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "LEAVE_REQUEST_APPROVE_REJECT_CANCEL_RESPONSE": [
+      {
+        "Message": "Leave Request Cancelled Successfully, and an Email Notification Has Been Sent to the Approver !!!"
+      }
+    ]
+  }
+}
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "LEAVE_REQUEST_APPROVE_REJECT_CANCEL_RESPONSE": [
+      {
+        "Message": "Leave Request Is Already Cancelled."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "Id",
+        "Message": "Leave Application Id Should Be Greater Than 0."
+      },
+      {
+        "Key": "ActionBy",
+        "Message": "Action By Should Be Greater Than 0."
+      },
+      {
+        "Key": "ActionType",
+        "Message": "Enter The Action Type."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------

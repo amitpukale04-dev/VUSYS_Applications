@@ -1,0 +1,97 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel
+
+
+@{
+	Layout = "_LoginLayout";
+	ViewData["Title"] = "Login";
+}
+
+<link href="~/Admin/LoginChangePassword.css" rel="stylesheet" />
+<div class="@ViewBag.SplashScreenCss" id="splash-screen">
+	<img src="~/Admin/dist/img/AppLogo.png" alt="Loading..." class="spinner">
+	<h1>VUSYS Time Pro</h1>
+</div>
+
+<div id="maincontent" class="@ViewBag.MainDivCss">
+	@* <div id="maincontent" class="hold-transition login-page" style="display:none; background-image: url('@Url.Content("~/Admin/dist/img/13.png")');"> *@
+	<div class="login-header-text">
+		<h1>Timesheet Management</h1>
+		<p>Track Time. Improve Productivity.</p>
+	</div>
+	<div class="login-box">
+		<div class="card card-outline card-primary">
+			<div class="card-header text-center">
+				<img src="~/Admin/dist/img/AppLogo.png" alt="Logo">
+			</div>
+			<div class="card-body">
+				<p class="login-box-msg loginAppName">Time Pro</p>
+				<form asp-controller="Login" asp-action="Login" id="LoginForm" method="post">
+					<div class="input-group mb-3">
+						<div class="input-group-append">
+							<div class="input-group-text">
+								<span class="fas fa-envelope"></span>
+							</div>
+						</div>
+						@if (ViewBag.UserName != null)
+						{
+							<input asp-for="UserLogin.UserEmailID" class="form-control" value=@ViewBag.UserName placeholder="Email" />
+						}
+						else
+						{
+							<input asp-for="UserLogin.UserEmailID" class="form-control" placeholder="Email" />
+						}
+					</div>
+					<span asp-validation-for="UserLogin.UserEmailID" class="text-danger"></span>
+					<div class="input-group mb-3">
+						<div class="input-group-append">
+							<div class="input-group-text">
+								<span class="fas fa-lock"></span>
+							</div>
+						</div>
+						@if (ViewBag.Password != null)
+						{
+							<input type="password" asp-for="UserLogin.Password" id="txtPassword" value=@ViewBag.Password class="form-control" placeholder="Password" />
+						}
+						else
+						{
+							<input type="password" asp-for="UserLogin.Password" id="txtPassword" class="form-control" placeholder="Password" />
+						}
+						<span class="input-group-btn">
+							<button class="btn btn-default btn-md" type="button" id="showhide" data-val='1'>
+								<span id='eye' class="fa fa-eye">
+								</span>
+							</button>
+						</span>
+					</div>
+					<span asp-validation-for="UserLogin.Password" class="text-danger"></span>
+					<div class="row">
+						<div class="col-8">
+							<div class="custom-control custom-switch">
+								@if (ViewBag.UserName != null && ViewBag.Password != null)
+								{
+									<input type="checkbox" class="custom-control-input" asp-for="UserLogin.RememberMe" checked="checked">
+								}
+								else
+								{
+									<input type="checkbox" class="custom-control-input" asp-for="UserLogin.RememberMe">
+								}
+								<label asp-for="UserLogin.RememberMe" class="custom-control-label"></label>
+							</div>
+						</div>
+					</div>
+					<div class="social-auth-links text-center mt-2 mb-3">
+						<button type="submit" id="btnLogin" class="btn btn-block btn-lg btn-primary VUSYSbg">Login</button>
+					</div>
+					<p class="mb-1">
+						<a asp-action="ForgotPassword" asp-controller="Login">Forgot Password?</a>
+					</p>
+					@await Html.PartialAsync("CommonControls/_EnvironmentVersionNo")
+					@if (ViewBag.LoginError != null)
+					{
+						<label class="form-label" id="loginerror" style="color:red">@ViewBag.LoginError</label>
+					}
+				</form>
+			</div>
+		</div>
+	</div>
+</div>

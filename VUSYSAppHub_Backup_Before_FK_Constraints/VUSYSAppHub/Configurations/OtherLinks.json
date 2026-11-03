@@ -1,0 +1,60 @@
+{
+    "OtherLinks": [
+        {
+            "Id": 1,
+            "Name": "Sharpply Jira Board",
+            "ProductGroup": "Other Links",
+            "Description": "Jira board used to manage Sharpply development tasks, bug tracking, sprint planning, and team workflow.",
+            "Url": "https://vusys.atlassian.net/jira/software/c/projects/SP/boards/2",
+            "IconCss": "bi bi-kanban-fill",
+            "Environment": "Reference",
+            "AppType": "WebApp",
+            "Status": "Live",
+            "IsActive": true,
+            "OpenInNewTab": true,
+            "SortOrder": 1
+        },
+        {
+            "Id": 2,
+            "Name": "Protectron Jira Board",
+            "ProductGroup": "Other Links",
+            "Description": "Jira board used to manage Protectron development tasks, bug tracking, sprint planning, and team workflow.",
+            "Url": "https://vusys-pepl-team.atlassian.net/jira/software/projects/PEPL/boards/1",
+            "IconCss": "bi bi-kanban-fill",
+            "Environment": "Reference",
+            "AppType": "WebApp",
+            "Status": "Live",
+            "IsActive": true,
+            "OpenInNewTab": true,
+            "SortOrder": 2
+        },
+        {
+            "Id": 3,
+            "Name": "Inspire Magnetics Jira Board",
+            "ProductGroup": "Other Links",
+            "Description": "Jira board used to manage Inspire Magnetics development tasks, bug tracking, sprint planning, and team workflow.",
+            "Url": "https://vusys-inspiremagnetics.atlassian.net/jira/software/projects/IM/boards/1",
+            "IconCss": "bi bi-kanban-fill",
+            "Environment": "Reference",
+            "AppType": "WebApp",
+            "Status": "Live",
+            "IsActive": true,
+            "OpenInNewTab": true,
+            "SortOrder": 3
+        },
+        {
+            "Id": 4,
+            "Name": "OneDrive App Builds",
+            "ProductGroup": "Other Links",
+            "Description": "Centralized OneDrive location for storing and managing deployed production build packages.",
+            "Url": "https://vusysin-my.sharepoint.com/:f:/g/personal/vusys_vusysin_onmicrosoft_com/IgC4IfXNmtKvTLZkr5sh3-3-AfVCPUZT-XS1VKk-P9W6pEE?e=5%3a8z6wnF&at=9",
+            "IconCss": "bi bi-kanban-fill",
+            "Environment": "Reference",
+            "AppType": "WebApp",
+            "Status": "Live",
+            "IsActive": true,
+            "OpenInNewTab": true,
+            "SortOrder": 4
+        }
+    ]
+}

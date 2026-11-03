@@ -1,0 +1,48 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel
+
+@{
+    ViewData["Title"] = "Project Allocated/Consumed Report List";
+    Layout = "_CommonNavLayout";
+}
+
+<form id="GetAllProjectAllocatedConsumedReportListForm" asp-action="GetAllProjectAllocatedConsumedReportList" method="post">
+	<section class="content">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-md-12">
+					<div class="card card-primary">
+						<div class="card-header VUSYSbg">
+							<h3 class="card-title divcustombold">Project Allocated/Consumed Report List</h3>
+						</div>
+						<div class="card-body" style="padding-left:10px;">
+							<div class="row form-group">
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6">
+										<label asp-for="projectAllocatedConsumedReportFilter.ProjectID" class="control-label"></label>
+									</div>
+									<div class="col-sm-12 col-md-10">
+										<select id="ddlProjectList" asp-for="projectAllocatedConsumedReportFilter.ProjectID" class="form-control" asp-items="@(new SelectList(ViewBag.ProjectList,"Value","Text"))"></select>
+									</div>
+								</div>
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 mt-4 col-md-12">
+										<button type="submit" id="btnSearchProjectAllocatedConsumedReportDetails" name="action" value="ByGetProjectAllocatedConsumedReportDetails" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-list"></i> Search</button>
+										<button type="submit" id="btnExportToExcelProjectAllocatedConsumedReportDetails" name="action" value="ExportToExcel" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-file-excel"></i> Export To Excel</button>
+										<button type="button" id="btnSearchProjectAllocatedConsumedReportDetailsClear" class="btn btn-success btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-sync"></i> Clear</button>
+									</div>
+								</div>
+							</div>
+							@{
+								if (ViewBag.DisplayGrid != null && ViewBag.DisplayGrid == true)
+								{
+									@await Html.PartialAsync("_GetProjectAllocatedConsumedReportList")
+								}
+							}
+							@await Html.PartialAsync("AlertNotification/_AlertNotification")
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+</form>

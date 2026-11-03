@@ -1,0 +1,26 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel
+
+@{
+	ViewData["Title"] = "Edit Employee";
+	Layout = "_CommonNavLayout";
+}
+
+<form id="EditEmployeeForm" asp-action="EditEmployee" method="post" enctype="multipart/form-data">
+	<section class="content">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-md-12">
+					<div class="card card-primary">
+						<div class="card-header VUSYSbg">
+							<h3 class="card-title divcustombold">Edit Employee</h3>
+						</div>
+						<input type="hidden" asp-for="EmployeeMaster.EmployeeID" />
+						<div class="card-body" style="padding-left:10px;">
+							@await Html.PartialAsync("_AddEditEmployee")
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+</form>

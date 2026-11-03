@@ -1,0 +1,79 @@
+﻿<div class="container">
+    <div style="width:100%; margin:0 auto;">
+        <table id="tblTimesheetList" class="table table-striped table-bordered dt-responsive nowrap" width="100%" cellspacing="0">
+            <thead class="VUSYSTableHeader">
+                <tr>
+                    <th></th>
+                    <th>ProjectTimeSheetID</th>
+                    <th>SL No.</th>
+                    <th>Client Name</th>
+                    <th>Project Name</th>
+                    <th>Task Date</th>
+                    <th>No. of Hours Worked</th>
+                    <th>Project Status</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        BindTimesheetListGrid();
+    });
+
+    function BindTimesheetListGrid() {
+        var FromTaskDate = $("#projectTimesheetFilter_FromTaskDate").val();
+        var ToTaskDate = $("#projectTimesheetFilter_ToTaskDate").val();
+        var baseUrl = '@Url.Action("GetTimeSheetList", "Timesheet")';
+        // Dynamically append query parameters to the URL
+        var url = baseUrl + '?FromTaskDate=' + encodeURIComponent(FromTaskDate) + '&ToTaskDate=' + encodeURIComponent(ToTaskDate);
+
+        var rtable = $("#tblTimesheetList").DataTable({
+            "processing": true, // for show progress bar
+            "serverSide": true, // for process server side
+            "filter": true, // this is for disable filter (search box)
+            "orderMulti": false, // for disable multiple column at once
+            "scrollX": true,
+            "scrollCollapse": true,
+            "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, 'All']],
+            "paging": true,
+            "ajax": {
+                "url": url,
+                "type": "POST",
+                "datatype": "json"
+            },
+            "columnDefs": [{
+                "targets": [1],
+                "visible": false,
+                "searchable": false
+            }],
+            "language": {
+                "emptyTable": "No Record Found.",
+                "processing":
+                    '<i class="fa fa-spinner fa-spin fa-3x fa-fw" style="color:#2a2b2b;"></i><span class="sr-only">Loading...</span> '
+            },
+            "columns": [
+                {
+                    "data": "encryptedId",
+                    "render": function (data) {
+                        return `
+                                    <div class="text-center" style="width:10px;">
+                                            <a href="@Url.Action("EditTimesheet", "Timesheet")/?id=${data}&source=List" class="" data-toggle="tooltip" data-placement="top" title="Edit Timesheet Details" style="cursor:pointer"><i class="fas fa-pencil-alt"></i></a>
+                                    </div>
+                                   `;
+                    }, "width": "3%"
+                },
+                { "data": "projectTimeSheetID", "name": "projectTimeSheetID", "width": "10%" },
+                { "data": "slNo", "name": "slNo", "width": "0%" },
+                { "data": "clientName", "name": "clientName", "width": "10%" },
+                { "data": "projectName", "name": "projectName", "width": "10%" },
+                { "data": "displayTaskDate", "name": "displayTaskDate", "width": "10%" },
+                { "data": "totalHoursWorked", "name": "totalHoursWorked", "width": "10%" },
+                { "data": "projectStatus", "name": "projectStatus", "width": "10%" }
+            ]
+
+        });
+    }
+</script>
+

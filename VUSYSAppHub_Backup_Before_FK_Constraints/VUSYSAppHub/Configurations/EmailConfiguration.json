@@ -1,0 +1,10 @@
+{
+    "EmailConfigurationDetails": [
+        {
+            "FromEmailID": "vusys.notifications@gmail.com",
+            "Password": "cohx dwpx ohzw firi",
+            "SmtpHost": "smtp.gmail.com",
+            "PortNo": "587"
+        }
+    ]
+}

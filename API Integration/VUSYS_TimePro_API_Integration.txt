@@ -1,0 +1,299 @@
+IF EXISTS(SELECT 1 FROM VUSYS_GenderMaster WHERE Id = @Id)
+BEGIN
+
+END
+ELSE
+BEGIN
+	SELECT 'Error' AS 'Status', 'Gender Details Not Found' AS 'Message';
+END
+
+
+now we will integrate Project Master with API Integration under Manage Projects Menu. Shall share i my existing latest complete project code and API Details?
+
+
+I have attached my existing latest completed project code. Modify and Provide me full updated project code.
+
+In Project Master (Create/Edit/View) Below controls
+
+--First Row (3 Controls)
+
+1. Project Code - Textbox
+2. Client Name - Textbox
+3. Project Name - Textbox
+--Second Row (2 Controls)
+4. Project Description - Textarea
+5. Start Date - DatePicker
+--Third Row (3 Controls)
+6. End Date - DatePicker
+7. Allocated Hours - Textbox (Number and Decimal)
+8. Consumed Hours - Textbox (Number and Decimal)
+--Fourth Row (2 Controls)
+9. Project Status - Dropdown
+10. Obsolete - Toggle Switch (Show only Edit Mode)
+
+In Project List Below Columns
+1. Actions (Same Like Employee Master)
+2. Project Code
+3. Client Name
+4. Project Name
+5. Start Date (Map from DisplayStartDate)
+6. End Date (Map from DisplayEndDate)
+7. Project Status
+8. Status (Active/Inactive)
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Dropdown API
+
+--Project Status
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "ProjectStatus",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "Not Started",
+        "ValueText": "1"
+      },
+      {
+        "DisplayText": "In Progress",
+        "ValueText": "2"
+      },
+      {
+        "DisplayText": "Completed",
+        "ValueText": "3"
+      },
+      {
+        "DisplayText": "On Hold",
+        "ValueText": "4"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+/api/Project/SaveAndUpdateProjectDetails
+
+Request Body
+
+{
+  "projectID": 0,
+  "projectCode": "VUSYS_DEMO",
+  "clientName": "Demo",
+  "projectName": "Demo Client",
+  "projectDescription": "Demo Project",
+  "startDate": "2026-08-21",
+  "endDate": "2026-09-21",
+  "allocatedHours": 10,
+  "consumedHours": 0,
+  "projectStatus": "1",
+  "isDeleted": false,
+  "createdBy": 1,
+  "updatedBy": 0
+}
+
+
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "PROJECT_DETAILS_RESPONSE": [
+      {
+        "Id": 5,
+        "Message": "New Project Added Successfully."
+      }
+    ]
+  }
+}
+
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "PROJECT_DETAILS_RESPONSE": [
+      {
+        "Id": 5,
+        "Message": "The Project Details Already Exists."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "EndDate",
+        "Message": "Enter The End Date."
+      },
+      {
+        "Key": "StartDate",
+        "Message": "Enter The Start Date."
+      },
+      {
+        "Key": "ClientName",
+        "Message": "Enter The Client Name."
+      },
+      {
+        "Key": "ProjectCode",
+        "Message": "Enter The Project Code."
+      },
+      {
+        "Key": "ProjectName",
+        "Message": "Enter The Project Name."
+      },
+      {
+        "Key": "ProjectStatus",
+        "Message": "Enter The Project Status."
+      },
+      {
+        "Key": "ProjectDescription",
+        "Message": "Enter The Project Description."
+      }
+    ]
+  }
+
+
+----------------------------------------------------------------------------------------------------------------------------------------
+/api/Project/GetProjectDetails
+
+
+Request Body
+
+{
+  "id": 2
+}
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "PROJECT_DETAILS_RESPONSE": [
+      {
+        "SLNo": 1,
+        "ProjectID": 5,
+        "ProjectCode": "VUSYS_DEMO",
+        "ClientName": "Demo",
+        "ProjectName": "Demo Client",
+        "ProjectDescription": "Demo Project",
+        "DisplayStartDate": "21-Aug-2026",
+        "DisplayEndDate": "21-Sep-2026",
+        "StartDate": "2026-08-21T00:00:00",
+        "EndDate": "2026-09-21T00:00:00",
+        "AllocatedHours": 10,
+        "ConsumedHours": 0,
+        "ProjectStatus": "1",
+        "ActiveStatus": "Active"
+      }
+    ]
+  }
+}
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "PROJECT_DETAILS_RESPONSE": [
+      {
+        "Message": "Project Details Not Found"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Project/GetProjectList
+
+{
+  "id": 0
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "PROJECT_LIST_RESPONSE": [
+      {
+        "SLNo": 5,
+        "ProjectID": 5,
+        "ProjectCode": "VUSYS_DEMO",
+        "ClientName": "Demo",
+        "ProjectName": "Demo Client",
+        "ProjectDescription": "Demo Project",
+        "DisplayStartDate": "21-Aug-2026",
+        "DisplayEndDate": "21-Sep-2026",
+        "StartDate": "2026-08-21T00:00:00",
+        "EndDate": "2026-09-21T00:00:00",
+        "AllocatedHours": 10,
+        "ConsumedHours": 0,
+        "ProjectStatus": "1",
+        "ActiveStatus": "Active"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "PROJECT_LIST_RESPONSE": [
+      {
+        "Message": "Project List Not Found"
+      }
+    ]
+  }
+}

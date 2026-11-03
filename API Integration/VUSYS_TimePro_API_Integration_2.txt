@@ -1,0 +1,248 @@
+IF EXISTS(SELECT 1 FROM VUSYS_GenderMaster WHERE Id = @Id)
+BEGIN
+
+END
+ELSE
+BEGIN
+	SELECT 'Error' AS 'Status', 'Gender Details Not Found' AS 'Message';
+END
+
+
+now we will integrate Project Activity with API Integration under Manage Projects Menu. Shall share i my existing latest complete project code and API Details?
+
+
+I have attached my existing latest completed project code. Modify and Provide me full updated project code.
+
+Implement Project Activity using the same inline-editable grid pattern. In this Inline-Editable Grid and apply User Security Access.
+
+
+/api/Project/SaveAndUpdateProjectActivityDetails
+
+Request Body
+
+{
+  "id": 0,
+  "activityName": "Demo",
+  "isDeleted": false,
+  "createdBy": 1,
+  "updatedBy": 0
+}
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "PROJECT_ACTIVITY_DETAILS_RESPONSE": [
+      {
+        "Id": 17,
+        "Message": "New Project Activity Added Successfully."
+      }
+    ]
+  }
+}
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "PROJECT_ACTIVITY_DETAILS_RESPONSE": [
+      {
+        "Id": 17,
+        "Message": "The Project Activity Already Exists."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "ActivityName",
+        "Message": "Enter The Activity Name."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------
+/api/Project/GetProjectActivityDetails
+
+
+Request Body
+
+{
+  "id": 2
+}
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "PROJECT_ACTIVITY_DETAILS_RESPONSE": [
+      {
+        "SLNo": 1,
+        "Id": 2,
+        "ActivityName": "System Design",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      }
+    ]
+  }
+}
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "PROJECT_ACTIVITY_DETAILS_RESPONSE": [
+      {
+        "Message": "Project Activity Details Not Found."
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Project/GetProjectActivityList
+
+{
+  "id": 0
+}
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "PROJECT_ACTIVITY_LIST_RESPONSE": [
+      {
+        "SLNo": 1,
+        "Id": 1,
+        "ActivityName": "Requirement Gathering & Analysis",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 2,
+        "Id": 2,
+        "ActivityName": "System Design",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 3,
+        "Id": 3,
+        "ActivityName": "Frontend Development",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 4,
+        "Id": 4,
+        "ActivityName": "Backend Development",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 5,
+        "Id": 5,
+        "ActivityName": "Code Review",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 6,
+        "Id": 6,
+        "ActivityName": "System Testing",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 7,
+        "Id": 7,
+        "ActivityName": "Project Management",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 8,
+        "Id": 8,
+        "ActivityName": "Deployment",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 9,
+        "Id": 9,
+        "ActivityName": "Post-Deployment Monitoring",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 10,
+        "Id": 10,
+        "ActivityName": "Fix Post-Release Bugs",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 11,
+        "Id": 11,
+        "ActivityName": "Maintenance",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 12,
+        "Id": 12,
+        "ActivityName": "Knowledge Transfer",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 13,
+        "Id": 13,
+        "ActivityName": "Learning",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 14,
+        "Id": 14,
+        "ActivityName": "ON LEAVE",
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "PROJECT_ACTIVITY_LIST_RESPONSE": [
+      {
+        "Message": "Project Activity List Not Found."
+      }
+    ]
+  }
+}

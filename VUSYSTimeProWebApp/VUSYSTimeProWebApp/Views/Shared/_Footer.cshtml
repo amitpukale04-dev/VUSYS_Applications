@@ -1,0 +1,20 @@
+﻿@using VUSYSTimeProWebApp.DACHelper
+@{
+    string FooterContent = CommonHelper.KeyOption.FooterContent;
+    string Version = CommonHelper.KeyOption.Version;
+    string Environment = CommonHelper.KeyOption.Environment;
+}
+
+<strong class="small">
+    <script>var CurrentYear = new Date().getFullYear(); document.write(CurrentYear);</script> 
+    @if (!string.IsNullOrEmpty(FooterContent))
+    {
+        <a>@FooterContent</a>
+    }
+</strong>
+@if (!string.IsNullOrEmpty(Environment) && !string.IsNullOrEmpty(Version))
+{
+    <div class="float-right d-none d-sm-inline-block">
+        @Environment <b>Version</b> @Version
+    </div>
+}

@@ -1,0 +1,98 @@
+﻿<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Allocation Notification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+
+        .email-header {
+            background-image: linear-gradient(to right, #6a0dad, #9b4f96);
+            background-color: #6a0dad;
+            color: #ffffff;
+            padding: 10px;
+            border-radius: 5px 5px 0 0;
+            text-align: center;
+        }
+
+        .email-body {
+            padding: 20px;
+        }
+
+        .email-footer {
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+        }
+
+        h2, h4 {
+            margin: 0;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+            ul li {
+                margin-bottom: 10px;
+            }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+            a:hover {
+                text-decoration: underline;
+            }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <h2>Project Allocation Notification - #ProjectName#</h2>
+        </div>
+        <div class="email-body">
+            <p>Dear #Name#,</p>
+            <p>I hope this email finds you well.</p>
+            <p>I am pleased to inform you that you have been allocated to the project <strong>#ProjectName#</strong>.</p>
+            <h4>Project Details:</h4>
+            <ul>
+                <li><strong>Client Name:</strong> #ClientName#</li>
+                <li><strong>Project Code:</strong> #ProjectCode#</li>
+                <li><strong>Project Name:</strong> #ProjectName#</li>
+                <li><strong>Start Date:</strong> #StartDate#</li>
+                <li><strong>End Date:</strong> #EndDate#</li>
+            </ul>
+            <h4>Project Description:</h4>
+            <p>#ProjectDescription#</p>
+            <br/>
+            <p>Thank You!</p>
+            <!--<p>Best regards,</p>
+            <p>
+                [Your Name]<br>
+                [Your Position]<br>
+                [Your Contact Information]
+            </p>-->
+        </div>
+        <div class="email-footer">
+            <p>&copy; #CurrentYear# VUSYS.</p>
+        </div>
+    </div>
+</body>
+</html>

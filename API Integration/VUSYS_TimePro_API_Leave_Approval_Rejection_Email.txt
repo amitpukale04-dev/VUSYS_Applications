@@ -1,0 +1,341 @@
+
+now we will integrate Leave Approve Rejection From the URL with API Integration under Leave Management Menu. Shall share i my existing latest complete project code and API Details?
+
+
+I have attached my existing latest complet project code. Modify and Provide me full updated project code.
+
+I have attached screenshot for your reference. But you should follow code Pattern, Indentation, code comments As per this application standards.
+
+You can refer TimesheetApprovalRejection.jsx 
+
+You need to create a jsx File with the Name Called LeaveApprovalRejection.jsx
+
+
+http://localhost:5173/leave-approval-rejection?ID=MTA=&S=YW1pdC5wdWthbGUwNEBvdXRsb29rLmNvbQ==&EC=VlVUMDAy
+
+Here From the URL ID=, EN=, EC= Values are EncodedBase64. To Decode u can use b64Decode
+
+ID = LeaveApplicationID
+EN = EmployeeName
+EC = EmployeeCode
+
+This screen is having the Permission Allow To Approve Leave.
+
+when i call this 
+
+This is similar to Leave Approval/Rejection List Action (Approve/Reject)
+
+In Leave Approval Rejection Below controls and Decode from the URL and Populate in the respective below controls 
+
+1. EmployeeCode (Textbox Readonly), 
+2. Approval Status (Dropdown it should call the API /api/Master/GetDropdownItems Approval Status)
+3. Remarks (Textarea)
+4. View Leave Details Link Button - When the user clicks View Leave Details, it should call /api/LeaveManagement/GetLeaveRequestDetails API and open the Leave Details popup (You can use LeaveDetailsPopup Component) As we implemented in LeaveApprovalRejectionList.jsx
+5. Save Button and Cancel Button.	  
+
+	 a). Reject Flow
+      - When the user selects Reject from the Approval Status dropdown and clicks Save it should Open the ConfirmModal.
+	  - And Display the Message as Are You Sure You Want To Reject This Leave Request ?
+	  - If the user clicks Yes, Confirm then call the /api/LeaveManagement/ApproveOrRejectOrCancelLeaveRequest for that particular row
+	  
+     b) Approve Flow
+      - When the user selects Approve from the Approval Status dropdown and clicks Save it should Open the ConfirmModal.
+	  - And Display the Message as Are You Sure You Want To Approve This Leave Request ?
+	  - If the user clicks Yes, Confirm then call the /api/LeaveManagement/ApproveOrRejectOrCancelLeaveRequest for that particular row
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+Dropdown API
+
+--Approval Status
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "LeaveApproveRejectStatus",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "Approve",
+        "ValueText": "2"
+      },
+      {
+        "DisplayText": "Reject",
+        "ValueText": "3"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+/api/LeaveManagement/GetLeaveRequestDetails
+
+When we click on View Leave Details Link
+
+Important Note: For id value should be ID which is decoded from the URL.
+For employeeCode value should be EC which is decoded from the URL.
+
+Request Payload
+
+{
+  "id": 7,
+  "employeeCode": "VUT002"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "LEAVE_REQUEST_DETAILS_RESPONSE": [
+      {
+        "Id": 7,
+        "EmployeeCode": "VUT002",
+        "EmployeeName": "Pooja",
+        "LeaveType": "Sick Leave/Casual Leave",
+        "FromDate": "26-Oct-2026",
+        "ToDate": "27-Oct-2026",
+        "TotalLeaveDays": 2,
+        "Reason": "As Iam Attending a Marriage Function of My Brother."
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "LEAVE_REQUEST_DETAILS_RESPONSE": [
+      {
+        "Message": "Leave Request Details Not Found."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+	  {
+        "Key": "Id",
+        "Message": "Leave Application Id Should Be Greater Than 0."
+      },
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+Approve or Reject
+
+/api/LeaveManagement/ApproveOrRejectOrCancelLeaveRequest
+
+Important Note: For employeeCode the value should be passed from the Employee Code Textbox.
+actionBy value should be passed as Logged In User ID.
+remarks from the Remarks Textbox
+id should be passed from the selected that particular row.
+
+Request Payload (Approve)
+
+{
+  "id": 3,
+  "employeeCode": "VUT002",
+  "actionType": "APPROVE",
+  "actionBy": 2,
+  "remarks": "Approved the Request"
+}
+
+Request Payload (Reject)
+
+{
+  "id": 3,
+  "employeeCode": "VUT002",
+  "actionType": "REJECT",
+  "actionBy": 2,
+  "remarks": "Rejected the Request"
+}
+
+
+Success Response (Approve)
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "LEAVE_REQUEST_APPROVE_REJECT_CANCEL_RESPONSE": [
+      {
+        "Message": "Leave Request Approved Successfully, and an Email Notification Has Been Sent to the User !!!"
+      }
+    ]
+  }
+}
+
+Success Response (Reject)
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "LEAVE_REQUEST_APPROVE_REJECT_CANCEL_RESPONSE": [
+      {
+        "Message": "Leave Request Rejected Successfully, and an Email Notification Has Been Sent to the User !!!"
+      }
+    ]
+  }
+}
+
+Error Response (Approve)
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "LEAVE_REQUEST_APPROVE_REJECT_CANCEL_RESPONSE": [
+      {
+        "Message": "Leave Request Is Already Approved."
+      }
+    ]
+  }
+}
+
+Error Response (Reject)
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "LEAVE_REQUEST_APPROVE_REJECT_CANCEL_RESPONSE": [
+      {
+        "Message": "Leave Request Is Already Rejected."
+      }
+    ]
+  }
+}
+
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "Id",
+        "Message": "Leave Application Id Should Be Greater Than 0."
+      },
+      {
+        "Key": "ActionBy",
+        "Message": "Action By Should Be Greater Than 0."
+      },
+      {
+        "Key": "ActionType",
+        "Message": "Enter The Action Type."
+      }
+    ]
+  }
+}
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+/api/LeaveManagement/CheckLeaveRequestApprovalStatus
+
+Request 
+
+{
+  "id": 1,
+  "employeeCode": "VUT002"
+}
+
+Success Response 
+
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "LEAVE_REQUEST_APPROVAL_STATUS_RESPONSE": [
+      {
+        "Message": "Pending For Approval."
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "LEAVE_REQUEST_APPROVAL_STATUS_RESPONSE": [
+      {
+        "Message": "The Leave Request Has Already Been Approved."
+      }
+    ]
+  }
+}
+
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+	  {
+        "Key": "Id",
+        "Message": "Leave Application Id Should Be Greater Than 0."
+      },
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      }
+    ]
+  }
+}

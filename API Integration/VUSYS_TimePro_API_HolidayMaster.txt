@@ -1,0 +1,222 @@
+now we will integrate Holiday Master with API Integration under Masters Menu. Shall share i my existing latest complete project code and API Details?
+
+I have attached my existing latest completed project code. Modify and Provide me full updated project code.
+
+Implement Holiday List using the same inline-editable grid pattern. In this Inline-Editable Grid and apply User Security Access.
+Like Country List
+
+Holiday Name - Textbox
+Holiday Date - Date Picker
+Holiday Year - Dropdown
+Holiday Description - Textarea
+IsOptional - Toggle Switch
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Dropdown API
+
+--Year
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Year",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "2026",
+        "ValueText": "2026"
+      },
+      {
+        "DisplayText": "2025",
+        "ValueText": "2025"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Master/SaveAndUpdateHolidayDetails
+
+Request Body
+
+{
+  "id": 0,
+  "holidayName": "Gandhi Jayanti",
+  "holidayDate": "2026-10-02",
+  "holidayYear": 2026,
+  "isOptionalHoliday": false,
+  "holidayDescription": "Mahtma Gandhi Jayanti",
+  "isDeleted": false,
+  "createdBy": 1,
+  "updatedBy": 0
+}
+
+
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "HOLIDAY_DETAILS_RESPONSE": [
+      {
+        "Id": 1,
+        "Message": "New Holiday Added Successfully."
+      }
+    ]
+  }
+}
+
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "HOLIDAY_DETAILS_RESPONSE": [
+      {
+        "Id": 1,
+        "Message": "The Holiday Details Already Exists."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "HolidayName",
+        "Message": "Enter The Holiday Name."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------
+/api/Master/GetHolidayDetails
+
+
+Request Body
+
+{
+  "id": 1,
+  "holidayYear": 2026
+}
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "HOLIDAY_DETAILS_RESPONSE": [
+      {
+        "SLNo": 1,
+        "Id": 1,
+        "HolidayName": "Gandhi Jayanti",
+        "HolidayDate": "2026-10-02T00:00:00",
+        "HolidayYear": 2026,
+        "HolidayDescription": "Mahtma Gandhi Jayanti",
+        "IsOptionalHoliday": false,
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      }
+    ]
+  }
+}
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "HOLIDAY_DETAILS_RESPONSE": [
+      {
+        "Message": "Holiday Details Not Found"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Master/GetHolidayList
+
+{
+  "id": 0,
+  "holidayYear": 2026
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "HOLIDAY_LIST_RESPONSE": [
+      {
+        "SLNo": 1,
+        "Id": 1,
+        "HolidayName": "Gandhi Jayanti",
+        "HolidayDate": "2026-10-02T00:00:00",
+        "HolidayYear": 2026,
+        "HolidayDescription": "Mahtma Gandhi Jayanti",
+        "IsOptionalHoliday": false,
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "HOLIDAY_LIST_RESPONSE": [
+      {
+        "Message": "Holiday List Not Found"
+      }
+    ]
+  }
+}

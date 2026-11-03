@@ -1,0 +1,7 @@
+﻿@{
+	string Greetings = TempData.Peek("WelcomeGreetings") as string ?? "";
+}
+
+<div class="navbar-brand mx-auto d-block text-center font-weight-bold app-name-responsive">
+	<h5 class="text-bold">@Greetings</h5>
+</div>

@@ -1,0 +1,32 @@
+﻿@if (TempData["SuccessMessage"] != null)
+{
+	<script type="text/javascript">
+		window.onload = function () {
+			ShowNotificationMessage('@TempData["SuccessMessage"]', "VUSYS Time Pro", "success", "center-center", 2000);
+		};
+	</script>
+}
+@if (TempData["AlreadyExistMessage"] != null)
+{
+	<script type="text/javascript">
+		window.onload = function () {
+			ShowNotificationMessage('@TempData["AlreadyExistMessage"]', "VUSYS Time Pro", "warning", "center-center", 2000);
+		};
+	</script>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+	<script type="text/javascript">
+		window.onload = function () {
+			ShowNotificationMessage('@TempData["ErrorMessage"]', "VUSYS Time Pro", "error", "center-center", 2000);
+		};
+	</script>
+}
+@if (TempData["WarningMessage"] != null)
+{
+	<script type="text/javascript">
+		window.onload = function () {
+			ShowNotificationMessage('@TempData["WarningMessage"]', "VUSYS Time Pro", "warning", "center-center", 2000);
+		};
+	</script>
+}

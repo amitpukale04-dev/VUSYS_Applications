@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Registered</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background-image: linear-gradient(to right, #6a0dad, #9b4f96);
+            background-color: #6a0dad;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .customPassword {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 20px 0;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 20px 0;
+            background-image: linear-gradient(to right, #6a0dad, #9b4f96);
+            background-color: #6a0dad;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #777777;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>User Registered</h1>
+        </div>
+        <div class="content">
+            <p>Dear #Name#,</p>
+            <p>Please use the below Password to Login into VUSYS Time Pro Portal for the first time. Please do not share it with anyone.</p>
+            <div class="customPassword">#Password#</div>
+            <p> Click the button below to login into the portal:</p>
+            <a href="#URLLink#" class="button">Login</a>
+            <p>Thank You!</p>
+        </div>
+        <div class="footer">
+            <p>&copy; #CurrentYear# VUSYS.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,97 @@
+﻿@await Html.PartialAsync("Sections/_Variables")
+
+@{
+	TempData.Keep("appName");
+	Layout = "_CommonLayout";
+}
+
+@section PageStyles {
+	@RenderSection("PageStyles", required: false)
+}
+
+@section PageScripts {
+	@RenderSection("PageScripts", required: false)
+}
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<meta name="theme-color" content="#01294d" />
+<!-- Show Notification -->
+<link rel="manifest" href="/manifest.json">
+@* <script src="~/js/service-worker-register.js"></script> *@
+<div class="wrapper">
+	@await Html.PartialAsync("_SideNavbar")
+
+	<div class="content-wrapper">
+		<section class="content">
+			<div class="card">
+				<div class="card-body">
+					@RenderBody()
+				</div>
+			</div>
+		</section>
+	</div>
+	<aside class="control-sidebar control-sidebar-dark">
+		<!-- Control sidebar content goes here -->
+	</aside>
+	<!-- /.control-sidebar -->
+	<div class='scrolltop'>
+		<a id="back-to-top" class="btn btn-primary back-to-top VUSYSbg" role="button" aria-label="Scroll to top">
+			<i class="fas fa-chevron-up"></i>
+		</a>
+	</div>
+	<!-- Main Footer -->
+	<footer class="main-footer">
+		<partial name="_Footer" />
+	</footer>
+</div>
+<!-- ./wrapper -->
+
+
+<script type="text/javascript">
+	$(window).scroll(function () {
+		if ($(this).scrollTop() > 50) {
+			$('.scrolltop:hidden').stop(true, true).fadeIn();
+		} else {
+			$('.scrolltop').stop(true, true).fadeOut();
+		}
+	});
+	$(function () { $(".back-to-top").click(function () { $("html,body").animate({ scrollTop: 0 }, "1200"); return false }) })
+
+
+</script>
+<script type="text/javascript">
+	function fnOpenLogoutConfirmation(sender) {
+		// sessionStorage.clear();
+
+		// // Redirect to the Login action of the UserAccount controller
+		// window.location.href = '@Url.Action("Login", "Login")';
+
+			if ($(sender).attr("confirmed") == "true") {
+				location.href= '@Url.Action("Logout", "Login")';
+					return true;
+				}
+				bootbox.confirm({
+					title: 'Logout',
+					message: "Are You Sure You Want To Logout ?",
+					buttons: {
+						confirm: {
+							label: '<i class="fa fa-check"></i> Yes',
+							className: 'btn-success'
+						},
+						cancel: {
+							label: '<i class="fa fa-times"></i> No',
+							className: 'btn-danger'
+						}
+					},
+					callback: function (confirmed) {
+						if (confirmed) {
+							$(sender).attr("confirmed", confirmed);
+							sender.click();
+						}
+					}
+				});
+				return false;
+	}
+</script>
+
+@RenderSection("scripts", required: false)

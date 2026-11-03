@@ -1,0 +1,20 @@
+﻿@{
+	Layout = "_ErrorLayout";
+	ViewData["Title"] = "Error 500";
+}
+<form id="form1" runat="server">
+	<div class="Error500MsgStyle">
+		<img src="~/Admin/dist/img/Error500.png" class="img-circle img-responsive center-block">
+		<h2>Server Error Occurred. Please Try After Sometime. Meanwhile, you may</h2>
+		<div class="form-group">
+			<a href="@Url.Action("Home","Home")" style="margin-left: 10px; font-weight: bold; color: blue;">Return To HomePage</a>
+			<br />
+			<a style="margin-left: 10px; font-weight: bold; color: blue;">OR</a>
+			<br />
+			<a href="@Url.Action("Login", "Login")" style="margin-left: 10px; font-weight: bold; color: blue;">Click Here To Login</a>
+		</div>
+	</div>
+	<footer class="Mfooter">
+		<partial name="_Footer" />
+	</footer>
+</form>

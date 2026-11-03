@@ -1,0 +1,192 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Object Generation OTP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 24px auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+        }
+
+        .header {
+            background-image: linear-gradient(135deg, #1f3b73, #2b5876, #4e4376);
+            background-color: #1f3b73;
+            color: #ffffff;
+            padding: 24px 20px;
+            text-align: center;
+        }
+
+            .header h1 {
+                margin: 0;
+                font-size: 24px;
+                font-weight: bold;
+            }
+
+        .content {
+            padding: 24px 20px;
+            color: #333333;
+            line-height: 1.6;
+        }
+
+        .intro-text {
+            margin-bottom: 18px;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            margin-bottom: 20px;
+            background-color: #fafafa;
+            border: 1px solid #eeeeee;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+            .info-table td {
+                padding: 10px 12px;
+                border-bottom: 1px solid #eeeeee;
+                vertical-align: top;
+            }
+
+            .info-table tr:last-child td {
+                border-bottom: none;
+            }
+
+        .info-label {
+            font-weight: bold;
+            width: 170px;
+            color: #1f3b73;
+            background-color: #f7f9fc;
+        }
+
+        .otp-box {
+            text-align: center;
+            margin: 28px 0;
+        }
+
+        .otp-label {
+            font-size: 14px;
+            color: #666666;
+            margin-bottom: 10px;
+        }
+
+        .otp {
+            display: inline-block;
+            padding: 14px 28px;
+            font-size: 30px;
+            font-weight: bold;
+            letter-spacing: 6px;
+            color: #0d6efd;
+            background-color: #eef5ff;
+            border: 2px dashed #0d6efd;
+            border-radius: 8px;
+        }
+
+        .note-box {
+            margin-top: 20px;
+            padding: 14px 16px;
+            background-color: #fff8e6;
+            border-left: 4px solid #f0ad4e;
+            border-radius: 6px;
+            color: #6b5b00;
+            font-size: 14px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 14px 12px;
+            font-size: 12px;
+            color: #777777;
+            background-color: #fafafa;
+            border-top: 1px solid #eeeeee;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: #1f3b73;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="header">
+            <h1>OTP for Database Object Generation</h1>
+        </div>
+
+        <div class="content">
+
+            <p class="intro-text">Dear <strong>#Name#</strong>,</p>
+
+            <p>
+                An OTP has been generated for secure access to the
+                <span class="highlight">Database Object Generation</span> module.
+            </p>
+
+            <table class="info-table">
+                <tr>
+                    <td class="info-label">Application</td>
+                    <td>#ApplicationName#</td>
+                </tr>
+                <tr>
+                    <td class="info-label">Environment</td>
+                    <td>#EnvironmentName#</td>
+                </tr>
+                <tr>
+                    <td class="info-label">Login ID</td>
+                    <td>#LoginId#</td>
+                </tr>
+                <tr>
+                    <td class="info-label">Database</td>
+                    <td>#Database#</td>
+                </tr>
+            </table>
+
+            <p>
+                To continue, please use the following One-Time Password (OTP):
+            </p>
+
+            <div class="otp-box">
+                <div class="otp-label">Your OTP</div>
+                <div class="otp">#OTP#</div>
+            </div>
+
+            <p>
+                This OTP is valid for <strong>#ExpiryMinutes#</strong> minute(s).
+            </p>
+
+            <div class="note-box">
+                If you did not request this OTP, please ignore this email.
+                Do not share this OTP with anyone for security reasons.
+            </div>
+
+            <p style="margin-top: 24px;">Thank You!</p>
+            <p><strong>VUSYS App-Hub Team</strong></p>
+
+        </div>
+
+        <div class="footer">
+            <p>&copy; #CurrentYear# App-Hub.</p>
+        </div>
+
+    </div>
+
+</body>
+</html>

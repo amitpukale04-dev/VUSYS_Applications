@@ -1,0 +1,105 @@
+{
+  "id": 0,
+  "employeeCode": "VUT002",
+  "leaveTypeID": 1,
+  "fromDate": "2026-10-01",
+  "toDate": "2026-10-05",
+  "isHalfDay": false,
+  "halfDayType": "",
+  "reason": "As I need to Attend Family Function.",
+  "isDeleted": false,
+  "createdBy": 1,
+  "updatedBy": 0
+}
+
+{
+  "id": 0,
+  "employeeCode": "VUT002",
+  "leaveTypeID": 1,
+  "fromDate": "2026-10-01",
+  "toDate": "2026-10-01",
+  "isHalfDay": true,
+  "halfDayType": "",
+  "reason": "As I need to Attend Family Function.",
+  "isDeleted": false,
+  "createdBy": 1,
+  "updatedBy": 0
+}
+
+
+
+UPDATE VUSYS_EmployeeLeaveBalance SET PendingLeave = 0.00, UsedLeave = 0.00, AvailableBalance = 12.00 WHERE Id = 1
+
+
+select * from VUSYS_EmployeeLeaveBalance
+select * from VUSYS_LeaveApplication
+
+select * from VUSYS_LeaveApplicationHistory
+
+select * from VUSYS_HolidayMaster
+
+UPDATE VUSYS_EmployeeLeaveBalance SET PendingLeave = 0.00, UsedLeave = 0.00, AvailableBalance = 12.00 WHERE Id = 1
+
+TRUNCATE TABLE VUSYS_LeaveApplication
+
+TRUNCATE TABLE VUSYS_LeaveApplicationHistory
+
+
+
+Approve
+EXEC dbo.usp_VUSYS_LeaveApplication_ApproveRejectCancel
+DECLARE @XMLParams XML;
+
+SET @XMLParams = '
+<LeaveApplicationM>
+    <Id>25</Id>
+    <EmployeeCode>VUT002</EmployeeCode>
+    <ActionType>APPROVE</ActionType>
+    <ActionBy>1</ActionBy>
+    <Remarks>Leave Approved.</Remarks>
+</LeaveApplicationM>';
+
+EXEC dbo.usp_VUSYS_LeaveApplication_ApproveRejectCancel
+    @XMLParams = @XMLParams;
+	
+	{
+  "id": 1,
+  "employeeCode": "VUT002",
+  "actionType": "APPROVE",
+  "actionBy": 1,
+  "remarks": "Approved the Request"
+}
+	
+	
+Reject
+
+DECLARE @XMLParams XML;
+
+SET @XMLParams = '
+<LeaveApplicationM>
+    <Id>26</Id>
+    <EmployeeCode>VUT002</EmployeeCode>
+    <ActionType>REJECT</ActionType>
+    <ActionBy>1</ActionBy>
+    <Remarks>Leave Rejected Due To Project Requirements.</Remarks>
+</LeaveApplicationM>';
+
+EXEC dbo.usp_VUSYS_LeaveApplication_ApproveRejectCancel
+    @XMLParams = @XMLParams;
+	
+	
+CANCEL
+
+DECLARE @XMLParams XML;
+
+SET @XMLParams = '
+<LeaveApplicationM>
+    <Id>25</Id>
+    <EmployeeCode>VUT002</EmployeeCode>
+    <ActionType>CANCEL</ActionType>
+    <ActionBy>1</ActionBy>
+    <Remarks>Employee Cancelled The Approved Leave.</Remarks>
+</LeaveApplicationM>';
+
+EXEC dbo.usp_VUSYS_LeaveApplication_ApproveRejectCancel
+    @XMLParams = @XMLParams;

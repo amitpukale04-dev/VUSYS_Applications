@@ -1,0 +1,154 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+    ViewData["Title"] = "Approve/Reject Timesheet";
+    Layout = "_BlankLayout";
+}
+
+<form id="ApproveRejectForm" asp-action="ApproveReject" method="post">
+	<section class="content">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-md-12">
+					<div class="card card-primary">
+						<div class="card-header VUSYSbg">
+							<h3 class="card-title divcustombold">Timesheet Approval/Rejection</h3>
+						</div>
+						<div class="card-body" style="padding-left:10px;">
+							@if (Model.projectTimesheetApproveRejection.IsOnPageLoad == true && Model.projectTimesheetApproveRejection.ProjectTimeSheetApprovalResponseStatus == "Success" && Model.projectTimesheetApproveRejection.ProjectTimeSheetApprovalResponseMessage == "Pending for Approval.")
+							{
+								<input type="hidden" id="hdnProjectTimesheetID" asp-for="projectTimesheetApproveRejection.ProjectTimeSheetID" />
+								<input type="hidden" asp-for="projectTimesheetApproveRejection.Source" />
+								<input type="hidden" asp-for="projectTimesheetApproveRejection.UserToken" />
+								<div class="row form-group">
+									<div class="col-sm-6 col-md-4 left">
+										<a href="@Url.Action("DownloadTimesheetToExcel", "TimesheetApprovalRejection", new { ProjectTimeSheetID = Model.projectTimesheetApproveRejection.ProjectTimeSheetID, EmployeeCode = Model.projectTimesheetApproveRejection.EmployeeCode, TimesheetMonth = Model.projectTimesheetApproveRejection.TimesheetMonth, TimesheetYear = Model.projectTimesheetApproveRejection.TimesheetYear})" class="btn btn-link">
+											<i class="fa fa-download"></i> Download Timesheet
+										</a>
+									</div>
+								</div>
+								<hr />
+								<div class="row form-group">
+									<div class="col-sm-6 col-md-4 left">
+										<div class="col-sm-12 col-md-6 mandatory">
+											<label asp-for="projectTimesheetApproveRejection.EmployeeCode" class="control-label"></label>
+										</div>
+										<div class="col-sm-12 col-md-10">
+											<input asp-for="projectTimesheetApproveRejection.EmployeeCode" class="form-control" readonly />
+											<span asp-validation-for="projectTimesheetApproveRejection.EmployeeCode" class="text-danger"></span>
+										</div>
+									</div>
+									<div class="col-sm-6 col-md-4 left">
+										<div class="col-sm-12 col-md-6 mandatory">
+											<label asp-for="projectTimesheetApproveRejection.TimesheetMonth" class="control-label"></label>
+										</div>
+										<div class="col-sm-12 col-md-10">
+											<input asp-for="projectTimesheetApproveRejection.TimesheetMonth" class="form-control" readonly />
+											<span asp-validation-for="projectTimesheetApproveRejection.TimesheetMonth" class="text-danger"></span>
+										</div>
+									</div>
+									<div class="col-sm-6 col-md-4 left">
+										<div class="col-sm-12 col-md-6 mandatory">
+											<label asp-for="projectTimesheetApproveRejection.TimesheetYear" class="control-label"></label>
+										</div>
+										<div class="col-sm-12 col-md-10">
+											<input asp-for="projectTimesheetApproveRejection.TimesheetYear" class="form-control" readonly />
+											<span asp-validation-for="projectTimesheetApproveRejection.TimesheetYear" class="text-danger"></span>
+										</div>
+									</div>
+								</div>
+								<div class="row form-group">
+									<div class="col-sm-6 col-md-4 left">
+										<div class="col-sm-12 col-md-6 mandatory">
+											<label asp-for="projectTimesheetApproveRejection.ProjectTimeSheetApprovalStatusID" class="control-label"></label>
+										</div>
+										<div class="col-sm-12 col-md-10">
+											<select id="ddlProjectTimesheetApprovalStatus" asp-for="projectTimesheetApproveRejection.ProjectTimeSheetApprovalStatusID" class="form-control" asp-items="@(new SelectList(ViewBag.ProjectTimesheetApprovalStatusList,"Value","Text"))"></select>
+											<span asp-validation-for="projectTimesheetApproveRejection.ProjectTimeSheetApprovalStatusID" class="text-danger"></span>
+										</div>
+									</div>
+
+									<div class="col-sm-6 col-md-8 left">
+										<div class="col-sm-12 col-md-6 mandatory">
+											<label asp-for="projectTimesheetApproveRejection.Remarks" class="control-label"></label>
+										</div>
+										<div class="col-sm-12 col-md-11">
+											<textarea asp-for="projectTimesheetApproveRejection.Remarks" id="txtRemarks" class="form-control"></textarea>
+											<span asp-validation-for="projectTimesheetApproveRejection.Remarks" class="text-danger"></span>
+										</div>
+									</div>
+									<button type="button" id="btnViewTimesheet" class="btn btn-link" title="Click to view the timesheet" onclick="ViewTimeSheetDetails(this)">View Timesheet</button>
+								</div>
+
+								<div class="form-group">
+									<button type="button" id="btnApproveReject" class="btn btn-success btn-mgn VUSYSbg" data-buttontext='<i class="fas fa-save"></i> Save' onclick="confirmApproveRejectExternalPage(this)">
+										<i class="fas fa-save"></i> Save
+									</button>
+								</div>
+
+								@await Html.PartialAsync("AlertNotification/_AlertNotification")
+							}
+							else if (Model.projectTimesheetApproveRejection.IsOnPageLoad == true && Model.projectTimesheetApproveRejection.ProjectTimeSheetApprovalResponseStatus == "Success" && Model.projectTimesheetApproveRejection.ProjectTimeSheetApprovalResponseMessage != "Pending for Approval.")
+							{
+								@await Html.PartialAsync("AlertNotification/_AlertNotification")
+							}
+							else if (Model.projectTimesheetApproveRejection.IsOnPageLoad == false && Model.projectTimesheetApproveRejection.ProjectTimeSheetApprovalResponseStatus == "Success")
+							{
+								@await Html.PartialAsync("AlertNotification/_AlertNotification")
+							}
+							else
+							{
+								<p>@Model.projectTimesheetApproveRejection.ProjectTimeSheetApprovalResponseMessage</p>
+							}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		@await Html.PartialAsync("_ViewTimeSheetDetailsPopup")
+	</section>
+</form>
+<script>
+	function confirmApproveRejectExternalPage(element) {
+		const selectedText = $('#ddlProjectTimesheetApprovalStatus option:selected').text().trim();
+		const actionText = selectedText === "Approve" ? "Approve" : "Reject";
+		const confirmMessage = `Are You Sure You Want To ${actionText} This Timesheet?`;
+
+		const originalHtml = element.innerHTML;
+
+		$(element).prop('disabled', true);
+		$(element).html('<i class="fa fa-spinner fa-spin"></i> Sending...');
+
+		bootbox.confirm({
+			title: 'Timesheet Confirmation',
+			message: confirmMessage,
+			buttons: {
+				confirm: {
+					label: '<i class="fa fa-check"></i> Yes',
+					className: 'btn-success'
+				},
+				cancel: {
+					label: '<i class="fa fa-times"></i> No',
+					className: 'btn-danger'
+				}
+			},
+			callback: function (confirmed) {
+				if (confirmed) {
+					if ($("#ApproveRejectForm").valid()) {
+						$("#ApproveRejectForm").trigger("submit");
+					} else {
+						// Re-enable if validation fails
+						$(element).prop('disabled', false);
+						$(element).html(originalHtml);
+					}
+				} else {
+					$(element).prop('disabled', false);
+					$(element).html(originalHtml);
+				}
+			}
+		});
+
+		return false;
+	}
+</script>
+

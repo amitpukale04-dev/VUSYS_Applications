@@ -1,0 +1,32 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    @{
+        string title = ViewData["Title"] as string ?? "";
+        string appName = TempData.Peek("appName") as string ?? "";
+    }
+    <title>@title | @appName</title>
+    <!-- Favicon -->
+    <link rel="shortcut icon" type="image/x-icon" href="~/Admin/dist/img/AppLogo.png" />
+
+    <!-- Core Styles -->
+    @await Html.PartialAsync("Sections/_ErrorStyles")
+    @await Html.PartialAsync("Sections/_ErrorScripts")
+</head>
+
+<body>
+    
+    <!-- Layout Content -->
+    @RenderBody()
+    <!--/ Layout Content -->
+
+    <!-- Core Scripts -->
+    @section PageStyles {
+        @RenderSection("PageStyles", required: false)
+    }
+    @RenderSection("PageScripts", required: false)
+</body>
+
+</html>

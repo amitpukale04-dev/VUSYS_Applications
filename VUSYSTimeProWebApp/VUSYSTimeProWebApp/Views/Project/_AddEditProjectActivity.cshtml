@@ -1,0 +1,41 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	TempData["ActionName"] = "GetAllProjectActivityList";
+	TempData["ControllerName"] = "Project";
+}
+
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="ProjectActivity.ActivityName" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="ProjectActivity.ActivityName" class="form-control" />
+			<span asp-validation-for="ProjectActivity.ActivityName" class="text-danger"></span>
+		</div>
+	</div>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<div class="col-sm-6 col-md-4 left">
+			<div class="col-sm-12 col-md-4">
+				<div class="custom-control custom-switch mandatory mt-4">
+					<input type="checkbox" class="custom-control-input" asp-for="ProjectActivity.IsDeleted">
+					<label asp-for="ProjectActivity.IsDeleted" class="custom-control-label"></label>
+					<span asp-validation-for="ProjectActivity.IsDeleted" class="text-danger"></span>
+				</div>
+			</div>
+		</div>
+	}
+</div>
+
+<div class="form-group">
+	<button type="submit" id="btnAddEditProjectActivity" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-save"></i> Save</button>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<button type="button" id="btnAddEditProjectActivityMasterClear" class="btn btn-secondary btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-reset"></i> Clear</button>
+	}
+	@await Html.PartialAsync("CommonControls/_CancelButton")
+</div>
+@await Html.PartialAsync("CommonControls/_BackToList")
+@await Html.PartialAsync("AlertNotification/_AlertNotification")

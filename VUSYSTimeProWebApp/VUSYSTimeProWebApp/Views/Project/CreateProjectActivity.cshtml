@@ -1,0 +1,24 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	ViewData["Title"] = "Add Project Activity";
+	Layout = "_CommonNavLayout";
+}
+<form id="CreateProjectActivityForm" asp-action="CreateProjectActivity" method="post">
+	<section class="content">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-md-12">
+					<div class="card card-primary">
+						<div class="card-header VUSYSbg">
+							<h3 class="card-title divcustombold">Add Project Activity</h3>
+						</div>
+						<div class="card-body" style="padding-left:10px;">
+							@await Html.PartialAsync("_AddEditProjectActivity")
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+</form>

@@ -1,0 +1,19 @@
+Database Details
+
+Development:
+
+DB Name: VUSYSTimeProDev
+Username: TimeProDev
+Password: VUSYS@123456
+Frontend URL: https://dev-timepro.vusys.in:8089
+Backend API URL: https://timepro-dev-webapi.vusys.in:9092/swagger/index.html
+
+--------------------------------------------------------------------------------------------- 
+Production:
+
+DB Name: VUSYSTimeProLive
+Username: sa
+Password: vusys_sa_adm@123456$
+Frontend URL: https://timepro.vusys.in:9090
+Backend API URL: https://timepro-webapi.vusys.in:9091/swagger/index.html
+---------------------------------------------------------------------------------------------

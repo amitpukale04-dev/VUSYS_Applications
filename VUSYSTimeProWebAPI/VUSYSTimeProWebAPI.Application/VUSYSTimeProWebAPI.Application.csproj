@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn> <!-- Optional: suppress missing doc warnings -->
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>e9996e52-2cc0-4cf8-bc78-00ae0f84c6e6</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="16.2.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="10.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VUSYSTimeProWebAPI.Domain\VUSYSTimeProWebAPI.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Abstractions\Modules\Employee\" />
+    <Folder Include="Abstractions\Modules\Timesheet\" />
+    <Folder Include="Abstractions\Modules\Project\" />
+    <Folder Include="Abstractions\Modules\OTPService\" />
+    <Folder Include="Abstractions\Modules\Reports\" />
+    <Folder Include="Abstractions\Services\" />
+    <Folder Include="Common\Options\" />
+    <Folder Include="Models\Authentication\" />
+    <Folder Include="Models\Configuration\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="CommonLibCore10">
+      <HintPath>..\TOOLS\CommonLibCore10.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

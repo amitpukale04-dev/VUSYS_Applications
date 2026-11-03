@@ -1,0 +1,250 @@
+﻿* {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+input::-ms-clear, input::-ms-reveal {
+    display: none;
+}
+
+.scrolltop {
+    display: none;
+    width: 100%;
+    margin: 0 auto;
+    position: fixed;
+    bottom: 20px;
+    right: 10px;
+}
+
+.scroll {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    background: #406bae;
+    padding: 20px;
+    text-align: center;
+    margin: 0 0 0 0;
+    cursor: pointer;
+    transition: 0.5s;
+    -moz-transition: 0.5s;
+    -webkit-transition: 0.5s;
+    -o-transition: 0.5s;
+}
+
+    .scroll:hover {
+        background: #406bae;
+        transition: 0.5s;
+        -moz-transition: 0.5s;
+        -webkit-transition: 0.5s;
+        -o-transition: 0.5s;
+    }
+
+        .scroll:hover .fa {
+            padding-top: -10px;
+        }
+
+    .scroll .fa {
+        font-size: 30px;
+        margin-top: -5px;
+        margin-left: 1px;
+        transition: 0.5s;
+        -moz-transition: 0.5s;
+        -webkit-transition: 0.5s;
+        -o-transition: 0.5s;
+    }
+
+.loginAppName {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-family: inherit;
+    font-weight: 500;
+    line-height: 1.2;
+    color: inherit;
+    display: block;
+    font-size: 1.5rem;
+}
+
+.divcustombold {
+    margin-top: 0;
+    font-family: inherit;
+    font-weight: 500;
+    line-height: 1.2;
+    color: inherit;
+    display: block;
+}
+
+.AppName {
+    font-size: 1.4rem;
+    color: darkslateblue;
+}
+
+.VUSYSbg {
+    /*background-image: linear-gradient(to right, #083389, #00B7AC);
+    background-color: #083389;*/
+    background-image: linear-gradient(to right, #6a0dad, #9b4f96);
+    background-color: #6a0dad;
+}
+
+.VUSYSbg1 {
+    /*background-image: linear-gradient(to right, #4e76c3, #3cc7bf);
+    background-color: #4f77c2;*/
+    background-image: linear-gradient(to right, #8a4ff9, #c63cf7);
+    background-color: #8a4ff9;
+}
+
+.VUSYSTableHeader {
+    color: #051452;
+    /*background-color:lightskyblue;*/
+    background-image: linear-gradient(to right, #8a4ff9, #c63cf7);
+    background-color: #8a4ff9;
+}
+
+/*Start DataTable Pagination Background Color*/
+.page-item.active .page-link {
+    z-index: 3;
+    color: #fff;
+    background-image: linear-gradient(to right, #6a0dad, #9b4f96);
+    background-color: #6a0dad;
+}
+
+/*End DataTable Pagination Background Color*/
+
+
+/*Start Toastr*/
+
+#toast-container > div {
+    opacity: 1.1;
+}
+
+#toast-container .toast-success {
+    background-color: #218838;
+}
+
+#toast-container .toast-warning {
+    background-color: #ffc107;
+    border-color: #edb100;
+    color: #1f2d3d;
+}
+
+.toast-center-center {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+}
+
+#toast-container.toast-center-center > div {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+}
+
+.LabelControl {
+    color: darkblue;
+    font-weight: normal;
+}
+
+#courseTable .custom-table-row {
+    height: 30px; /* Adjust the height as needed */
+}
+
+/*End Toastr*/
+
+
+/*Error Pages Footer*/
+
+.Error404MsgStyle {
+    text-align: center;
+    left: 13%;
+    position: absolute;
+}
+
+.Error500MsgStyle {
+    text-align: center;
+    left: 13%;
+    position: absolute;
+}
+
+.CommonErrorContainer {
+    display: flex;
+    justify-content: center; /* Horizontal center */
+    align-items: center; /* Vertical center */
+    height: 75vh; /* Full height of the viewport */
+}
+
+.CommonErrorDiv {
+    width: 300px;
+    height: 350px;
+    /*height: 200px;
+    background-color: lightblue;*/
+    text-align: center;
+}
+
+.UnExpectedErrorMsgStyle {
+    text-align: center;
+    left: 12%;
+    position: absolute;
+}
+
+.Mfooter {
+    bottom: 0;
+    margin: 0 auto !important;
+    left: 0px;
+    text-align: center !important;
+    width: 100% !important;
+    position: fixed;
+    background-color: #fff;
+    border-top: 1px solid #dee2e6;
+    color: #869099;
+    padding: 1rem;
+}
+
+/*Error Pages Footer*/
+
+
+/* Make brand text smaller on mobile */
+.app-name-responsive {
+    font-size: 1.4rem;
+    font-weight: bold;
+    background: linear-gradient(to right, #6a0dad, #9b4f96);
+    background-clip: text;
+    -webkit-background-clip: text; /* Required for Chrome, Safari, Edge */
+    -webkit-text-fill-color: transparent; /* Required to make the gradient visible */
+    display: inline-block;
+}
+
+@media (max-width: 576px) {
+    .app-name-responsive {
+        font-size: 0.9rem;
+    }
+
+    .navbar .form-inline {
+        width: 100%;
+        padding: 0 0.5rem;
+    }
+
+    .navbar .input-group {
+        width: 100%;
+    }
+
+    .navbar .form-control {
+        font-size: 14px;
+        background-color: #fff;
+    }
+
+    .navbar .input-group-text {
+        padding: 0.25rem 0.5rem;
+    }
+
+    .navbar .img-circle {
+        width: 28px;
+        height: 28px;
+    }
+}
+
+@supports not (-webkit-background-clip: text) {
+    .app-name-responsive {
+        color: #6a0dad; /* fallback solid color */
+    }
+}
+

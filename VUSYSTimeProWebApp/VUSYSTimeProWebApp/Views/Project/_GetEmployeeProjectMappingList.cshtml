@@ -1,0 +1,74 @@
+﻿<div class="container">
+    <div style="width:100%; margin:0 auto;">
+        <table id="tblEmployeeProjectMappingList" class="table table-striped table-bordered dt-responsive nowrap" width="100%" cellspacing="0">
+            <thead class="VUSYSTableHeader">
+                <tr>
+                    <th></th>
+                    <th>EmployeeProjectMappingID</th>
+                    <th>SL No.</th>
+                    <th>Project Code</th>
+                    <th>Project Name</th>
+                    <th>Employee Code</th>
+                    <th>Employee Name</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        BindEmployeeProjectMappingListGrid();
+    });
+
+    function BindEmployeeProjectMappingListGrid() {
+        var url = '@Url.Action("GetEmployeeProjectMappingList", "Project")';
+        var rtable = $("#tblEmployeeProjectMappingList").DataTable({
+            "processing": true, // for show progress bar
+            "serverSide": true, // for process server side
+            "filter": true, // this is for disable filter (search box)
+            "orderMulti": false, // for disable multiple column at once
+            "scrollX": true,
+            "scrollCollapse": true,
+            "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, 'All']],
+            "paging": true,
+            "ajax": {
+                "url": url,
+                "type": "POST",
+                "datatype": "json"
+            },
+            "columnDefs": [{
+                "targets": [1],
+                "visible": false,
+                "searchable": false
+            }],
+            "language": {
+                "emptyTable": "No Record Found.",
+                "processing":
+                    '<i class="fa fa-spinner fa-spin fa-3x fa-fw" style="color:#2a2b2b;"></i><span class="sr-only">Loading...</span> '
+            },
+            "columns": [
+                {
+                    "data": "encryptedId",
+                    "render": function (data) {
+                        return `
+                                    <div class="text-center" style="width:10px;">
+                                            <a href="@Url.Action("EditEmployeeProjectMapping", "Project")/?id=${data}" class="" data-toggle="tooltip" data-placement="top" title="Edit Project Details" style="cursor:pointer"><i class="fas fa-pencil-alt"></i></a>
+                                    </div>
+                                   `;
+                    }, "width": "3%"
+                },
+                { "data": "employeeProjectMappingID", "name": "employeeProjectMappingID", "width": "10%" },
+                { "data": "slNo", "name": "slNo", "width": "0%" },
+                { "data": "projectCode", "name": "projectCode", "width": "10%" },
+                { "data": "projectName", "name": "projectName", "width": "10%" },
+                { "data": "employeeCode", "name": "employeeCode", "width": "10%" },
+                { "data": "employeeName", "name": "employeeName", "width": "10%" },
+                { "data": "activeStatus", "name": "activeStatus", "width": "10%" }
+            ]
+
+        });
+    }
+</script>
+

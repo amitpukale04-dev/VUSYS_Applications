@@ -1,0 +1,155 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	TempData["ActionName"] = "GetAllUserList";
+	TempData["ControllerName"] = "Users";
+}
+
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="Users.EmployeeCode" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<select id="ddlemployee" asp-for="Users.EmployeeCode" class="form-control" asp-items="@(new SelectList(ViewBag.employee,"Value","Text"))" onchange="fnGetEmployeeDetails();"></select>
+			<span asp-validation-for="Users.EmployeeCode" class="text-danger"></span>
+		</div>
+	</div>
+
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="Users.UserName" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="Users.UserName" class="form-control">
+			<span asp-validation-for="Users.UserName" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="Users.FullName" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="Users.FullName" class="form-control" />
+			<span asp-validation-for="Users.FullName" class="text-danger"></span>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="Users.MobileNo" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="Users.MobileNo" class="form-control" onpaste="javascript:return false;" ondrop="javascript:return false;" onkeypress="return IsNumeric(event);" />
+			<span asp-validation-for="Users.MobileNo" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="Users.UserEmailID" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="Users.UserEmailID" class="form-control" />
+			<span asp-validation-for="Users.UserEmailID" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="Users.RoleID" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<select id="ddlrole" asp-for="Users.RoleID" class="form-control" asp-items="@(new SelectList(ViewBag.role,"Value","Text"))"></select>
+			<span asp-validation-for="Users.RoleID" class="text-danger"></span>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6">
+			<label asp-for="Users.ProfileUserImage" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="Users.ProfileUserImage" class="form-control" />
+			<span asp-validation-for="Users.ProfileUserImage" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-10">
+			<div class="custom-control custom-switch mt-4">
+				<input type="checkbox" class="custom-control-input" asp-for="Users.IsEnableTwoFactorAuthentication">
+				<label asp-for="Users.IsEnableTwoFactorAuthentication" class="custom-control-label"></label>
+				<span asp-validation-for="Users.IsEnableTwoFactorAuthentication" class="text-danger"></span>
+			</div>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-10">
+			<div class="custom-control custom-switch mt-4">
+				<input type="checkbox" class="custom-control-input" asp-for="Users.IsApprover">
+				<label asp-for="Users.IsApprover" class="custom-control-label"></label>
+			</div>
+			<span asp-validation-for="Users.IsApprover" class="text-danger"></span>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<div class="col-sm-6 col-md-4 left">
+			<div class="col-sm-12 col-md-4">
+				<div class="custom-control custom-switch mandatory mt-4">
+					<input type="checkbox" class="custom-control-input" asp-for="Users.IsDeleted">
+					<label asp-for="Users.IsDeleted" class="custom-control-label"></label>
+					<span asp-validation-for="Users.IsDeleted" class="text-danger"></span>
+				</div>
+			</div>
+		</div>
+	}
+</div>
+<div class="form-group">
+	<button type="button" id="btnAddEditUser" class="btn btn-success btn-mgn VUSYSbg" onclick="fnSaveUpdate(this)"><i class="fas fa-save"></i> Save</button>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<button type="button" id="btnAddEditUserMasterClear" class="btn btn-secondary btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-reset"></i> Clear</button>
+	}
+	@await Html.PartialAsync("CommonControls/_CancelButton")
+</div>
+@await Html.PartialAsync("CommonControls/_BackToList")
+@await Html.PartialAsync("AlertNotification/_AlertNotification")
+<script type="text/javascript">
+	$(function () {
+		$("#ddlemployee").select2();
+		$("#ddlrole").select2();
+	});
+
+	function fnGetEmployeeDetails()
+	{
+		var EmployeeCode = $('#ddlemployee').find(":selected").attr('value');
+		if(EmployeeCode != null && EmployeeCode != '')
+		{
+			var result = {};
+			var url = '@Url.Action("GetEmployeeDetails", "Users")';
+			$.ajax({
+				type: "POST",
+				url: url,
+				data: "EmployeeCode=" + EmployeeCode,
+				success: function (data) {
+					result = data;
+					if (result.length > 0) 
+					{
+						$('#Users_FullName').val(result[0].fullName);
+						$('#Users_UserEmailID').val(result[0].userEmailID);
+						$('#Users_MobileNo').val(result[0].mobileNo);
+					}
+					else
+					{
+						$('#Users_FullName').val("");
+						$('#Users_UserEmailID').val("");
+						$('#Users_MobileNo').val("");
+					}
+				}
+			});
+		}
+	}
+</script>

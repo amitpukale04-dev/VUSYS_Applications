@@ -1,0 +1,63 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	TempData["ActionName"] = "GetAllStateList";
+	TempData["ControllerName"] = "State";
+}
+
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="StateMaster.CountryID" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<select id="ddlCountry" asp-for="StateMaster.CountryID" class="form-control" asp-items="@(new SelectList(ViewBag.CountryList,"Value","Text"))"></select>
+			<span asp-validation-for="StateMaster.CountryID" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="StateMaster.StateCode" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="StateMaster.StateCode" class="form-control" />
+			<span asp-validation-for="StateMaster.StateCode" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="StateMaster.StateName" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="StateMaster.StateName" class="form-control" />
+			<span asp-validation-for="StateMaster.StateName" class="text-danger"></span>
+		</div>
+	</div>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<div class="col-sm-6 col-md-4 left">
+			<div class="col-sm-12 col-md-4">
+				<div class="custom-control custom-switch mandatory mt-4">
+					<input type="checkbox" class="custom-control-input" asp-for="StateMaster.IsDeleted">
+					<label asp-for="StateMaster.IsDeleted" class="custom-control-label"></label>
+					<span asp-validation-for="StateMaster.IsDeleted" class="text-danger"></span>
+				</div>
+			</div>
+		</div>
+	}
+</div>
+<div class="form-group">
+	<button type="submit" id="btnAddEditState" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-save"></i> Save</button>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<button type="button" id="btnAddEditStateMasterClear" class="btn btn-secondary btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-reset"></i> Clear</button>
+	}
+	@await Html.PartialAsync("CommonControls/_CancelButton")
+</div>
+@await Html.PartialAsync("CommonControls/_BackToList")
+@await Html.PartialAsync("AlertNotification/_AlertNotification")
+<script type="text/javascript">
+	$(function () {
+		$("#ddlCountry").select2();
+	});
+</script>

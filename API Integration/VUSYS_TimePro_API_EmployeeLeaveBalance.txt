@@ -1,0 +1,453 @@
+now we will integrate Employee Leave Balance with API Integration under Leave Management Menu. Shall share i my existing latest complete project code and API Details?
+
+Refer Leave Type Master Screen (LeaveTypeFormPage.jsx, LeaveTypeMaster.jsx and leaveTypeService.js) and also code Pattern, Indentation, code comments.
+Also Refer Attached Screenshots.
+
+I have attached my existing latest completed project code. Modify and Provide me full updated project code.
+
+In Employee Leave Balance (Create/Edit/View) Below controls
+
+--First Row (3 Controls)
+
+1. Employee - Dropdown (Mandatory Field)
+2. Leave Type - Dropdown (Mandatory Field)
+3. Year - Dropdown (Mandatory Field)
+--Second Row (2 Controls)
+4. Opening Balance - Textbox (Number and Decimal) (Mandatory Field)
+5. Allocated Leave - Textbox (Number and Decimal) (Mandatory Field)
+6. Used Leave - Textbox (Number and Decimal) (Mandatory Field)
+--Third Row (3 Controls)
+7. Pending Leave - Textbox (Number and Decimal) (Mandatory Field)
+8. Available Balance - Textbox (Number and Decimal) (Mandatory Field)
+9. Obsolete - Toggle Switch (Show only Edit Mode)
+
+In Employee Leave Balance List Below Columns
+
+Add tp-form-page-heading-actions it should have search leave balance Icon, initialize leave balance Icon and cancel icon (See Attached 4th Screenshot)
+
+--First Row
+1. Year - Dropdown (By Default it should be selected as current year)
+
+Use Sortable Table like Columns should be
+
+1. Actions (Same Like Leave Type Master)
+2. Employee Code
+3. Employee Name
+4. Leave Type
+5. Allocated Leave
+6. Pending Leave
+7. Available Balance
+8. Leave Year
+9. Status (Active/Inactive)
+
+On the Page Load it should call the API /api/LeaveManagement/GetEmployeeLeaveBalanceList
+1. When we click on search leave balance Icon it should call the API /api/LeaveManagement/GetEmployeeLeaveBalanceList
+2. When we click on initialize leave balance Icon it should open the Popup and in that Popup It should have the Controls like
+   1. Year Dropdown (By Default it should be selected as current year)
+   2. Initialize Button (When We click on this Button it should call the API /api/LeaveManagement/SaveEmployeeLeaveBalanceInitialize)
+   3. Cancel Button
+   
+For Popup you can refer 5th screenshot.
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Dropdown API
+
+--Leave Type
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "LeaveType",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ValueText": 2,
+        "DisplayText": "COMPOFF"
+      },
+      {
+        "ValueText": 1,
+        "DisplayText": "Sick Leave/Casual Leave"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+--Employee
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Employee",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ValueText": "VUT001",
+        "DisplayText": "Amit P Pukale"
+      },
+      {
+        "ValueText": "VUT002",
+        "DisplayText": "Pooja"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+--Year
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Year",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "2026",
+        "ValueText": "2026"
+      },
+      {
+        "DisplayText": "2025",
+        "ValueText": "2025"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+/api/LeaveManagement/SaveAndUpdateEmployeeLeaveBalanceDetails
+
+Request Body
+
+{
+  "id": 0,
+  "employeeCode": "VUT003",
+  "leaveTypeID": 1,
+  "leaveYear": 2026,
+  "openingBalance": 0,
+  "allocatedLeave": 12,
+  "usedLeave": 0,
+  "pendingLeave": 0,
+  "availableBalance": 12,
+  "isDeleted": false,
+  "createdBy": 1,
+  "updatedBy": 0
+}
+
+
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_LEAVE_BALANCE_DETAILS_RESPONSE": [
+      {
+        "Id": 1,
+        "Message": "Employee Leave Balance Added Successfully."
+      }
+    ]
+  }
+}
+
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "EMPLOYEE_LEAVE_BALANCE_DETAILS_RESPONSE": [
+      {
+        "Id": 1,
+        "Message": "The Employee Leave Balance Details Already Exists."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "LeaveYear",
+        "Message": "Leave Year Should Be Greater Than 0."
+      },
+      {
+        "Key": "LeaveTypeID",
+        "Message": "Leave Type Id Should Be Greater Than 0."
+      },
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------
+/api/LeaveManagement/GetEmployeeLeaveBalanceDetails
+
+
+Request Body
+
+{
+  "id": 1,
+  "employeeCode": "",
+  "leaveYear": 0
+}
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_LEAVE_BALANCE_DETAILS_RESPONSE": [
+      {
+        "SLNo": 1,
+        "Id": 1,
+        "EmployeeCode": "VUT003",
+        "EmployeeName": "Demo",
+        "LeaveTypeID": 1,
+        "LeaveType": "Sick Leave/Casual Leave",
+        "LeaveTypeCode": "SL/CL",
+        "LeaveYear": 2026,
+        "OpeningBalance": 0,
+        "AllocatedLeave": 12,
+        "UsedLeave": 0,
+        "PendingLeave": 0,
+        "AvailableBalance": 12,
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      }
+    ]
+  }
+}
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "EMPLOYEE_LEAVE_BALANCE_DETAILS_RESPONSE": [
+      {
+        "Message": "Employee Leave Balance Details Not Found"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+/api/LeaveManagement/GetEmployeeLeaveBalanceList
+
+{
+  "id": 0,
+  "employeeCode": "",
+  "leaveYear": 2026
+}
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_LEAVE_BALANCE_LIST_RESPONSE": [
+      {
+        "SLNo": 1,
+        "Id": 2,
+        "EmployeeCode": "VUT003",
+        "EmployeeName": "Demo",
+        "LeaveTypeID": 2,
+        "LeaveType": "COMPOFF",
+        "LeaveTypeCode": "CO",
+        "LeaveYear": 2026,
+        "OpeningBalance": 0,
+        "AllocatedLeave": 0,
+        "UsedLeave": 0,
+        "PendingLeave": 0,
+        "AvailableBalance": 0,
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      },
+      {
+        "SLNo": 2,
+        "Id": 1,
+        "EmployeeCode": "VUT003",
+        "EmployeeName": "Demo",
+        "LeaveTypeID": 1,
+        "LeaveType": "Sick Leave/Casual Leave",
+        "LeaveTypeCode": "SL/CL",
+        "LeaveYear": 2026,
+        "OpeningBalance": 0,
+        "AllocatedLeave": 12,
+        "UsedLeave": 0,
+        "PendingLeave": 0,
+        "AvailableBalance": 12,
+        "IsDeleted": false,
+        "ActiveStatus": "Active"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "EMPLOYEE_LEAVE_BALANCE_LIST_RESPONSE": [
+      {
+        "Message": "Employee Leave Balance List Not Found"
+      }
+    ]
+  }
+}
+
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+/api/LeaveManagement/SaveEmployeeLeaveBalanceInitialize
+
+{
+  "leaveYear": 2026,
+  "createdBy": 1
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_LEAVE_BALANCE_INITIALIZE_RESPONSE": [
+      {
+        "Id": 2,
+        "Message": "2 Employee Leave Balance Record(s) Added Successfully."
+      }
+    ]
+  }
+}
+
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "LeaveYear",
+        "Message": "Leave Year Should Be Greater Than 0."
+      }
+    ]
+  }
+}
+
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "EMPLOYEE_LEAVE_BALANCE_INITIALIZE_RESPONSE": [
+      {
+        "Id": 0,
+        "Message": "Employee Leave Balance Details Already Exist For Leave Year 2026."
+      }
+    ]
+  }
+}

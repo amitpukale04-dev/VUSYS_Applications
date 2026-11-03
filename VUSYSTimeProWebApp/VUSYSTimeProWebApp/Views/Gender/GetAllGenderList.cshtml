@@ -1,0 +1,26 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel
+
+@{
+	ViewData["Title"] = "Gender List";
+	Layout = "_CommonNavLayout";
+}
+
+<p class="text-right h-50 text-bold text-danger">
+	<a asp-action="CreateGender">Add Gender</a>
+</p>
+<section class="content">
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<div class="card card-primary">
+					<div class="card-header VUSYSbg">
+						<h3 class="card-title divcustombold">Gender List</h3>
+					</div>
+					<div class="card-body" style="padding-left:10px;">
+						@await Html.PartialAsync("_GetGenderList")
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>

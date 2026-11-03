@@ -1,0 +1,11 @@
+﻿@using VUSYSTimeProWebApp.DACHelper
+@{
+	string EnvironmentVersionNo = CommonHelper.GetEnvironmentAndVersionNo();
+}
+
+@if (!string.IsNullOrEmpty(EnvironmentVersionNo))
+{
+	<div class="navbar-brand mx-auto d-block text-center font-weight-bold app-name-responsive">
+		<h6 class="text-bold">@EnvironmentVersionNo</h6>
+	</div>
+}

@@ -1,0 +1,10 @@
+{
+	"ConnectionStrings": [
+		{
+			"Environment": "DevOrProd",
+			"Connections": {
+				"VUSYSTimeProDB": "Data Source=WIN-J677118KRF9; Initial Catalog=VUSYSTimeProDev; Integrated Security=true; User ID=TimeProDev; password=VUSYS@123456; Trusted_Connection=false; TrustServerCertificate=true; Pooling=true; Connect Timeout=60; Max Pool Size=60;"
+			}
+		}
+	]
+}

@@ -1,0 +1,64 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	ViewData["Title"] = "Timesheet List";
+	Layout = "_CommonNavLayout";
+}
+
+<p class="text-right h-50 text-bold text-danger">
+	<a asp-action="CreateTimesheet">Add Timesheet</a>
+</p>
+<form id="GetAllTimesheetListForm" asp-action="GetAllTimesheetList" method="post">
+	<section class="content">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-md-12">
+					<div class="card card-primary">
+						<div class="card-header VUSYSbg">
+							<h3 class="card-title divcustombold">Timesheet List</h3>
+						</div>
+						<div class="card-body" style="padding-left:10px;">
+							<div class="row form-group">
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6 mandatory">
+										<label asp-for="projectTimesheetFilter.FromTaskDate" class="control-label"></label>
+									</div>
+									<div class="col-sm-12 col-md-10">
+										<input asp-for="projectTimesheetFilter.FromTaskDate" class="form-control" />
+										<span asp-validation-for="projectTimesheetFilter.FromTaskDate" class="text-danger"></span>
+									</div>
+								</div>
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6 mandatory">
+										<label asp-for="projectTimesheetFilter.ToTaskDate" class="control-label"></label>
+									</div>
+									<div class="col-sm-12 col-md-10">
+										<input asp-for="projectTimesheetFilter.ToTaskDate" class="form-control" />
+										<span asp-validation-for="projectTimesheetFilter.ToTaskDate" class="text-danger"></span>
+									</div>
+								</div>
+								<div class="col-sm-6 col-md-4 left">
+									<div class="col-sm-12 col-md-6">
+									</div>
+									<div class="col-sm-12 mt-4 col-md-10">
+										<button type="submit" id="btnSearchTimesheetDetails" name="action" value="ByGetDetails" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-list"></i> Search</button>
+										<button type="button" id="btnSearchTimesheetDetailsClear" class="btn btn-success btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-sync"></i> Clear</button>
+									</div>
+								</div>
+							</div>
+							@{
+								if (ViewBag.DisplayGrid != null && ViewBag.DisplayGrid == true)
+								{
+									@await Html.PartialAsync("_GetTimesheetList")
+								}
+							}
+							@await Html.PartialAsync("AlertNotification/_AlertNotification")
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+ </form>
+
+

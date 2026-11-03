@@ -1,0 +1,40 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	TempData["ActionName"] = "GetAllGenderList";
+	TempData["ControllerName"] = "Gender";
+}
+
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="GenderMaster.Gender" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="GenderMaster.Gender" class="form-control" />
+			<span asp-validation-for="GenderMaster.Gender" class="text-danger"></span>
+		</div>
+	</div>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<div class="col-sm-6 col-md-4 left">
+			<div class="col-sm-12 col-md-4">
+				<div class="custom-control custom-switch mandatory mt-4">
+					<input type="checkbox" class="custom-control-input" asp-for="GenderMaster.IsDeleted">
+					<label asp-for="GenderMaster.IsDeleted" class="custom-control-label"></label>
+					<span asp-validation-for="GenderMaster.IsDeleted" class="text-danger"></span>
+				</div>
+			</div>
+		</div>
+	}
+</div>
+<div class="form-group">
+	<button type="submit" id="btnAddEditGender" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-save"></i> Save</button>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<button type="button" id="btnAddEditGenderMasterClear" class="btn btn-secondary btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-reset"></i> Clear</button>
+	}
+	@await Html.PartialAsync("CommonControls/_CancelButton")
+</div>
+@await Html.PartialAsync("CommonControls/_BackToList")
+@await Html.PartialAsync("AlertNotification/_AlertNotification")

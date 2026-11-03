@@ -1,0 +1,182 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	TempData["ActionName"] = "GetAllEmployeeList";
+	TempData["ControllerName"] = "Employee";
+}
+
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmployeeMaster.FullName" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="EmployeeMaster.FullName" class="form-control" />
+			<span asp-validation-for="EmployeeMaster.FullName" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmployeeMaster.GenderID" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<select id="ddlGender" asp-for="EmployeeMaster.GenderID" class="form-control" asp-items="@(new SelectList(ViewBag.GenderList,"Value","Text"))"></select>
+			<span asp-validation-for="EmployeeMaster.GenderID" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmployeeMaster.DateofBirth" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="EmployeeMaster.DateofBirth" class="form-control" />
+			<span asp-validation-for="EmployeeMaster.DateofBirth" class="text-danger"></span>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmployeeMaster.MobileNo" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="EmployeeMaster.MobileNo" class="form-control" onpaste="javascript:return false;" ondrop="javascript:return false;" onkeypress="return IsNumeric(event);" />
+			<span asp-validation-for="EmployeeMaster.MobileNo" class="text-danger"></span>
+		</div>
+	</div>
+
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmployeeMaster.EmailID" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="EmployeeMaster.EmailID" class="form-control" />
+			<span asp-validation-for="EmployeeMaster.EmailID" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmployeeMaster.CountryID" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<select id="ddlCountry" asp-for="EmployeeMaster.CountryID" class="form-control" asp-items="@(new SelectList(ViewBag.CountryList,"Value","Text"))"></select>
+			<span asp-validation-for="EmployeeMaster.CountryID" class="text-danger"></span>
+		</div>
+	</div>
+	
+</div>
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmployeeMaster.StateID" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<select id="ddlState" asp-for="EmployeeMaster.StateID" class="form-control" asp-items="@(new SelectList(ViewBag.StateList,"Value","Text"))"></select>
+			<span asp-validation-for="EmployeeMaster.StateID" class="text-danger"></span>
+		</div>
+	</div>
+
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmployeeMaster.CityName" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="EmployeeMaster.CityName" class="form-control" />
+			<span asp-validation-for="EmployeeMaster.CityName" class="text-danger"></span>
+		</div>
+	</div>
+
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmployeeMaster.PinCode" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="EmployeeMaster.PinCode" class="form-control" />
+			<span asp-validation-for="EmployeeMaster.PinCode" class="text-danger"></span>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-6 col-md-8 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmployeeMaster.Skills" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-11">
+			<textarea asp-for="EmployeeMaster.Skills" id="txtSkills" class="form-control"></textarea>
+			<span asp-validation-for="EmployeeMaster.Skills" class="text-danger"></span>
+		</div>
+	</div>
+
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmployeeMaster.HireDate" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="EmployeeMaster.HireDate" class="form-control"/>
+			<span asp-validation-for="EmployeeMaster.HireDate" class="text-danger"></span>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmployeeMaster.EmployeeTypeID" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<select id="ddlEmployeeType" asp-for="EmployeeMaster.EmployeeTypeID" class="form-control" asp-items="@(new SelectList(ViewBag.EmployeeTypeList,"Value","Text"))"></select>
+			<span asp-validation-for="EmployeeMaster.EmployeeTypeID" class="text-danger"></span>
+		</div>
+	</div>
+
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmployeeMaster.ParentCompanyName" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="EmployeeMaster.ParentCompanyName" class="form-control" />
+			<span asp-validation-for="EmployeeMaster.ParentCompanyName" class="text-danger"></span>
+		</div>
+	</div>
+
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6">
+			<label asp-for="EmployeeMaster.ProfileUserImage" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="EmployeeMaster.ProfileUserImage" class="form-control" />
+			<span asp-validation-for="EmployeeMaster.ProfileUserImage" class="text-danger"></span>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<div class="col-sm-6 col-md-4 left">
+			<div class="col-sm-12 col-md-4">
+				<div class="custom-control custom-switch mandatory mt-4">
+					<input type="checkbox" class="custom-control-input" asp-for="EmployeeMaster.IsDeleted">
+					<label asp-for="EmployeeMaster.IsDeleted" class="custom-control-label"></label>
+					<span asp-validation-for="EmployeeMaster.IsDeleted" class="text-danger"></span>
+				</div>
+			</div>
+		</div>
+	}
+</div>
+<div class="form-group">
+	<button type="submit" id="btnAddEditEmployee" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-save"></i> Save</button>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<button type="button" id="btnAddEditEmployeeMasterClear" class="btn btn-secondary btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-reset"></i> Clear</button>
+	}
+	@await Html.PartialAsync("CommonControls/_CancelButton")
+</div>
+@await Html.PartialAsync("CommonControls/_BackToList")
+@await Html.PartialAsync("AlertNotification/_AlertNotification")
+<script type="text/javascript">
+	$(function () {
+		$("#ddlGender").select2();
+		$("#ddlGender").select2();
+		$("#ddlCountry").select2();
+		$("#ddlEmployeeType").select2();
+	});
+</script>

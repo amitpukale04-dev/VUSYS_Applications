@@ -1,0 +1,98 @@
+############# LOGS #############
+logs/
+LogFiles/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+############# NODE / VITE / FRONTEND #############
+node_modules/
+.vite/
+dist/
+dist-ssr/
+*.local
+dist.zip
+
+############# DOTNET BUILD OUTPUT #############
+**/bin/
+**/obj/
+**/bin/Debug/
+**/bin/Release/
+publish/
+artifacts/
+
+############# EDITORS / IDE FILES #############
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+.vscode-test/
+
+# Visual Studio
+**/.vs/
+*.suo
+*.user
+*.userosscache
+*.njsproj
+*.ntvs*
+*.njsproj
+*.sln.docstates
+*.sw?
+*.swp
+
+# Ignore publish profile user files
+*.pubxml
+*.pubxml.user
+
+# JetBrains / Rider / ReSharper
+.idea/
+_ReSharper*/
+*.ReSharper
+*.DotSettings.user
+
+# OS-specific
+.DS_Store
+
+############# ENV / SECRETS #############
+*.env
+secrets.json
+
+############# TEMP / BACKUP FILES #############
+*.bak
+*.tmp
+~$*
+
+############# NUGET / PACKAGES #############
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+
+############# ASP.NET CORE RUNTIME FILES #############
+*.deps.json
+*.runtimeconfig.json
+*.runtimeconfig.dev.json
+
+############# TEST RESULTS #############
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+############# AZURE PIPELINES #############
+.azure-pipelines/
+
+############# LOCAL DB FILES #############
+*.mdf
+*.ldf
+
+############# CUSTOM / PROJECT SPECIFIC #############
+
+############# KEEP THESE (DO NOT IGNORE) #############
+!wwwroot/
+!wwwroot/**
+!**/TOOLS/
+!**/TOOLS/**

@@ -1,0 +1,178 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	ViewData["Title"] = "Role Menu Access";
+	Layout = "_CommonNavLayout";
+}
+
+@section PageStyles {
+	<link href="~/Admin/jstree/themes/default/style.min.css" rel="stylesheet" />
+}
+
+<section class="content">
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-12">
+				<div class="card card-primary">
+					<div class="card-header VUSYSbg">
+						<h3 class="card-title divcustombold">Menu Access For Role</h3>
+					</div>
+					<form id="RoleMenuAccessForm" asp-action="SaveRoleMenuAccess" method="post" asp-controller="RoleMenuAccess">
+						<div class="card-body" style="padding-left:10px;">
+							<div class="form-row align-items-center">
+								<div class="col-sm0 my-1">
+									<label asp-for="Users.RoleName" class="control-label mandatory"></label>
+									<input type="hidden" name="selectedItems" id="selectedItems" />
+								</div>
+								<div class="col-sm-3 my-1">
+									<div class="input-group">
+										<select id="ddlRoles" asp-for="Users.RoleID" class="form-control" asp-items="@(new SelectList(ViewBag.RoleList,"Value","Text"))"></select>
+									</div>
+								</div>
+								<div class="col-auto my-1">
+									<button type="submit" id="btnSaveRoleMenuAccess" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-save"></i> Update</button>
+								</div>
+								<div class="col-auto my-1">
+									@await Html.PartialAsync("CommonControls/_CancelButton")
+								</div>
+							</div>
+							<div class="form-group mx-sm-5 mb-2">
+								<span asp-validation-for="Users.RoleID" class="text-danger"></span>
+							</div>
+							<div class="card card-primary">
+								<div id="MenuJStree">
+								</div>
+							</div>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+@await Html.PartialAsync("AlertNotification/_AlertNotification")
+<script type="text/javascript">
+	$(function () {
+		$("#ddlRoles").select2();
+	});
+</script>
+
+@section PageScripts {
+	<script src="~/Admin/jstree/jstree.min.js"></script>
+}
+
+<script type="text/javascript">
+	$(function () {
+		$('#MenuJStree').on("changed.jstree", function (e, data) {
+			var i, j;
+			var selectedItems = [];
+			for (i = 0, j = data.selected.length; i < j; i++) {
+
+				//Fetch the Id.
+				var id = data.selected[i];
+
+				//Remove the ParentId.
+				if (id.indexOf('-') != -1) {
+					id = id.split("-")[1];
+				}
+
+				//Add the Node to the JSON Array.
+				selectedItems.push({
+					text: data.instance.get_node(data.selected[i]).text,
+					id: id,
+					parent: data.node.parents[0]
+				});
+			}
+
+			//Serialize the JSON Array and save in HiddenField.
+			$('#selectedItems').val(JSON.stringify(selectedItems));
+		}).jstree({
+			"core": {
+				"themes": {
+					"variant": "large",
+					"icons": false
+				},
+
+				"data": @Html.Raw(ViewBag.Json)
+							},
+			"checkbox": {
+				"keep_selected_style": false
+			},
+			"plugins": ["checkbox", "changed"],
+		})
+			.bind("loaded.jstree", function (event, data) {
+				$(this).jstree("open_all");
+			});
+		$('#ddlRoles').on('change', function () {
+			$('#MenuJStree').jstree("destroy").empty();
+			fnGetRoleMenuAccess();
+		});
+	});
+
+	function fnGetRoleMenuAccess() {
+		var url = '@Url.Action("GetRoleMenuAccessForRoleId", "RoleMenuAccess")';
+		$.ajax({
+			type: "POST",
+			url: url,
+			data: { "RoleId": $('#ddlRoles :selected').val() },
+			dataType: 'json',
+			success: function (result) {
+				CreateJSTree(result);
+			},
+			error: function (result) {
+				console.log(result);
+			}
+		});
+	}
+	function CreateJSTree(jsonData) {
+		$('#MenuJStree').on("changed.jstree", function (e, data) {
+			var i, j;
+			var selectedItems = [];
+			for (i = 0, j = data.selected.length; i < j; i++) {
+
+				//Fetch the Id.
+				var id = data.selected[i];
+
+				//Remove the ParentId.
+				if (id.indexOf('-') != -1) {
+					id = id.split("-")[1];
+				}
+
+				//Add the Node to the JSON Array.
+				selectedItems.push({
+					text: data.instance.get_node(data.selected[i]).text,
+					id: id,
+					//parent: data.node.parents[0],
+					parent: data.instance.get_node(data.selected[i]).parents[0],
+					roleid: $('#ddlRoles :selected').val()
+				});
+			}
+
+			//Serialize the JSON Array and save in HiddenField.
+			$('#selectedItems').val(JSON.stringify(selectedItems));
+		}).jstree({
+			"core": {
+				"themes": {
+					"variant": "large",
+					"icons": false
+				},
+
+				"data": jsonData
+			},
+			"checkbox": {
+				"keep_selected_style": false
+			},
+			"plugins": ["checkbox"],
+		})
+			.bind("loaded.jstree", function (event, data) {
+				let checkedItems = [];
+				for (let i = 0; i < jsonData.length; i++) {
+					if (jsonData[i].roleId > 0) {
+						checkedItems.push(jsonData[i].id);
+					}
+				}
+				$(this).jstree("open_all");
+				$("#MenuJStree").jstree("check_node", checkedItems);
+			})
+	}
+</script>

@@ -1,0 +1,1526 @@
+﻿@page "/update-app-deployment-version"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+@inject IUpdateDeploymentVersionService UpdateDeploymentVersionService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+@using System.Security.Cryptography
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using VUSYSAppHub.Contracts
+@using VUSYSAppHub.DACHelper
+@using VUSYSAppHub.Models
+@using VUSYSAppHub.Services
+
+<PageTitle>Update Deployment Version No.</PageTitle>
+
+<div class="apphub-page @(isDarkMode ? "dark-mode" : "")">
+	<div class="container-fluid px-3 px-md-4 px-lg-5 py-4 py-lg-5">
+		<div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
+			<div>
+				<h2 class="page-title mb-1">Update Deployment Version No.</h2>
+				<div class="page-note">Dedicated page to fetch and update deployment version by application and environment.</div>
+			</div>
+
+			<div class="d-flex align-items-center gap-2 flex-wrap">
+				<button type="button"
+						class="btn btn-back-dashboard d-inline-flex align-items-center gap-2"
+						@onclick="GoBackToHome">
+					<i class="bi bi-arrow-left-circle-fill"></i>
+					<span>Back to App Hub</span>
+				</button>
+
+				<button type="button"
+						class="btn btn-theme d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+						style="width: 56px; height: 56px; padding: 0;"
+						title="@(isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")"
+						aria-label="@(isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode")"
+						@onclick="ToggleThemeAsync">
+					<i class="bi @(isDarkMode ? "bi-sun-fill" : "bi-moon-stars-fill") fs-4"></i>
+				</button>
+			</div>
+		</div>
+
+		<div class="card border-0 shadow-sm mb-4 monitoring-dashboard-card">
+			<div class="monitoring-dashboard-header">
+				<div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
+					<div class="d-flex align-items-center gap-3">
+						<div class="monitoring-dashboard-icon">
+							<i class="bi bi-arrow-repeat"></i>
+						</div>
+						<div>
+							<h4 class="monitoring-dashboard-title mb-1">Update Deployment Version Dashboard</h4>
+							<div class="monitoring-dashboard-subtitle">
+								Manage deployment version number for supported applications across environments
+							</div>
+						</div>
+					</div>
+
+					<div class="monitoring-dashboard-right">
+						<div class="monitoring-refresh-pill @(isBusy ? "refreshing" : "")">
+							<span class="monitoring-refresh-dot"></span>
+							<span>@GetActionStatusText()</span>
+						</div>
+
+						<div class="monitoring-last-refresh">
+							<i class="bi bi-clock-history me-1"></i>
+							@(lastActionAt.HasValue ? $"Last action: {lastActionAt.Value:dd-MMM-yyyy hh:mm:ss tt}" : "Last action: --")
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="card-body p-4">
+				@if (!string.IsNullOrWhiteSpace(successMessage))
+				{
+					<div class="alert alert-success mb-4" role="alert">
+						<i class="bi bi-check-circle-fill me-2"></i>
+						@successMessage
+					</div>
+				}
+
+				@if (!string.IsNullOrWhiteSpace(errorMessage))
+				{
+					<div class="alert alert-danger mb-4" role="alert">
+						<i class="bi bi-exclamation-triangle-fill me-2"></i>
+						@errorMessage
+					</div>
+				}
+
+				<div class="row g-4">
+					<div class="col-12 col-lg-6">
+						<label class="filter-label">Application</label>
+						<select class="form-select form-select-modern"
+								@bind="selectedApplication"
+								@bind:after="OnSelectionChangedAsync"
+								disabled="@IsUiInteractionDisabled()">
+							@foreach (var app in applicationOptions)
+							{
+								<option value="@app">@app</option>
+							}
+						</select>
+					</div>
+
+					<div class="col-12 col-lg-6">
+						<label class="filter-label">Environment</label>
+						<select class="form-select form-select-modern"
+								@bind="selectedEnvironment"
+								@bind:after="OnSelectionChangedAsync"
+								disabled="@IsUiInteractionDisabled()">
+							@foreach (var env in environmentOptions)
+							{
+								<option value="@env">@env</option>
+							}
+						</select>
+					</div>
+
+					<div class="col-12 col-lg-6">
+						<label class="filter-label">Last Version</label>
+						<input type="text"
+							   class="form-control form-select-modern"
+							   value="@lastVersion"
+							   readonly />
+					</div>
+
+					<div class="col-12 col-lg-6">
+						<label class="filter-label">New Version</label>
+						<input type="text"
+							   class="form-control form-select-modern"
+							   value="@newVersion"
+							   readonly />
+					</div>
+
+					<div class="col-12">
+						<label class="filter-label">Upload PDF File</label>
+						<InputFile @key="fileUploadControlKey"
+								   OnChange="OnPdfFileSelectedAsync"
+								   accept=".pdf,application/pdf"
+								   class="form-control form-select-modern"
+								   disabled="@IsUiInteractionDisabled()" />
+
+						<div class="mt-2 d-flex flex-wrap align-items-center gap-3">
+							<small class="text-muted">
+								Allowed file type: PDF only | Maximum size: 5 MB
+							</small>
+
+							@if (ShouldShowViewUploadedFileLink())
+							{
+								<button type="button"
+										class="btn btn-link p-0 text-decoration-none apphub-uploaded-file-link"
+										@onclick="OpenUploadedFileModalAsync"
+										disabled="@IsUiInteractionDisabled()">
+									<i class="bi bi-file-earmark-pdf-fill me-1"></i>
+									<span>View Uploaded File</span>
+								</button>
+							}
+						</div>
+
+						@if (!string.IsNullOrWhiteSpace(uploadedPdfFileName))
+						{
+							<div class="mt-2 d-flex flex-wrap align-items-center gap-2">
+								<span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+									<i class="bi bi-file-earmark-pdf-fill me-1"></i>
+									@uploadedPdfFileName
+								</span>
+								<span class="text-muted small">(@GetFormattedFileSize(uploadedPdfFileSize))</span>
+							</div>
+						}
+					</div>
+				</div>
+
+				<div class="d-flex flex-wrap justify-content-end gap-3 mt-4">
+					<button type="button"
+							class="btn btn-outline-secondary btn-launcher d-inline-flex align-items-center gap-2"
+							@onclick="ClearForm"
+							disabled="@IsUiInteractionDisabled()">
+						<i class="bi bi-x-circle"></i>
+						<span>Clear</span>
+					</button>
+
+					<button type="button"
+							class="btn btn-monitoring-dashboard d-inline-flex align-items-center gap-2"
+							@onclick="OpenLoginPopupAsync"
+							disabled="@IsUiInteractionDisabled()">
+						<i class="bi bi-check-circle-fill"></i>
+						<span>@(isBusy && currentAction == "update" ? "Updating..." : "Update Version")</span>
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<button type="button"
+				class="scroll-to-top-btn @(showScrollToTop ? "show" : "")"
+				title="Scroll to top"
+				aria-label="Scroll to top"
+				@onclick="ScrollToTopAsync">
+			<i class="bi bi-chevron-up"></i>
+		</button>
+	</div>
+</div>
+
+@if (showLoginPopup)
+{
+	<div class="apphub-modal-overlay">
+		<div class="apphub-modal-card monitoring-dashboard-card shadow-lg" @onclick:stopPropagation="true">
+			<div class="monitoring-dashboard-header apphub-modal-header">
+				<div class="d-flex align-items-center gap-3">
+					<div class="monitoring-dashboard-icon">
+						<i class="bi bi-person-badge-fill"></i>
+					</div>
+					<div>
+						<h4 class="monitoring-dashboard-title mb-1">Login ID Verification</h4>
+						<div class="monitoring-dashboard-subtitle">
+							Enter your Login ID to receive OTP for deployment version update
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="card-body p-4 apphub-modal-body">
+				@if (!string.IsNullOrWhiteSpace(loginPopupErrorMessage))
+				{
+					<div class="alert alert-danger mb-3" role="alert">
+						<i class="bi bi-exclamation-triangle-fill me-2"></i>
+						@loginPopupErrorMessage
+					</div>
+				}
+
+				@if (!string.IsNullOrWhiteSpace(loginPopupInfoMessage))
+				{
+					<div class="alert alert-info mb-3" role="alert">
+						<i class="bi bi-info-circle-fill me-2"></i>
+						@loginPopupInfoMessage
+					</div>
+				}
+
+				<div class="row g-4">
+					<div class="col-12">
+						<label class="filter-label">Login ID</label>
+						<input type="text"
+							   class="form-control form-select-modern"
+							   @bind="loginIdInput"
+							   @bind:event="oninput"
+							   @onkeydown="HandleLoginIdKeyDownAsync"
+							   placeholder="Enter Login ID"
+							   maxlength="100"
+							   disabled="@isPopupBusy" />
+					</div>
+				</div>
+
+				<div class="d-flex flex-wrap justify-content-end gap-3 mt-4">
+					<button type="button"
+							class="btn btn-outline-secondary btn-launcher d-inline-flex align-items-center gap-2"
+							@onclick="CloseLoginPopup"
+							disabled="@isPopupBusy">
+						<i class="bi bi-x-circle"></i>
+						<span>Cancel</span>
+					</button>
+
+					<button type="button"
+							class="btn btn-monitoring-dashboard d-inline-flex align-items-center gap-2"
+							@onclick="ValidateLoginAndSendOtpAsync"
+							disabled="@isPopupBusy">
+						<i class="bi bi-envelope-check-fill"></i>
+						<span>@(isPopupBusy && currentPopupAction == "send-otp" ? "Sending OTP..." : "Send OTP")</span>
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+@if (showOtpPopup)
+{
+	<div class="apphub-modal-overlay">
+		<div class="apphub-modal-card monitoring-dashboard-card shadow-lg" @onclick:stopPropagation="true">
+			<div class="monitoring-dashboard-header apphub-modal-header">
+				<div class="d-flex align-items-center gap-3">
+					<div class="monitoring-dashboard-icon">
+						<i class="bi bi-shield-lock-fill"></i>
+					</div>
+					<div>
+						<h4 class="monitoring-dashboard-title mb-1">OTP Verification</h4>
+						<div class="monitoring-dashboard-subtitle">
+							Enter the 6-digit OTP sent to your registered email address
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="card-body p-4 apphub-modal-body">
+				<div class="apphub-otp-user-summary mb-3">
+					<div><strong>Login ID:</strong> @validatedEmployee.LoginId</div>
+					<div><strong>Employee Name:</strong> @validatedEmployee.EmployeeName</div>
+					<div><strong>Email ID:</strong> @validatedEmployee.EmailId</div>
+				</div>
+
+				@if (!string.IsNullOrWhiteSpace(otpPopupErrorMessage))
+				{
+					<div class="alert alert-danger mb-3" role="alert">
+						<i class="bi bi-exclamation-triangle-fill me-2"></i>
+						@otpPopupErrorMessage
+					</div>
+				}
+
+				@if (!string.IsNullOrWhiteSpace(otpPopupInfoMessage))
+				{
+					<div class="alert alert-info mb-3" role="alert">
+						<i class="bi bi-info-circle-fill me-2"></i>
+						@otpPopupInfoMessage
+					</div>
+				}
+
+				<div class="apphub-otp-label mb-2">Enter OTP</div>
+
+				<div class="apphub-otp-input-wrapper mb-3">
+					@for (int i = 0; i < otpDigits.Length; i++)
+					{
+						var index = i;
+						<input id="@($"otp-box-{index}")"
+							   class="apphub-otp-input"
+							   type="text"
+							   inputmode="numeric"
+							   autocomplete="one-time-code"
+							   maxlength="1"
+							   value="@otpDigits[index]"
+							   @oninput="async e => await OnOtpInputAsync(index, e)"
+							   @onkeydown="async e => await OnOtpKeyDownAsync(index, e)"
+							   @onpaste="async e => await OnOtpPasteAsync(index, e)"
+							   @onpaste:preventDefault="true"
+							   disabled="@isPopupBusy" />
+					}
+				</div>
+
+				<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+					<button type="button"
+							class="btn btn-link apphub-resend-link p-0 text-decoration-none"
+							@onclick="ResendOtpAsync"
+							disabled="@isPopupBusy">
+						<i class="bi bi-arrow-repeat me-1"></i>
+						<span>@(isPopupBusy && currentPopupAction == "resend-otp" ? "Resending OTP..." : "Resend OTP")</span>
+					</button>
+
+					<div class="d-flex flex-wrap justify-content-end gap-3">
+						<button type="button"
+								class="btn btn-outline-secondary btn-launcher d-inline-flex align-items-center gap-2"
+								@onclick="CloseOtpPopup"
+								disabled="@isPopupBusy">
+							<i class="bi bi-x-circle"></i>
+							<span>Cancel</span>
+						</button>
+
+						<button type="button"
+								class="btn btn-monitoring-dashboard d-inline-flex align-items-center gap-2"
+								@onclick="VerifyOtpAndUpdateAsync"
+								disabled="@isPopupBusy">
+							<i class="bi bi-patch-check-fill"></i>
+							<span>@(isPopupBusy && currentPopupAction == "verify-otp" ? "Verifying..." : "Verify")</span>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+@if (showUploadedFileModal)
+{
+	<div class="apphub-modal-overlay" @onclick="CloseUploadedFileModal">
+		<div class="apphub-modal-card monitoring-dashboard-card shadow-lg apphub-pdf-modal-card" @onclick:stopPropagation="true">
+			<div class="monitoring-dashboard-header apphub-modal-header">
+				<div class="d-flex flex-column gap-3 w-100">
+					<div class="d-flex align-items-center justify-content-between gap-3 w-100">
+						<div class="d-flex align-items-center gap-3">
+							<div class="monitoring-dashboard-icon">
+								<i class="bi bi-file-earmark-pdf-fill"></i>
+							</div>
+							<div>
+								<h4 class="monitoring-dashboard-title mb-1">Uploaded PDF File</h4>
+								<div class="monitoring-dashboard-subtitle">
+									@uploadedFileModalSubTitle
+								</div>
+							</div>
+						</div>
+
+						<button type="button"
+								class="btn btn-light apphub-pdf-close-icon"
+								@onclick="CloseUploadedFileModal"
+								aria-label="Close PDF Viewer">
+							<i class="bi bi-x-lg"></i>
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="card-body p-0 apphub-modal-body apphub-pdf-modal-body">
+				@if (!string.IsNullOrWhiteSpace(pdfViewerBase64))
+				{
+					<div id="apphub-pdf-render-container" class="apphub-pdf-container"></div>
+				}
+				else
+				{
+					<div class="apphub-pdf-fallback">
+						<i class="bi bi-file-earmark-pdf-fill"></i>
+						<div>No PDF available to preview.</div>
+					</div>
+				}
+			</div>
+
+			<div class="apphub-pdf-modal-footer">
+				<button type="button"
+						class="btn btn-outline-secondary btn-launcher d-inline-flex align-items-center gap-2"
+						@onclick="CloseUploadedFileModal">
+					<i class="bi bi-x-circle"></i>
+					<span>Close</span>
+				</button>
+			</div>
+		</div>
+	</div>
+}
+
+<script>
+	window.appHubOtp = window.appHubOtp || {};
+	window.appHubToast = window.appHubToast || {};
+
+	window.appHubOtp.focusOtpBox = window.appHubOtp.focusOtpBox || function (elementId) {
+		const element = document.getElementById(elementId);
+		if (element) {
+			element.focus();
+			element.select();
+		}
+	};
+
+	window.appHubOtp.getClipboardText = window.appHubOtp.getClipboardText || async function () {
+		try {
+			if (navigator.clipboard && navigator.clipboard.readText) {
+				return await navigator.clipboard.readText();
+			}
+		} catch (e) {
+		}
+		return "";
+	};
+
+	window.appHubOtp.storeOtp = window.appHubOtp.storeOtp || function (key, value) {
+		localStorage.setItem(key, JSON.stringify(value));
+	};
+
+	window.appHubOtp.getOtp = window.appHubOtp.getOtp || function (key) {
+		const value = localStorage.getItem(key);
+		return value ? JSON.parse(value) : null;
+	};
+
+	window.appHubOtp.removeOtp = window.appHubOtp.removeOtp || function (key) {
+		localStorage.removeItem(key);
+	};
+
+	window.appHubToast.show = function (message, type) {
+		if (!message) return;
+
+		let toast = document.getElementById("appHubPwaToast");
+
+		if (!toast) {
+			toast = document.createElement("div");
+			toast.id = "appHubPwaToast";
+			document.body.appendChild(toast);
+		}
+
+		const toastType = type || "info";
+
+		let iconClass = "bi-info-circle-fill";
+
+		if (toastType === "success") iconClass = "bi-check-circle-fill";
+		if (toastType === "error") iconClass = "bi-x-circle-fill";
+		if (toastType === "warning") iconClass = "bi-exclamation-triangle-fill";
+
+		toast.className = `apphub-pwa-toast ${toastType}`;
+		toast.innerHTML = `<i class="bi ${iconClass}"></i><span>${message}</span>`;
+
+		clearTimeout(window.appHubToastTimer);
+
+		requestAnimationFrame(() => {
+			toast.classList.add("show");
+		});
+
+		window.appHubToastTimer = setTimeout(() => {
+			toast.classList.remove("show");
+		}, 3200);
+	};
+</script>
+
+@code {
+	private const string DefaultSelectText = "SELECT";
+	private const int SuccessMessageDisplayMilliseconds = 3000;
+	private const string OtpStorageKey = "apphub.update.deployment.version.otp";
+	private const long MaxPdfFileSize = 5 * 1024 * 1024;
+
+	private List<string> applicationOptions = new() { DefaultSelectText };
+	private List<string> environmentOptions = new() { DefaultSelectText, "Development", "Staging", "Production" };
+
+	private string selectedApplication = DefaultSelectText;
+	private string selectedEnvironment = DefaultSelectText;
+	private string lastVersion = string.Empty;
+	private string newVersion = string.Empty;
+
+	private string successMessage = string.Empty;
+	private string errorMessage = string.Empty;
+
+	private bool isBusy = false;
+	private string currentAction = string.Empty;
+	private bool isDarkMode = false;
+	private bool showScrollToTop = false;
+	private DateTime? lastActionAt;
+
+	private bool showLoginPopup = false;
+	private bool showOtpPopup = false;
+	private bool isPopupBusy = false;
+	private string currentPopupAction = string.Empty;
+
+	private string loginIdInput = string.Empty;
+	private string loginPopupErrorMessage = string.Empty;
+	private string loginPopupInfoMessage = string.Empty;
+
+	private string otpPopupErrorMessage = string.Empty;
+	private string otpPopupInfoMessage = string.Empty;
+	private string[] otpDigits = new string[6] { "", "", "", "", "", "" };
+	private bool isAutoVerifyingOtp = false;
+	private bool focusFirstOtpBoxPending = false;
+
+	private EmployeeLoginValidationResultModel validatedEmployee = new();
+
+	private DotNetObjectReference<UpdateAppDeploymentVersion>? dotNetRef;
+	private bool scrollListenerRegistered = false;
+	private CancellationTokenSource? successMessageCts;
+	private int selectionChangeRequestId = 0;
+
+	private string uploadedPdfFileName = string.Empty;
+	private long uploadedPdfFileSize = 0;
+	private string uploadedPdfBase64 = string.Empty;
+	private string fileUploadControlKey = Guid.NewGuid().ToString();
+
+	private string existingAppUpdateBase64 = string.Empty;
+	private bool showUploadedFileModal = false;
+	private string uploadedFileModalSubTitle = string.Empty;
+
+	private string pdfViewerBase64 = string.Empty;
+	private bool renderPdfPending = false;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadApplicationOptionsAsync();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			isDarkMode = await JS.InvokeAsync<bool>("themeManager.getCurrentThemeIsDark");
+
+			dotNetRef = DotNetObjectReference.Create(this);
+			await JS.InvokeVoidAsync("appHubScroll.registerScrollListener", dotNetRef);
+			scrollListenerRegistered = true;
+
+			StateHasChanged();
+		}
+
+		if (focusFirstOtpBoxPending && showOtpPopup)
+		{
+			focusFirstOtpBoxPending = false;
+			await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", "otp-box-0");
+		}
+
+		if (renderPdfPending && showUploadedFileModal && !string.IsNullOrWhiteSpace(pdfViewerBase64))
+		{
+			renderPdfPending = false;
+
+			await JS.InvokeVoidAsync("appHubPdfViewer.clear", "apphub-pdf-render-container");
+
+			await JS.InvokeVoidAsync(
+				"appHubPdfViewer.renderPdfFromBase64",
+				"apphub-pdf-render-container",
+				pdfViewerBase64,
+				new
+				{
+					initialZoomPreset = "fit-width",
+					enableVirtualScroll = true,
+					enableSecurityHardening = true,
+					showThumbnails = true
+				});
+		}
+	}
+
+	private async Task LoadApplicationOptionsAsync()
+	{
+		try
+		{
+			var applications = await UpdateDeploymentVersionService.GetApplicationsAsync();
+
+			applicationOptions = new List<string> { DefaultSelectText };
+
+			if (applications?.Any() == true)
+			{
+				applicationOptions.AddRange(
+					applications
+						.Select(x => x.ApplicationName)
+						.Where(x => !string.IsNullOrWhiteSpace(x))
+						.Where(x =>
+							string.Equals(x, "Sharpply", StringComparison.OrdinalIgnoreCase) ||
+							string.Equals(x, "Sharpply PWA", StringComparison.OrdinalIgnoreCase) ||
+							string.Equals(x, "Protectron", StringComparison.OrdinalIgnoreCase) ||
+							string.Equals(x, "Inspire Magnetics", StringComparison.OrdinalIgnoreCase))
+						.Distinct(StringComparer.OrdinalIgnoreCase)
+						.OrderBy(x => x));
+			}
+		}
+		catch (Exception ex)
+		{
+			errorMessage = ex.Message;
+		}
+	}
+
+	private async Task OnSelectionChangedAsync()
+	{
+		await LoadVersionOnSelectionChangeAsync();
+	}
+
+	private async Task LoadVersionOnSelectionChangeAsync()
+	{
+		var requestId = ++selectionChangeRequestId;
+
+		ClearMessages();
+		lastVersion = string.Empty;
+		newVersion = string.Empty;
+		existingAppUpdateBase64 = string.Empty;
+		showUploadedFileModal = false;
+		pdfViewerBase64 = string.Empty;
+		uploadedFileModalSubTitle = string.Empty;
+
+		if (!HasValidSelections())
+		{
+			await InvokeAsync(StateHasChanged);
+			return;
+		}
+
+		try
+		{
+			isBusy = true;
+			currentAction = "load";
+			await InvokeAsync(StateHasChanged);
+
+			var deploymentVersionDetails = await UpdateDeploymentVersionService.GetDeploymentVersionDetailsAsync(
+				selectedApplication,
+				selectedEnvironment);
+
+			if (requestId != selectionChangeRequestId)
+				return;
+
+			lastVersion = string.IsNullOrWhiteSpace(deploymentVersionDetails.LastVersion) ? "0.0" : deploymentVersionDetails.LastVersion;
+			newVersion = UpdateDeploymentVersionService.CalculateNextVersion(lastVersion);
+			existingAppUpdateBase64 = deploymentVersionDetails.AppUpdateBase64?.Trim() ?? string.Empty;
+			lastActionAt = DateTime.Now;
+		}
+		catch (Exception ex)
+		{
+			if (requestId != selectionChangeRequestId)
+				return;
+
+			lastVersion = string.Empty;
+			newVersion = string.Empty;
+			existingAppUpdateBase64 = string.Empty;
+			errorMessage = ex.Message;
+		}
+		finally
+		{
+			if (requestId == selectionChangeRequestId)
+			{
+				isBusy = false;
+				currentAction = string.Empty;
+				await InvokeAsync(StateHasChanged);
+			}
+		}
+	}
+
+	private async Task OnPdfFileSelectedAsync(InputFileChangeEventArgs e)
+	{
+		try
+		{
+			errorMessage = string.Empty;
+			uploadedPdfFileName = string.Empty;
+			uploadedPdfFileSize = 0;
+			uploadedPdfBase64 = string.Empty;
+
+			if (e.FileCount == 0)
+				return;
+
+			var file = e.File;
+
+			if (file == null)
+				return;
+
+			var fileName = file.Name?.Trim() ?? string.Empty;
+			var extension = Path.GetExtension(fileName);
+
+			if (string.IsNullOrWhiteSpace(fileName) ||
+				!string.Equals(extension, ".pdf", StringComparison.OrdinalIgnoreCase))
+			{
+				errorMessage = "Only PDF file is allowed.";
+				return;
+			}
+
+			if (file.Size <= 0)
+			{
+				errorMessage = "Selected file is empty.";
+				return;
+			}
+
+			if (file.Size > MaxPdfFileSize)
+			{
+				errorMessage = "PDF file size must not exceed 5 MB.";
+				return;
+			}
+
+			await using var stream = file.OpenReadStream(MaxPdfFileSize);
+			using var memoryStream = new MemoryStream();
+			await stream.CopyToAsync(memoryStream);
+
+			var fileBytes = memoryStream.ToArray();
+
+			if (fileBytes.Length == 0)
+			{
+				errorMessage = "Selected PDF file is empty.";
+				return;
+			}
+
+			uploadedPdfBase64 = Convert.ToBase64String(fileBytes);
+			uploadedPdfFileName = fileName;
+			uploadedPdfFileSize = file.Size;
+		}
+		catch (Exception ex)
+		{
+			uploadedPdfFileName = string.Empty;
+			uploadedPdfFileSize = 0;
+			uploadedPdfBase64 = string.Empty;
+			errorMessage = ex.Message;
+		}
+	}
+
+	private async Task OpenUploadedFileModalAsync()
+	{
+		try
+		{
+			errorMessage = string.Empty;
+
+			if (string.IsNullOrWhiteSpace(existingAppUpdateBase64))
+			{
+				errorMessage = "Uploaded file is not available for the selected Application and Environment.";
+				return;
+			}
+
+			var normalizedBase64 = NormalizeBase64Pdf(existingAppUpdateBase64);
+
+			if (string.IsNullOrWhiteSpace(normalizedBase64))
+			{
+				errorMessage = "Uploaded PDF content is not valid.";
+				return;
+			}
+
+			pdfViewerBase64 = normalizedBase64;
+			uploadedFileModalSubTitle = $"{selectedApplication} - {selectedEnvironment}";
+			showUploadedFileModal = true;
+			renderPdfPending = true;
+
+			await InvokeAsync(StateHasChanged);
+		}
+		catch (Exception ex)
+		{
+			errorMessage = ex.Message;
+		}
+	}
+
+	private async Task CloseUploadedFileModal()
+	{
+		showUploadedFileModal = false;
+		pdfViewerBase64 = string.Empty;
+		uploadedFileModalSubTitle = string.Empty;
+		renderPdfPending = false;
+
+		await JS.InvokeVoidAsync("appHubPdfViewer.clear", "apphub-pdf-render-container");
+	}
+
+	private bool ShouldShowViewUploadedFileLink()
+	{
+		return HasValidSelections() && !string.IsNullOrWhiteSpace(existingAppUpdateBase64);
+	}
+
+	private async Task OpenLoginPopupAsync()
+	{
+		try
+		{
+			ClearMessages();
+
+			if (!ValidateSelections())
+				return;
+
+			if (string.IsNullOrWhiteSpace(lastVersion))
+			{
+				errorMessage = "Last Version is empty. Please select Application and Environment.";
+				return;
+			}
+
+			if (string.IsNullOrWhiteSpace(newVersion))
+			{
+				errorMessage = "New Version is empty.";
+				return;
+			}
+
+			await JS.InvokeVoidAsync("appHubOtp.removeOtp", OtpStorageKey);
+
+			loginIdInput = string.Empty;
+			loginPopupErrorMessage = string.Empty;
+			loginPopupInfoMessage = string.Empty;
+			otpPopupErrorMessage = string.Empty;
+			otpPopupInfoMessage = string.Empty;
+			validatedEmployee = new EmployeeLoginValidationResultModel();
+
+			showLoginPopup = true;
+			showOtpPopup = false;
+		}
+		catch (Exception ex)
+		{
+			errorMessage = ex.Message;
+		}
+	}
+
+	private async Task ValidateLoginAndSendOtpAsync()
+	{
+		try
+		{
+			loginPopupErrorMessage = string.Empty;
+			loginPopupInfoMessage = string.Empty;
+
+			if (!ValidateSelections())
+				return;
+
+			if (string.IsNullOrWhiteSpace(loginIdInput))
+			{
+				loginPopupErrorMessage = "Please enter Login ID.";
+				return;
+			}
+
+			isPopupBusy = true;
+			currentPopupAction = "send-otp";
+
+			var objEmployeeLoginValidationRequestModel = new EmployeeLoginValidationRequestModel
+			{
+				ApplicationName = selectedApplication,
+				EnvironmentName = selectedEnvironment,
+				LoginID = loginIdInput,
+			};
+
+			var validationResult = await UpdateDeploymentVersionService.ValidateLoginIdAsync(objEmployeeLoginValidationRequestModel);
+
+			if (!validationResult.IsValid)
+			{
+				loginPopupErrorMessage = string.IsNullOrWhiteSpace(validationResult.ErrorMessage)
+					? "Invalid Login ID."
+					: validationResult.ErrorMessage;
+
+				await ShowAppHubToastAsync(loginPopupErrorMessage, "error");
+				return;
+			}
+
+			if (string.IsNullOrWhiteSpace(validationResult.EmailId))
+			{
+				loginPopupErrorMessage = "Email ID is not configured for this Login ID.";
+				await ShowAppHubToastAsync(loginPopupErrorMessage, "error");
+				return;
+			}
+
+			validatedEmployee = validationResult;
+
+			await SendAndStoreOtpAsync(isResend: false);
+
+			showLoginPopup = false;
+			showOtpPopup = true;
+			otpPopupErrorMessage = string.Empty;
+			otpPopupInfoMessage = $"OTP has been sent to {validatedEmployee.EmailId}.";
+			ClearOtpInputs();
+			focusFirstOtpBoxPending = true;
+		}
+		catch (Exception ex)
+		{
+			loginPopupErrorMessage = ex.Message;
+			await ShowAppHubToastAsync(loginPopupErrorMessage, "error");
+		}
+		finally
+		{
+			isPopupBusy = false;
+			currentPopupAction = string.Empty;
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private async Task ResendOtpAsync()
+	{
+		try
+		{
+			otpPopupErrorMessage = string.Empty;
+			otpPopupInfoMessage = string.Empty;
+			if (!validatedEmployee.IsValid ||
+				string.IsNullOrWhiteSpace(validatedEmployee.LoginId) ||
+				string.IsNullOrWhiteSpace(validatedEmployee.EmailId))
+			{
+				otpPopupErrorMessage = "Validated employee details not found. Please start the process again.";
+				await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+				return;
+			}
+
+			isPopupBusy = true;
+			currentPopupAction = "resend-otp";
+
+			await SendAndStoreOtpAsync(isResend: true);
+
+			otpPopupInfoMessage = $"A new OTP has been sent to {validatedEmployee.EmailId}.";
+			await ShowAppHubToastAsync(otpPopupInfoMessage, "success");
+			ClearOtpInputs();
+			focusFirstOtpBoxPending = true;
+		}
+		catch (Exception ex)
+		{
+			otpPopupErrorMessage = ex.Message;
+			await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+		}
+		finally
+		{
+			isPopupBusy = false;
+			currentPopupAction = string.Empty;
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private async Task HandleLoginIdKeyDownAsync(KeyboardEventArgs e)
+	{
+		if (e.Key != "Enter")
+			return;
+
+		if (isPopupBusy)
+			return;
+
+		await ValidateLoginAndSendOtpAsync();
+	}
+
+	private async Task SendAndStoreOtpAsync(bool isResend)
+	{
+		var otp = GenerateSixDigitOtp();
+		var expiryMinutes = Convert.ToInt32(CommonHelper.KeyOption.OTPExpiryInMinutes);
+		var expiryUtc = DateTime.UtcNow.AddMinutes(expiryMinutes);
+
+		var storageModel = new DeploymentVersionOtpStorageModel
+		{
+			LoginId = validatedEmployee.LoginId,
+			EmployeeName = validatedEmployee.EmployeeName,
+			EmailId = validatedEmployee.EmailId,
+			Otp = otp,
+			ExpiryUtc = expiryUtc,
+			ApplicationName = selectedApplication,
+			Environment = selectedEnvironment,
+			NewVersion = newVersion
+		};
+
+		var objDeploymentSendOtpModel = new DeploymentSendOtpModel
+		{
+			ApplicationName = selectedApplication,
+			Environment = selectedEnvironment,
+			LoginId = validatedEmployee.LoginId,
+			EmployeeName = validatedEmployee.EmployeeName,
+			EmailId = validatedEmployee.EmailId,
+			Otp = otp,
+			ExpiryInMinutes = Convert.ToString(expiryMinutes),
+			NewVersion = newVersion
+		};
+
+		await UpdateDeploymentVersionService.SendDeploymentOtpAsync(objDeploymentSendOtpModel);
+
+		await JS.InvokeVoidAsync("appHubOtp.storeOtp", OtpStorageKey, storageModel);
+	}
+
+	private async Task VerifyOtpAndUpdateAsync()
+	{
+		try
+		{
+			otpPopupErrorMessage = string.Empty;
+			otpPopupInfoMessage = string.Empty;
+			var enteredOtp = string.Concat(otpDigits);
+
+			if (string.IsNullOrWhiteSpace(enteredOtp) || enteredOtp.Length != 6 || enteredOtp.Any(x => !char.IsDigit(x)))
+			{
+				otpPopupErrorMessage = "Please enter valid 6-digit OTP.";
+				return;
+			}
+
+			isPopupBusy = true;
+			currentPopupAction = "verify-otp";
+
+			var storedOtp = await JS.InvokeAsync<DeploymentVersionOtpStorageModel?>("appHubOtp.getOtp", OtpStorageKey);
+
+			if (storedOtp == null)
+			{
+				otpPopupErrorMessage = "OTP not found. Please request OTP again.";
+				await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+				return;
+			}
+
+			if (storedOtp.ExpiryUtc <= DateTime.UtcNow)
+			{
+				await JS.InvokeVoidAsync("appHubOtp.removeOtp", OtpStorageKey);
+				otpPopupErrorMessage = "OTP has expired. Please click Resend OTP.";
+				await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+				return;
+			}
+
+			if (!string.Equals(storedOtp.ApplicationName, selectedApplication, StringComparison.OrdinalIgnoreCase) ||
+				!string.Equals(storedOtp.Environment, selectedEnvironment, StringComparison.OrdinalIgnoreCase) ||
+				!string.Equals(storedOtp.LoginId, validatedEmployee.LoginId, StringComparison.OrdinalIgnoreCase) ||
+				!string.Equals(storedOtp.EmailId, validatedEmployee.EmailId, StringComparison.OrdinalIgnoreCase))
+			{
+				await JS.InvokeVoidAsync("appHubOtp.removeOtp", OtpStorageKey);
+				otpPopupErrorMessage = "OTP session is invalid. Please start again.";
+				await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+				return;
+			}
+
+			if (!string.Equals(storedOtp.Otp, enteredOtp, StringComparison.Ordinal))
+			{
+				otpPopupErrorMessage = "OTP is not valid.";
+				await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+				return;
+			}
+
+			await JS.InvokeVoidAsync("appHubOtp.removeOtp", OtpStorageKey);
+
+			showOtpPopup = false;
+			showLoginPopup = false;
+
+			await PerformVersionUpdateAsync(validatedEmployee.LoginId);
+		}
+		catch (Exception ex)
+		{
+			otpPopupErrorMessage = ex.Message;
+			await ShowAppHubToastAsync(otpPopupErrorMessage, "error");
+		}
+		finally
+		{
+			isPopupBusy = false;
+			currentPopupAction = string.Empty;
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private async Task PerformVersionUpdateAsync(string updatedByLoginId)
+	{
+		try
+		{
+			ClearMessages();
+
+			if (!ValidateSelections())
+				return;
+
+			if (string.IsNullOrWhiteSpace(lastVersion))
+			{
+				errorMessage = "Last Version is empty. Please select Application and Environment.";
+				return;
+			}
+
+			if (string.IsNullOrWhiteSpace(newVersion))
+			{
+				errorMessage = "New Version is empty.";
+				return;
+			}
+
+			isBusy = true;
+			currentAction = "update";
+
+			var model = new UpdateDeploymentVersionModel
+			{
+				ApplicationName = selectedApplication,
+				Environment = selectedEnvironment,
+				VersionNumber = newVersion,
+				UpdatedBy = updatedByLoginId,
+				AppUpdateBase64 = uploadedPdfBase64
+			};
+
+			var updatedVersion = newVersion;
+			var result = await UpdateDeploymentVersionService.UpdateDeploymentVersionAsync(model);
+
+			if (result)
+			{
+				successMessage = $"Deployment version updated successfully to {updatedVersion}.";
+				await ShowAppHubToastAsync(successMessage, "success");
+				lastActionAt = DateTime.Now;
+				existingAppUpdateBase64 = uploadedPdfBase64;
+
+				isBusy = false;
+				currentAction = string.Empty;
+				StateHasChanged();
+
+				await ShowSuccessThenResetAsync();
+				return;
+			}
+			else
+			{
+				errorMessage = "Failed to update deployment version.";
+				await ShowAppHubToastAsync(errorMessage, "error");
+			}
+		}
+		catch (OperationCanceledException)
+		{
+		}
+		catch (Exception ex)
+		{
+			errorMessage = ex.Message;
+		}
+		finally
+		{
+			isBusy = false;
+			currentAction = string.Empty;
+			StateHasChanged();
+		}
+	}
+
+	private async Task ShowSuccessThenResetAsync()
+	{
+		successMessageCts?.Cancel();
+		successMessageCts?.Dispose();
+		successMessageCts = new CancellationTokenSource();
+		try
+		{
+			await Task.Delay(SuccessMessageDisplayMilliseconds, successMessageCts.Token);
+
+			successMessage = string.Empty;
+			errorMessage = string.Empty;
+
+			await ResetFormAndReloadDropdownsAsync();
+			await JS.InvokeVoidAsync("appHubOtp.removeOtp", OtpStorageKey);
+			await InvokeAsync(StateHasChanged);
+		}
+		catch (OperationCanceledException)
+		{
+		}
+	}
+
+	private async Task ResetFormAndReloadDropdownsAsync()
+	{
+		ResetFieldsOnly();
+
+		environmentOptions = new List<string> { DefaultSelectText, "Development", "Staging", "Production" };
+		await LoadApplicationOptionsAsync();
+
+		selectedApplication = DefaultSelectText;
+		selectedEnvironment = DefaultSelectText;
+		validatedEmployee = new EmployeeLoginValidationResultModel();
+		loginIdInput = string.Empty;
+		ClearOtpInputs();
+		showLoginPopup = false;
+		showOtpPopup = false;
+		showUploadedFileModal = false;
+		pdfViewerBase64 = string.Empty;
+		uploadedFileModalSubTitle = string.Empty;
+	}
+
+	private bool HasValidSelections()
+	{
+		return !string.IsNullOrWhiteSpace(selectedApplication) &&
+			   !string.Equals(selectedApplication, DefaultSelectText, StringComparison.OrdinalIgnoreCase) &&
+			   !string.IsNullOrWhiteSpace(selectedEnvironment) &&
+			   !string.Equals(selectedEnvironment, DefaultSelectText, StringComparison.OrdinalIgnoreCase);
+	}
+
+	private bool ValidateSelections()
+	{
+		if (string.IsNullOrWhiteSpace(selectedApplication) ||
+			string.Equals(selectedApplication, DefaultSelectText, StringComparison.OrdinalIgnoreCase))
+		{
+			errorMessage = "Please select Application.";
+			return false;
+		}
+
+		if (string.IsNullOrWhiteSpace(selectedEnvironment) ||
+			string.Equals(selectedEnvironment, DefaultSelectText, StringComparison.OrdinalIgnoreCase))
+		{
+			errorMessage = "Please select Environment.";
+			return false;
+		}
+
+		return true;
+	}
+
+	private string GetActionStatusText()
+	{
+		if (isBusy && currentAction == "load")
+			return "Loading version...";
+
+		if (isBusy && currentAction == "update")
+			return "Updating version...";
+
+		if (isPopupBusy && currentPopupAction == "send-otp")
+			return "Sending OTP...";
+
+		if (isPopupBusy && currentPopupAction == "resend-otp")
+			return "Resending OTP...";
+
+		if (isPopupBusy && currentPopupAction == "verify-otp")
+			return "Verifying OTP...";
+
+		return "Ready for version update";
+	}
+
+	private bool IsUiInteractionDisabled()
+	{
+		return isBusy || isPopupBusy || showLoginPopup || showOtpPopup || showUploadedFileModal;
+	}
+
+	private async Task ShowAppHubToastAsync(string message, string type = "info")
+	{
+		if (string.IsNullOrWhiteSpace(message))
+			return;
+
+		await JS.InvokeVoidAsync("appHubToast.show", message, type);
+	}
+
+	private void ClearForm()
+	{
+		successMessageCts?.Cancel();
+		selectionChangeRequestId++;
+		ClearMessages();
+		ResetFieldsOnly();
+
+		validatedEmployee = new EmployeeLoginValidationResultModel();
+		loginIdInput = string.Empty;
+		loginPopupErrorMessage = string.Empty;
+		loginPopupInfoMessage = string.Empty;
+		otpPopupErrorMessage = string.Empty;
+		otpPopupInfoMessage = string.Empty;
+		ClearOtpInputs();
+		showLoginPopup = false;
+		showOtpPopup = false;
+		showUploadedFileModal = false;
+		pdfViewerBase64 = string.Empty;
+		uploadedFileModalSubTitle = string.Empty;
+	}
+
+	private void ResetFieldsOnly()
+	{
+		selectedApplication = DefaultSelectText;
+		selectedEnvironment = DefaultSelectText;
+		lastVersion = string.Empty;
+		newVersion = string.Empty;
+		uploadedPdfFileName = string.Empty;
+		uploadedPdfFileSize = 0;
+		uploadedPdfBase64 = string.Empty;
+		existingAppUpdateBase64 = string.Empty;
+		showUploadedFileModal = false;
+		pdfViewerBase64 = string.Empty;
+		uploadedFileModalSubTitle = string.Empty;
+		fileUploadControlKey = Guid.NewGuid().ToString();
+	}
+
+	private void ClearMessages()
+	{
+		successMessage = string.Empty;
+		errorMessage = string.Empty;
+	}
+
+	private void CloseLoginPopup()
+	{
+		if (isPopupBusy)
+			return;
+
+		showLoginPopup = false;
+		loginPopupErrorMessage = string.Empty;
+		loginPopupInfoMessage = string.Empty;
+	}
+
+	private void CloseOtpPopup()
+	{
+		if (isPopupBusy)
+			return;
+
+		showOtpPopup = false;
+		otpPopupErrorMessage = string.Empty;
+		otpPopupInfoMessage = string.Empty;
+		ClearOtpInputs();
+	}
+
+	private void ClearOtpInputs()
+	{
+		otpDigits = new string[6] { "", "", "", "", "", "" };
+	}
+
+	private async Task OnOtpInputAsync(int index, ChangeEventArgs e)
+	{
+		var input = Convert.ToString(e.Value)?.Trim() ?? string.Empty;
+
+		if (string.IsNullOrWhiteSpace(input))
+		{
+			otpDigits[index] = string.Empty;
+			return;
+		}
+
+		var digit = input.LastOrDefault(char.IsDigit);
+
+		if (digit == default)
+		{
+			otpDigits[index] = string.Empty;
+			return;
+		}
+
+		otpDigits[index] = digit.ToString();
+
+		if (index < otpDigits.Length - 1)
+		{
+			await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", $"otp-box-{index + 1}");
+		}
+
+		await AutoVerifyOtpIfCompletedAsync();
+	}
+
+	private async Task OnOtpPasteAsync(int startIndex, ClipboardEventArgs e)
+	{
+		try
+		{
+			otpPopupErrorMessage = string.Empty;
+
+			var clipboardText = await JS.InvokeAsync<string>("appHubOtp.getClipboardText");
+			if (string.IsNullOrWhiteSpace(clipboardText))
+				return;
+
+			var digitsOnly = new string(clipboardText.Where(char.IsDigit).ToArray());
+			if (string.IsNullOrWhiteSpace(digitsOnly))
+				return;
+
+			var targetIndex = startIndex;
+
+			for (int i = 0; i < digitsOnly.Length && targetIndex < otpDigits.Length; i++, targetIndex++)
+			{
+				otpDigits[targetIndex] = digitsOnly[i].ToString();
+			}
+
+			await InvokeAsync(StateHasChanged);
+
+			var nextFocusIndex = Array.FindIndex(otpDigits, startIndex, value => string.IsNullOrWhiteSpace(value));
+			if (nextFocusIndex >= 0)
+			{
+				await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", $"otp-box-{nextFocusIndex}");
+			}
+			else
+			{
+				await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", $"otp-box-{otpDigits.Length - 1}");
+			}
+
+			await AutoVerifyOtpIfCompletedAsync();
+		}
+		catch (Exception ex)
+		{
+			otpPopupErrorMessage = ex.Message;
+		}
+	}
+
+	private async Task AutoVerifyOtpIfCompletedAsync()
+	{
+		if (isPopupBusy || isAutoVerifyingOtp)
+			return;
+
+		var enteredOtp = string.Concat(otpDigits);
+
+		if (string.IsNullOrWhiteSpace(enteredOtp) || enteredOtp.Length != 6 || enteredOtp.Any(x => !char.IsDigit(x)))
+			return;
+
+		isAutoVerifyingOtp = true;
+		isPopupBusy = true;
+		currentPopupAction = "verify-otp";
+
+		await InvokeAsync(StateHasChanged);
+
+		try
+		{
+			await Task.Delay(150);
+
+			isPopupBusy = false;
+			currentPopupAction = string.Empty;
+
+			await VerifyOtpAndUpdateAsync();
+		}
+		finally
+		{
+			isAutoVerifyingOtp = false;
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private async Task OnOtpKeyDownAsync(int index, KeyboardEventArgs e)
+	{
+		if (e.Key == "Backspace")
+		{
+			if (string.IsNullOrWhiteSpace(otpDigits[index]))
+			{
+				if (index > 0)
+				{
+					otpDigits[index - 1] = string.Empty;
+					await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", $"otp-box-{index - 1}");
+				}
+			}
+			else
+			{
+				otpDigits[index] = string.Empty;
+			}
+		}
+		else if (e.Key == "ArrowLeft" && index > 0)
+		{
+			await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", $"otp-box-{index - 1}");
+		}
+		else if (e.Key == "ArrowRight" && index < otpDigits.Length - 1)
+		{
+			await JS.InvokeVoidAsync("appHubOtp.focusOtpBox", $"otp-box-{index + 1}");
+		}
+	}
+
+	private static string NormalizeBase64Pdf(string base64Value)
+	{
+		try
+		{
+			if (string.IsNullOrWhiteSpace(base64Value))
+				return string.Empty;
+
+			var normalizedValue = base64Value.Trim();
+
+			var base64MarkerIndex = normalizedValue.IndexOf("base64,", StringComparison.OrdinalIgnoreCase);
+			if (base64MarkerIndex >= 0)
+			{
+				normalizedValue = normalizedValue[(base64MarkerIndex + "base64,".Length)..];
+			}
+
+			normalizedValue = normalizedValue
+				.Replace("\r", string.Empty)
+				.Replace("\n", string.Empty)
+				.Trim();
+
+			_ = Convert.FromBase64String(normalizedValue);
+			return normalizedValue;
+		}
+		catch
+		{
+			return string.Empty;
+		}
+	}
+
+	private static string GenerateSixDigitOtp()
+	{
+		var otpNumber = RandomNumberGenerator.GetInt32(100000, 1000000);
+		return otpNumber.ToString();
+	}
+
+	private static string GetFormattedFileSize(long bytes)
+	{
+		if (bytes <= 0)
+			return "0 KB";
+
+		var kb = bytes / 1024d;
+		if (kb < 1024)
+			return $"{kb:0.##} KB";
+
+		var mb = kb / 1024d;
+		return $"{mb:0.##} MB";
+	}
+
+	private void GoBackToHome()
+	{
+		Navigation.NavigateTo("/");
+	}
+
+	private async Task ToggleThemeAsync()
+	{
+		isDarkMode = await JS.InvokeAsync<bool>("themeManager.toggleTheme");
+	}
+
+	private async Task ScrollToTopAsync()
+	{
+		await JS.InvokeVoidAsync("appHubScroll.scrollToTop");
+	}
+
+	[JSInvokable]
+	public async Task UpdateScrollToTopVisibility(bool visible)
+	{
+		if (showScrollToTop == visible)
+			return;
+
+		showScrollToTop = visible;
+		await InvokeAsync(StateHasChanged);
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		successMessageCts?.Cancel();
+		successMessageCts?.Dispose();
+
+		try
+		{
+			await JS.InvokeVoidAsync("appHubPdfViewer.clear", "apphub-pdf-render-container");
+		}
+		catch
+		{
+		}
+
+		try
+		{
+			if (scrollListenerRegistered)
+				await JS.InvokeVoidAsync("appHubScroll.unregisterScrollListener");
+		}
+		catch
+		{
+		}
+
+		dotNetRef?.Dispose();
+	}
+}

@@ -1,0 +1,38 @@
+{
+    "name": "VUSYS App Hub",
+    "short_name": "App Hub",
+    "description": "Central Application Launcher for all VUSYS applications",
+
+    "start_url": "/",
+    "scope": "/",
+
+    "display": "standalone",
+    "orientation": "portrait-primary",
+
+    "background_color": "#183f66",
+    "theme_color": "#183f66",
+
+    "categories": [ "productivity", "business" ],
+
+    "icons": [
+        {
+            "src": "/images/apphub-icon-192.png",
+            "type": "image/png",
+            "sizes": "192x192",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/images/apphub-icon-512.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "any maskable"
+        },
+
+        /* Extra icons for better splash support */
+        {
+            "src": "/images/apphub-icon-512.png",
+            "type": "image/png",
+            "sizes": "512x512"
+        }
+    ]
+}

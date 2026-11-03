@@ -1,0 +1,23 @@
+﻿@model VUSYSTimeProWebApp.Models.CommonError
+
+@{
+	Layout = "_ErrorLayout";
+	ViewData["Title"] = "Error";
+}
+<form id="form1" runat="server">
+	<div class="CommonErrorContainer">
+		<div class="CommonErrorDiv">
+			<img src="~/Admin/dist/img/@Model.ImageName" class="img-circle img-responsive center-block">
+			<h2>@Model.ErrorMessage</h2>
+			<div class="form-group">
+				<a href="@Url.Action(Model.ActionName, Model.ControllerName)" style="margin-left: 10px; font-weight: bold; color: blue;">@Model.LinkText</a>
+			</div>
+		</div>
+	</div>
+	@if(Model.IsShowFooter)
+	{
+		<footer class="Mfooter">
+			<partial name="_Footer" />
+		</footer>
+	}
+</form>

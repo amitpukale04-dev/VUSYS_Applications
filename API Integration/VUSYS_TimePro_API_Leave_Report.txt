@@ -1,0 +1,326 @@
+
+
+now we will integrate Leave Report with API Integration under Reports Menu. Shall share i my existing latest complete project code and API Details?
+
+
+I have attached my existing latest completed project code. Modify and Provide me full updated project code.
+
+Important Note: To Export To Excel use exportBase64File function.
+
+In Leave Report Below controls
+
+In tp-form-page-heading-actions it should have search Report Icon, export to excel icon and cancel icon
+
+Refer Allocated/Consumed Report For UI/UX.
+
+--First Row (3 Controls) - All are Mandatory
+
+1. Employee - Dropdown - By Default All should be Displayed
+2. Month - Dropdown - By Default Current Month should be Displayed
+3. Year - Dropdown - By Default Current Year should be Displayed
+
+Use Sortable Table like Columns should be
+1. SL No.
+2. Employee Name
+3. Email ID
+4. On Leave
+5. Holiday
+6. Compoff
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Dropdown API
+
+--Employee
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "EmployeeProjectWithAll",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "ALL",
+        "ValueText": "0"
+      },
+      {
+        "DisplayText": "Amit P Pukale",
+        "ValueText": "VUT0011"
+      },
+      {
+        "DisplayText": "Anitha",
+        "ValueText": "VUT002"
+      },
+      {
+        "DisplayText": "Sanket",
+        "ValueText": "VUT003"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+--Month
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Month",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "January",
+        "ValueText": "January"
+      },
+      {
+        "DisplayText": "February",
+        "ValueText": "February"
+      },
+      {
+        "DisplayText": "March",
+        "ValueText": "March"
+      },
+      {
+        "DisplayText": "April",
+        "ValueText": "April"
+      },
+      {
+        "DisplayText": "May",
+        "ValueText": "May"
+      },
+      {
+        "DisplayText": "June",
+        "ValueText": "June"
+      },
+      {
+        "DisplayText": "July",
+        "ValueText": "July"
+      },
+      {
+        "DisplayText": "August",
+        "ValueText": "August"
+      },
+      {
+        "DisplayText": "September",
+        "ValueText": "September"
+      },
+      {
+        "DisplayText": "October",
+        "ValueText": "October"
+      },
+      {
+        "DisplayText": "November",
+        "ValueText": "November"
+      },
+      {
+        "DisplayText": "December",
+        "ValueText": "December"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+--Year
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Year",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "2026",
+        "ValueText": "2026"
+      },
+      {
+        "DisplayText": "2025",
+        "ValueText": "2025"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+/api/Report/GetProjectAllocatedConsumedReportList
+
+when we click on search Report Icon then below is the request payload and Response
+
+/api/Report/GetEmployeeLeaveReportList
+
+when we click on search Report Icon then below is the request payload and Response
+
+Request Payload
+
+{
+  "employeeCode": "0",
+  "leaveMonth": "June",
+  "leaveYear": 2026,
+  "action": "Search"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_LEAVE_REPORT_RESPONSE": [
+      {
+        "SLNo": 1,
+        "FullName": "Amit P Pukale",
+        "EmailID": "test@gmail.com",
+        "OnLeave": 1,
+        "Holiday": 0,
+        "CompOff": 0
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "EMPLOYEE_LEAVE_REPORT_RESPONSE": [
+      {
+        "Message": "Leave Report Not Found."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Report/GetEmployeeLeaveReportList
+
+when we click on export to excel Icon then below is the request payload and Response
+
+Request Payload
+
+{
+  "employeeCode": "0",
+  "leaveMonth": "June",
+  "leaveYear": 2026,
+  "action": "Export"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_LEAVE_EXPORTED_RESPONSE": [
+      {
+        "FileName": "Leave Report June_2026.xlsx",
+        "ContentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "FileBase64": "UEsDBBQAAAAIAINzF11Sh62Y"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "EMPLOYEE_LEAVE_EXPORTED_RESPONSE": [
+      {
+        "FileName": "",
+        "ContentType": "",
+        "FileBase64": ""
+      }
+    ]
+  }
+}

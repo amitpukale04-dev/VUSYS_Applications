@@ -1,0 +1,323 @@
+
+now we will integrate Timesheet Submission with API Integration under Manage Timesheet Menu. Shall share i my existing latest complete project code and API Details?
+
+
+I have attached my existing latest completed project code. Modify and Provide me full updated project code.
+
+I have attached screen screenshots for your reference. But you should follow our UI/UX and architecture standards. As per this application standards.
+
+This is similar to Timesheet Report 
+
+In Timesheet Submission Below controls
+
+In tp-form-page-heading-actions it should have search Report Icon and cancel icon
+
+--First Row (2 Controls) All are Mandatory Fields
+
+1. Month - Dropdown - By Default Current Month should be Displayed
+2. Year - Dropdown - By Default Current Year should be Displayed
+
+Use Sortable Table like Columns should be
+1. Actions (Send For Approval Or Resend For Approval) - This is Link Button
+   - Send For Approval Link Button Flow 
+     1. It Should Visible if IsSentForApproval is false and IsShowSendForApprovalButton is true else dont show from /api/Timesheet/GetTimesheetSubmissionList for that particular row
+	 2. On Click of Send For Approval Link Button. It should ConfirmModal and message should be "Are You Sure You Want To Send Timesheet For Approval ?"
+	 3. If i on click on Yes, Confirm then call the API /api/Timesheet/SubmitTimesheetDetailsForApproval for that particular row
+	 
+   - Resend For Approval Link Button Flow 
+     1. It Should Visible if IsSentForApproval is true and IsAvailableToResendForApproval is true else dont show from /api/Timesheet/GetTimesheetSubmissionList for that particular row
+	 2. On Click of Resend For Approval Link Button. It should ConfirmModal and message should be "Are You Sure You Want To Send Timesheet For Approval ?"
+	 3. If i on click on Yes, Confirm then call the API /api/Timesheet/SubmitTimesheetDetailsForApproval for that particular row
+2. Month
+3. Year
+4. No. of Hours Worked
+5. Approval Status
+6. Approved/Rejected Details - Display View Details Link Button if ApprovedOrRejectedReason is not null and empty from /api/Timesheet/GetTimesheetSubmissionList for that particular row
+    - On click of that Link Button Open a Popup to Show the Details like ApprovedOrRejectedByUser, ApprovedOrRejectedDateTime and ApprovedOrRejectedReason
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Dropdown API
+
+--Month
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Month",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "January",
+        "ValueText": "January"
+      },
+      {
+        "DisplayText": "February",
+        "ValueText": "February"
+      },
+      {
+        "DisplayText": "March",
+        "ValueText": "March"
+      },
+      {
+        "DisplayText": "April",
+        "ValueText": "April"
+      },
+      {
+        "DisplayText": "May",
+        "ValueText": "May"
+      },
+      {
+        "DisplayText": "June",
+        "ValueText": "June"
+      },
+      {
+        "DisplayText": "July",
+        "ValueText": "July"
+      },
+      {
+        "DisplayText": "August",
+        "ValueText": "August"
+      },
+      {
+        "DisplayText": "September",
+        "ValueText": "September"
+      },
+      {
+        "DisplayText": "October",
+        "ValueText": "October"
+      },
+      {
+        "DisplayText": "November",
+        "ValueText": "November"
+      },
+      {
+        "DisplayText": "December",
+        "ValueText": "December"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+--Year
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Year",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "2026",
+        "ValueText": "2026"
+      },
+      {
+        "DisplayText": "2025",
+        "ValueText": "2025"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+/api/Timesheet/GetTimesheetSubmissionList
+
+Here for employeeCode u need to pass from LoggedIn User EmployeeCode
+
+{
+  "employeeCode": "VUT001",
+  "timesheetMonth": "July",
+  "timesheetYear": 2026,
+  "paramType": "GetEmployeeProjectTimesheetForSubmission"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "TIMESHEET_SUBMISSION_RESPONSE": [
+      {
+        "ProjectTimeSheetID": 1003,
+        "EmployeeCode": "VUT001",
+        "FullName": "Amit P Pukale",
+        "TimeSheetMonth": "July",
+        "TimeSheetYear": 2026,
+        "TotalHoursWorked": 8,
+        "TimesheetApprovalStatus": "Not Submitted",
+        "ApprovedOrRejectedReason": "",
+        "ApprovedOrRejectedByUser": "",
+        "ApprovedOrRejectedDateTime": "",
+        "IsShowSendForApprovalButton": true,
+        "IsShowSendNotificationButton": false,
+        "IsSentForApproval": false,
+        "IsAvailableToResendForApproval": false,
+        "IsShowViewDetailsButton": false,
+        "IsShowApproveRejectButton": false
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "TIMESHEET_SUBMISSION_RESPONSE": [
+      {
+        "Message": "Timesheet Submission Not Found."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "TIMESHEET_SUBMISSION_RESPONSE": [
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      },
+      {
+        "Key": "TimesheetMonth",
+        "Message": "Enter The Timesheet Month."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Timesheet/SubmitTimesheetDetailsForApproval
+
+
+Important Note: For approveStatus value should be Send For Approval if the user has clicked on Send For Approval Link.
+For approveStatus value should be Resend For Approval if the user has clicked on Resend For Approval Link
+
+
+Request Payload
+
+{
+  "employeeCode": "VUT001",
+  "timesheetMonth": "July",
+  "timesheetYear": 2026,
+  "projectTimeSheetID": 1003,
+  "approveStatus": "Send For Approval"
+}
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "TIMESHEET_SUBMITTED_RESPONSE": [
+      {
+        "Message": "Your Timesheet Has Been Submitted For Approval Successfully, and an Email Notification Has Been Sent to the Approver !!!"
+      }
+    ]
+  }
+}
+
+Error Reponse
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "TIMESHEET_SUBMITTED_RESPONSE": [
+      {
+        "Message": "Your Timesheet Has Been Already Submitted For Approval"
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      },
+      {
+        "Key": "TimesheetYear",
+        "Message": "Timesheet Year Should Be Greater Than 0."
+      },
+      {
+        "Key": "TimesheetMonth",
+        "Message": "Enter The Timesheet Month."
+      }
+    ]
+  }
+}

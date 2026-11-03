@@ -1,0 +1,50 @@
+﻿<style>
+	#tblViewTimeSheetList td:nth-child(6) {
+		white-space: normal !important;
+		word-break: break-word;
+		vertical-align: top;
+	}
+
+	#tblViewTimeSheetList td ol {
+		padding-left: 18px;
+		margin: 0;
+	}
+
+	#tblViewTimeSheetList td li {
+		margin-bottom: 3px;
+	}
+</style>
+<div class="modal fade" id="modalViewTimesheet" tabindex="-1" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="modalViewTimesheetLabel" aria-hidden="true">
+	<div class="modal-dialog modal-xl" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="modalViewTimesheetTitle">Timesheet Details</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+				<div class="container">
+					<div style="width:100%; margin:0 auto; overflow-x: auto;">
+						<table id="tblViewTimeSheetList" class="table table-striped table-bordered" width="100%" cellspacing="0">
+							<thead class="VUSYSTableHeader">
+								<tr>
+									<th>SL No.</th>
+									<th>Task Date</th>
+									<th>Client</th>
+									<th>Project</th>
+									<th>Activity</th>
+									<th>Task Description</th>
+									<th>No. of Hours Worked</th>
+								</tr>
+							</thead>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-danger btn-mgn" data-dismiss="modal"><i class="fas fa-close"></i> Cancel</button>
+			</div>
+		</div>
+	</div>
+</div>

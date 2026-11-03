@@ -1,0 +1,76 @@
+{
+    "ConnectionMappings": [
+        {
+            "Application": "Sharpply",
+            "Environment": "Development",
+            "ConnectionString": "Driver=SQL Anywhere 17;Uid=uZKYZE6BhP3YqUiGPrgZtlWb5GsXcf41GfZLEsjh76U=;Pwd=FiGOOW6Ybh+MqB/ntPH6Z/p6CxIIwXvAuZNXyuzg5a8jQ8TR9iYWrq70B8UqFL2A;Server=8HTjArDCHtq1lJ5UsyL5vPYQXfWDAh/l843IK0dMQas=;Host=ILifJixZO2Cn4tG3NX6DfG0275DcDaTliVif0h/FBMg1/3D8O8teNohYl2Hd2d8l;Database=UVvNMxtKmY3YRhWzhOFoSVgVXY9P43E6Shpa5YqVDlw="
+        },
+        {
+            "Application": "Sharpply",
+            "Environment": "Staging",
+            "ConnectionString": "Driver=SQL Anywhere 17;Uid=lzSyjbp860aMS1KgH6SeZmCEDW8KI5PHDA3AUFjjbf8=;Pwd=os53d8fl1upw68XOEUwrgeMGRy95egVeW7T6q/NY8CpoeP2IMjeX5wuwzlphyGwr;Server=D7JheAze9CKkTgNBXd1A7WWeJnSMfB9amgrdZvlm2/M8WYz3Cgjce3gAwDqh3k/w;Host=x7c63DOzBKL5bNRyWzhebFxusURTjFkQd03CK6RuRIggmf0NGynTxkIkKoW/UT3a;Database=giFDPMo9vJxmYp/iW11usUD6mzSGgRWWkenXF5fAyn8="
+        },
+        {
+            "Application": "Sharpply",
+            "Environment": "Production",
+            "ConnectionString": "Driver=SQL Anywhere 17;Uid=oS5br0GLDQ5v8J0ZETlp9E4upiLW0RP8HSxKAc1I9wY=;Pwd=Od96k4Z6RHyk3sPc27w/AKL4jDUMRtwMHER8Nc+Pdf8wpiHh5dfMZGAEegfyPCeX;Server=MGosmgixBaNJ47XQr/we9wuiekfqM2eGPh39MI9yqUc=;Host=G6JU3PdVf4Rv5tzNgmagsesfhEjs+4INE0IiBltTHkgzmE5wyn9o4kADaZ7NxhHe;Database=K3MjPrADEHvMwjdy+IkejD5YuZsWasVYpHYEnWSnauw="
+        },
+        {
+            "Application": "Protectron",
+            "Environment": "Development",
+            "ConnectionString": "Driver=SQL Anywhere 17;Uid=CdOCR+yae1kRCZmIPmp93jd8XeUkxMGftWekgyAswvM=;Pwd=lldB9BCKIbP3BW3gMuicjORi3uNM/02gDdzXQCEaT7w=;Server=1i7rQBSC5zDTjZMXHApPBRRgPT1mMPjIyFYBaROd9JyBATFWW6uGwl0RP7RUKIsb;Host=TS3zY9lNMsxbkw5bnfBYwvzG6BjzikQZBZoL/oE0b1brE8jrOsejZwb/MB8BLuV7;Database=eH87xmI2aHvtAzQTEuoB9+ZCo0dlwrpggiawqPKaroY="
+        },
+        {
+            "Application": "Protectron",
+            "Environment": "Staging",
+            "ConnectionString": "Driver=SQL Anywhere 17;Uid=QOQdISSy9dV4+f6WwMPn1QLJqSNJCkbNqGeiL6n0YBQ=;Pwd=BRe60WCt2NR1pZcCmfEPILamXW1MgIcRIlenPHWNWjw=;Server=4WDZDxndghxJzU9vsp2UXjEfN89SIrh4BY7oaW3eeNy4nUyJX3X8WE8rnnentGiZ; Host=8GvbVZV322KTjRApTpcbQvEY9iwpJMyskC/Pkh8RKVzpaUSEMLoLdsSk1ftuRDqx; Database=4nAbYtbGd4g4h1ZJ788lmlyf0yVpPCFOocSymBsynpc="
+        },
+        {
+            "Application": "Protectron",
+            "Environment": "Production",
+            "ConnectionString": "Driver=SQL Anywhere 17;Uid=MmpoZeT9XXGkQ+sow0Bp2m8YYTx06Yy7CMYTBt8W5fM=;Pwd=wmhSql5VaNu6ngaW3gMrGMNRZLvDsdxm1gmCVlkPotQ=;Server=tNLs5gouBML17TXxnMrT0DZjZJ4FS46e9u1NzLsq2msLWdHQeIXW7YVJgnQOv0fP;Host=b6sPEH0XjSRFjULwKufhzKfHb8N7V2zzZDZ079kL3Kx0TFHVJQpc540G9B5lMKFu;Database=s2JyG5ZiAh2Illa7tQ5bWtW78qis0AqS4j7MgTCecek="
+        },
+
+        {
+            "Application": "Protectron HR",
+            "Environment": "Development",
+            "ConnectionString": "Driver=SQL Anywhere 17;Uid=MPHKyqTqfVfohE6IagsmgZ9G1cMLW1y8OxahenbT7hA=;Pwd=iVzBe18SdvqwjP7hiox60wyYfIexQnffTQNIlDAzMoI=;Server=dWbFzCt1tQHFODKDT39e9ZDP7jEsje9xqtwxlUm7Dc3T8CsDqJP2kqCqbZvAK3wR;Host=ZwXiuBAX7DDEvUzbZ01AWlG2mxI7f9gDSUPjTZUUn8cKrO7YaKwTTTW891woACQ1;Database=uHYuT4Q7CVRB2NgtpxyOs61wnrFL2cs06bsEJaas3uA="
+        },
+        {
+            "Application": "Protectron HR",
+            "Environment": "Staging",
+            "ConnectionString": "Driver=SQL Anywhere 17;Uid=MPHKyqTqfVfohE6IagsmgZ9G1cMLW1y8OxahenbT7hA=;Pwd=iVzBe18SdvqwjP7hiox60wyYfIexQnffTQNIlDAzMoI=;Server=dWbFzCt1tQHFODKDT39e9ZDP7jEsje9xqtwxlUm7Dc3T8CsDqJP2kqCqbZvAK3wR;Host=ZwXiuBAX7DDEvUzbZ01AWlG2mxI7f9gDSUPjTZUUn8cKrO7YaKwTTTW891woACQ1;Database=uHYuT4Q7CVRB2NgtpxyOs61wnrFL2cs06bsEJaas3uA="
+        },
+        {
+            "Application": "Protectron HR",
+            "Environment": "Production",
+            "ConnectionString": "Driver=SQL Anywhere 17;Uid=E9ElfEALojP55hMLE5qF2JXNGDnpPUZ6M2QwjD2uYms=;Pwd=Rt78ATI3jj6zxA9TMcArlFaEQhWEeq+x2K7pvtLrfJQ=;Server=o8mBvP5z7RWLNnrCtHiTChK44pcV2W1R8aCIdrJTN7A=;Host=AH3CEWId4RYrVqqxBiufWZkTfuV6lQXVMtlYdcszqbixAtsceVn5TFBnV3B/6nRW;Database=bYpZyPueM6gvjKL977xzuN5sfZsVBKqQTfNKGfAsjL8="
+        },
+
+        {
+            "Application": "Inspire Magnetics",
+            "Environment": "Development",
+            "ConnectionString": "Driver=SQL Anywhere 17;Uid=WMFdfxtScuZUr3BNL1yfJjfY25/4l7iwsrCOCKqyUqQ=;Pwd=seEpK5BUkOSLPji9R6Cf0pvyyLykXCJAfYhWqcKC884=;Server=jB0Hm2GSvFQRNgYhGhJ0UmfVYCAlXRRvRZJEuUU6zMc=;Host=POwfyRUuNLWYhkfx7aXInJ52v7vI1nyVPJSnNxqwos8jo5QCzEZLri2ejgvY9cIJ;Database=HTI0Pf4FPTUn05yfuIBGBNgSUJGqpdf16TiHNh5eVjA7voJYWyCnyOGIoUukzc2Q"
+        },
+        {
+            "Application": "Inspire Magnetics",
+            "Environment": "Staging",
+            "ConnectionString": "Driver=SQL Anywhere 17;Uid=WMFdfxtScuZUr3BNL1yfJjfY25/4l7iwsrCOCKqyUqQ=;Pwd=seEpK5BUkOSLPji9R6Cf0pvyyLykXCJAfYhWqcKC884=;Server=eMmAlEFHUjwokjl56hazChebIpCN+BSo6xMRI6Sk7uFYTJCOneZws43JdwdoL232;Host=XHgGZfPBquzb7uM18LqqHTHsPyUBF3219phCLTC2I5sRo4ax+772iPH6dDq6lBfk;Database=HTI0Pf4FPTUn05yfuIBGBNgSUJGqpdf16TiHNh5eVjA7voJYWyCnyOGIoUukzc2Q"
+        },
+        {
+            "Application": "Inspire Magnetics",
+            "Environment": "Production",
+            "ConnectionString": "Driver=SQL Anywhere 17;Uid=nQC1YmZp9zgmHUgx5U9uiXukOqHj0xacjen+Y4zPR5s=;Pwd=nf4HPLcWY6Gn+GZg1WiqKzt7q9ojmg3YsAQsf59DgBM=;Server=kkWjDQy1pzQ4gb7ABqgD4sKgI9pGdtEeQZ+zFgtUkikeTZMYpHszTob+xkqE0AWv; Host=LavFfYTesL14ZH+R8HyDWGRq3v9SrpJzLQG7KBlmpmmrodMwPnxDKgNLw7ZTip74; Database=mTgN6kBj1+kGlkL7yjE4qS4u1W9NCoOYBIJ/ZkrJvLSPKmmDsKVArx2KsT7jPX3m"
+        },
+        {
+            "Application": "TimePro",
+            "Environment": "Development",
+            "ConnectionString": "Data Source=DESKTOP-QE1TBUJ; Initial Catalog=VUSYSTimePro; Integrated Security=true; User ID=sa; password=123456; Trusted_Connection=false; TrustServerCertificate=true"
+        },
+        {
+            "Application": "TimePro",
+            "Environment": "Production",
+            "ConnectionString": "Data Source=WIN-J677118KRF9; Initial Catalog=VUSYSTimeProLive; Integrated Security=true; User ID=sa; password=vusys_sa_adm@123456$; Trusted_Connection=false; TrustServerCertificate=true"
+        }
+    ]
+}

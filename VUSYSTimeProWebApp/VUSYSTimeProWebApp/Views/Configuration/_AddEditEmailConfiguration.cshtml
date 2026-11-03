@@ -1,0 +1,78 @@
+﻿@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	TempData["ActionName"] = "GetAllEmailConfigurationList";
+	TempData["ControllerName"] = "Configuration";
+}
+
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmailConfigurationMaster.FromEmail" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-8">
+			<input asp-for="EmailConfigurationMaster.FromEmail" class="form-control" />
+			<span asp-validation-for="EmailConfigurationMaster.FromEmail" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmailConfigurationMaster.Password" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-8">
+			@{
+				if (ViewBag.EncryptedPassword != null)
+				{
+					<input type="password" asp-for="EmailConfigurationMaster.Password" value="@ViewBag.EncryptedPassword" class="form-control" />
+				}
+				else
+				{
+					<input type="password" asp-for="EmailConfigurationMaster.Password" class="form-control" />
+				}
+			}
+			<span asp-validation-for="EmailConfigurationMaster.Password" class="text-danger"></span>
+		</div>
+	</div>
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmailConfigurationMaster.SmtpHost" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-8">
+			<input asp-for="EmailConfigurationMaster.SmtpHost" class="form-control" />
+			<span asp-validation-for="EmailConfigurationMaster.SmtpHost" class="text-danger"></span>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="EmailConfigurationMaster.PortNo" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-8">
+			<input asp-for="EmailConfigurationMaster.PortNo" class="form-control" onpaste="javascript:return false;" ondrop="javascript:return false;" onkeypress="return IsNumeric(event);" />
+			<span asp-validation-for="EmailConfigurationMaster.PortNo" class="text-danger"></span>
+		</div>
+	</div>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<div class="col-sm-6 col-md-4 left">
+			<div class="col-sm-12 col-md-4 mandatory">
+				<label asp-for="EmailConfigurationMaster.IsDeleted" class="control-label mandatory"></label>
+				<div class="form-check">
+					<input type="checkbox" class="form-check-input" asp-for="EmailConfigurationMaster.IsDeleted" />
+					<span asp-validation-for="EmailConfigurationMaster.IsDeleted" class="text-danger"></span>
+				</div>
+			</div>
+		</div>
+	}
+</div>
+<div class="form-group">
+	<button type="submit" id="btnAddEditEmailConfigurationMaster" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-save"></i> Save</button>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<button type="button" id="btnAddEditEmailConfigurationMasterClear" class="btn btn-secondary btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-reset"></i> Clear</button>
+	}
+	@await Html.PartialAsync("CommonControls/_CancelButton")
+</div>
+@await Html.PartialAsync("CommonControls/_BackToList")
+@await Html.PartialAsync("AlertNotification/_AlertNotification")

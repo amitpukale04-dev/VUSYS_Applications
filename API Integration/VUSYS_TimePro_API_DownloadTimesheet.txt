@@ -1,0 +1,468 @@
+
+now we will integrate Download Timesheet Screen with API Integration under Manage Timesheet Menu. Shall share i my existing latest complete project code and API Details?
+
+
+I have attached my existing latest complete project code. Modify and Provide me full updated project code.
+
+I have attached screen screenshots for your reference. But you should follow our UI/UX and architecture standards. As per this application standards.
+
+In Download Timesheet Below controls
+
+In tp-form-page-heading-actions it should have View Timesheet Icon, Download Timesheet Icon, Download DateWise Timesheet Icon, Download ProjectWise Timesheet Icon, and cancel icon
+
+Create SVG Icon for View Timesheet Icon, Download Timesheet Icon, Download DateWise Timesheet Icon and Download ProjectWise Timesheet Icon
+
+1. View Timesheet Icon - This View Timesheet Icon should be display if the LoggedIn User Role is Admin Else dont display.
+
+--First Row (3 Controls) All are Mandatory Fields
+All Dropdowns should be Searchable.
+
+1. Employee - Dropdown - If the LoggedIn User Role is Admin then display all the Employees else Display LoggedIn Employee
+2. TimesheetMonth - Dropdown - By Default Current Month should be Displayed
+3. TimesheetYear - Dropdown - By Default Current Year should be Displayed
+
+Before clicking on View Timesheet Icon Flow. The User Will Select Employee, Timesheet Month and Timesheet Year from the Dropdowns
+Then when user clicks on View Timesheet Icon the api will be called and once the response is received from the Then Open the Popup and in that Popup it should have 
+Sortable Table like Columns should be
+
+For the Popup I have attached screen screenshot for your reference. But you should follow our UI/UX and architecture standards. As per this application standards.
+
+1. SL No.
+2. Employee Code
+3. Name
+4. Task Date
+5. Client
+6. Project
+7. Activity
+8. Task Description
+9. No. of Hours Worked
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Dropdown API
+
+--Employee
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Employee",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "ALL",
+        "ValueText": "0"
+      },
+      {
+        "DisplayText": "Amit P Pukale",
+        "ValueText": "VUT0011"
+      },
+      {
+        "DisplayText": "Anitha",
+        "ValueText": "VUT002"
+      },
+      {
+        "DisplayText": "Sanket",
+        "ValueText": "VUT003"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+--Month
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Month",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "January",
+        "ValueText": "January"
+      },
+      {
+        "DisplayText": "February",
+        "ValueText": "February"
+      },
+      {
+        "DisplayText": "March",
+        "ValueText": "March"
+      },
+      {
+        "DisplayText": "April",
+        "ValueText": "April"
+      },
+      {
+        "DisplayText": "May",
+        "ValueText": "May"
+      },
+      {
+        "DisplayText": "June",
+        "ValueText": "June"
+      },
+      {
+        "DisplayText": "July",
+        "ValueText": "July"
+      },
+      {
+        "DisplayText": "August",
+        "ValueText": "August"
+      },
+      {
+        "DisplayText": "September",
+        "ValueText": "September"
+      },
+      {
+        "DisplayText": "October",
+        "ValueText": "October"
+      },
+      {
+        "DisplayText": "November",
+        "ValueText": "November"
+      },
+      {
+        "DisplayText": "December",
+        "ValueText": "December"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+--Year
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Year",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "2026",
+        "ValueText": "2026"
+      },
+      {
+        "DisplayText": "2025",
+        "ValueText": "2025"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+/api/Timesheet/GetOrExportEmployeeTimesheetList
+
+When we click on View Timesheet Icon
+
+Request Payload
+
+{
+  "employeeCode": "VUT002",
+  "timesheetMonth": "June",
+  "timesheetYear": 2026,
+  "projectTimeSheetID": 0,
+  "action": "View"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_TIMESHEET_RESPONSE": [
+      {
+        "SLNo": 1,
+        "EmployeeCode": "VUT002",
+        "Name": "Anitha",
+        "DisplayTaskDate": "05-06-2026",
+        "ClientName": "Sharpply",
+        "ProjectName": "Sharpply",
+        "ActivityName": "Frontend Development",
+        "TaskDescription": "<ol><li>&nbsp;Test</li></ol>",
+        "TotalHoursWorked": 8
+      },
+      {
+        "SLNo": 2,
+        "EmployeeCode": "VUT002",
+        "Name": "Anitha",
+        "DisplayTaskDate": "21-08-2026",
+        "ClientName": "Sharpply",
+        "ProjectName": "Sharpply",
+        "ActivityName": "Frontend Development",
+        "TaskDescription": "<ol><li>&nbsp;Frontend Task - Completed</li></ol>",
+        "TotalHoursWorked": 8
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "EMPLOYEE_TIMESHEET_RESPONSE": [
+      {
+        "Message": "Timesheet Data Not Found."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      },
+      {
+        "Key": "TimesheetMonth",
+        "Message": "Enter The Timesheet Month."
+      },
+	  {
+        "Key": "Action",
+        "Message": "Enter The Action(View/Export/ExportDateWise)."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+/api/Timesheet/GetOrExportEmployeeTimesheetList
+
+When we click on Download Timesheet Icon
+
+Request Payload
+
+{
+  "employeeCode": "VUT001",
+  "timesheetMonth": "June",
+  "timesheetYear": 2026,
+  "projectTimeSheetID": 0,
+  "action": "Export"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_TIMESHEET_EXPORTED_RESPONSE": [
+      {
+        "FileName": "VUT001_TimeSheet_June_2026.xlsx",
+        "ContentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "FileBase64": "UEsDBBQAAAAIADBnGF2KTk6H"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "EMPLOYEE_TIMESHEET_EXPORTED_RESPONSE": [
+      {
+        "FileName": "",
+        "ContentType": "",
+        "FileBase64": ""
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      },
+      {
+        "Key": "TimesheetMonth",
+        "Message": "Enter The Timesheet Month."
+      },
+	  {
+        "Key": "Action",
+        "Message": "Enter The Action(View/Export/ExportDateWise)."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Timesheet/GetOrExportEmployeeTimesheetList
+
+When we click on Download DateWise Timesheet Icon
+
+Request Payload
+
+{
+  "employeeCode": "VUT001",
+  "timesheetMonth": "June",
+  "timesheetYear": 2026,
+  "projectTimeSheetID": 0,
+  "action": "ExportDateWise"
+}
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_TIMESHEET_DATE_WISE_EXPORTED_RESPONSE": [
+      {
+        "FileName": "VUT001_TimeSheet_June_2026_DateWise.xlsx",
+        "ContentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "FileBase64": "UEsDBBQAAAAIADhoGF1YtMg4Cg"
+      }
+    ]
+  }
+}
+
+Error Reponse
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "EMPLOYEE_TIMESHEET_DATE_WISE_EXPORTED_RESPONSE": [
+      {
+        "FileName": "",
+        "ContentType": "",
+        "FileBase64": ""
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      },
+      {
+        "Key": "TimesheetMonth",
+        "Message": "Enter The Timesheet Month."
+      },
+	  {
+        "Key": "Action",
+        "Message": "Enter The Action(View/Export/ExportDateWise)."
+      }
+    ]
+  }
+}

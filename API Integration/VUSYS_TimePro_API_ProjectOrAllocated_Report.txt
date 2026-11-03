@@ -1,0 +1,213 @@
+
+
+now we will integrate Allocated/Consumed Report Report with API Integration under Reports Menu. Shall share i my existing latest complete project code and API Details?
+
+
+I have attached my existing latest completed project code. Modify and Provide me full updated project code.
+
+Important Note: To Export To Excel use exportBase64File function.
+
+It is like Timesheet Report
+
+In Allocated/Consumed Report Below controls
+
+In tp-form-page-heading-actions it should have search Report Icon, export to excel icon and cancel icon
+
+--First Row 
+
+1. Project - Dropdown (It should be Mandatory Field)
+
+Use Sortable Table like Columns should be
+1. SL No.
+2. Project Code
+3. Project Name
+4. Client
+5. Allocated Hours
+6. ConsumedHours
+7. Requirement Gathering & Analysis
+8. System Design
+9. Frontend Development
+10. Backend Development
+11. Code Review
+12. System Testing
+13. Project Management
+14. Deployment
+15. Post-Deployment Monitoring
+16. Fix Post-Release Bugs
+17. Maintenance
+
+When the Screen is invoked it should call the API.
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Dropdown API
+
+--Project
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "AllProject",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "ALL",
+        "ValueText": "0"
+      },
+      {
+        "DisplayText": "Demo Client",
+        "ValueText": "5"
+      },
+      {
+        "DisplayText": "Demo Client1",
+        "ValueText": "6"
+      },
+      {
+        "DisplayText": "Sharpply",
+        "ValueText": "1"
+      },
+      {
+        "DisplayText": "Stylebox",
+        "ValueText": "2"
+      },
+      {
+        "DisplayText": "Timesheet Management",
+        "ValueText": "3"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+/api/Report/GetProjectAllocatedConsumedReportList
+
+when we click on search Report Icon then below is the request payload and Response
+
+Request Payload
+
+{
+  "projectID": 1
+  "action": "Search"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "PROJECT_ALLOCATED_CONSUMED_REPORT_RESPONSE": [
+      {
+        "SLNo": 1,
+        "ProjectID": 1,
+        "ProjectCode": "VUSYS_SHARPPLY",
+        "ProjectName": "Sharpply",
+        "ClientName": "Sharpply",
+        "AllocatedHours": 800,
+        "ConsumedHours": 67,
+        "RequirementGatheringAndAnalysis": 0,
+        "SystemDesign": 0,
+        "FrontendDevelopment": 8,
+        "BackendDevelopment": 31,
+        "CodeReview": 0,
+        "SystemTesting": 0,
+        "ProjectManagement": 0,
+        "Deployment": 0,
+        "PostDeploymentMonitoring": 0,
+        "FixPostReleaseBugs": 0,
+        "Maintenance": 0,
+        "KnowledgeTransfer": 0,
+        "Learning": 0
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "PROJECT_ALLOCATED_CONSUMED_REPORT_RESPONSE": []
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Report/GetProjectAllocatedConsumedReportList
+
+when we click on export to excel Icon then below is the request payload and Response
+
+Request Payload
+
+{
+  "projectID": 1
+  "action": "Export"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "PROJECT_ALLOCATED_CONSUMED_EXPORTED_RESPONSE": [
+      {
+        "FileName": "ProjectAllocatedOrConsumedReport.xlsx",
+        "ContentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "FileBase64": "UEsDBBQAAAAIAH1uF11U/JY6CgEAAMsBAAAPAAAAeGwvd29ya2Jvb2sueG"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "PROJECT_ALLOCATED_CONSUMED_EXPORTED_RESPONSE": [
+      {
+        "FileName": "",
+        "ContentType": "",
+        "FileBase64": ""
+      }
+    ]
+  }
+}

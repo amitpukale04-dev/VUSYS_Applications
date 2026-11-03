@@ -1,0 +1,146 @@
+﻿@using CommonLib.Constants
+@model VUSYSTimeProWebApp.ViewModels.AllViewModel;
+
+@{
+	TempData["ActionName"] = "GetAllTimesheetList";
+	TempData["ControllerName"] = "Timesheet";
+}
+<style>
+	.table-responsive {
+		width: 100%;
+		overflow-x: auto;
+	}
+	
+	.table-responsive table {
+		min-width: 800px;
+	}
+</style>
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="projectTimesheet.ProjectID" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<select id="ddlProject" asp-for="projectTimesheet.ProjectID" class="form-control" asp-items="@(new SelectList(ViewBag.ProjectList,"Value","Text"))"></select>
+			<span asp-validation-for="projectTimesheet.ProjectID" class="text-danger"></span>
+		</div>
+	</div>
+
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="projectTimesheet.ProjectActivityID" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<select id="ddlProjectActivity" asp-for="projectTimesheet.ProjectActivityID" class="form-control" asp-items="@(new SelectList(ViewBag.ProjectActivityList,"Value","Text"))"></select>
+			<span asp-validation-for="projectTimesheet.ProjectActivityID" class="text-danger"></span>
+		</div>
+	</div>
+
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="projectTimesheet.TaskDate" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="projectTimesheet.TaskDate" class="form-control" />
+			<span asp-validation-for="projectTimesheet.TaskDate" class="text-danger"></span>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-6 col-md-4 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="projectTimesheet.NoofHoursWorked" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-10">
+			<input asp-for="projectTimesheet.NoofHoursWorked" class="form-control" />
+			<span asp-validation-for="projectTimesheet.NoofHoursWorked" class="text-danger"></span>
+		</div>
+	</div>
+
+	<div class="col-sm-6 col-md-6 left">
+		<div class="col-sm-12 col-md-4">
+			<div class="custom-control custom-switch mandatory mt-4">
+				<input type="checkbox" id="chkIsOnLeave" class="custom-control-input" asp-for="projectTimesheet.IsOnLeave">
+				<label asp-for="projectTimesheet.IsOnLeave" class="custom-control-label"></label>
+				<span asp-validation-for="projectTimesheet.IsOnLeave" class="text-danger"></span>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="row form-group">
+	<div class="col-sm-6 col-md-12 left">
+		<div class="col-sm-12 col-md-6 mandatory">
+			<label asp-for="projectTimesheet.TaskDescription" class="control-label"></label>
+		</div>
+		<div class="col-sm-12 col-md-12">
+			@* <div id="editor"></div>
+			<textarea asp-for="projectTimesheet.TaskDescription" id="txtTaskDescription" class="form-control" hidden></textarea> *@
+			<textarea asp-for="projectTimesheet.TaskDescription" id="txtTaskDescription" class="form-control" rows="5"></textarea>
+			<span asp-validation-for="projectTimesheet.TaskDescription" class="text-danger"></span>
+		</div>
+	</div>
+</div>
+<div class="form-group">
+	<button type="submit" id="btnAddEditTimesheet" name="action" value="Add" class="btn btn-success btn-mgn VUSYSbg"><i class="fas fa-save"></i> Add</button>
+	<button type="button" id="btnSaveTimesheet" name="action" value="Save" class="btn btn-success btn-mgn VUSYSbg" onclick="confirmSaveTimesheet(this)"><i class="fas fa-save"></i> Save Timesheet</button>
+	@if (@ViewBag.IsVisible != null && @ViewBag.IsVisible == true)
+	{
+		<button type="button" id="btnAddEditTimesheetClear" class="btn btn-secondary btn-mgn VUSYSbg" onclick="fnReset(this)"><i class="fas fa-reset"></i> Clear</button>
+	}
+	@await Html.PartialAsync("CommonControls/_CancelButton")
+</div>
+@if (ViewBag.TempTimesheetList != null)
+{
+	<div class="container">
+		<div class="table-responsive">
+			<table id="tblTempTimesheetList" class="table table-striped table-bordered dt-responsive nowrap w-100" cellspacing="0">
+				<thead class="VUSYSTableHeader">
+					<tr>
+						<th></th>
+						<th>SL No.</th>
+						<th>Project</th>
+						<th>Activity</th>
+						<th>Date</th>
+						<th>Description</th>
+						<th>On Leave</th>
+						<th>No. of Hours Worked</th>
+					</tr>
+				</thead>
+				<tbody>
+					@foreach (var item in ViewBag.TempTimesheetList as List<ProjectTimesheet>)
+					{
+						if (item.IsDeleted == false)
+						{
+							<tr>
+								<td>
+									@if (item.IsSentForApproval == false || (item.IsSentForApproval == true && item.IsApproved == false && item.ApprovedOrRejectedReason == null))
+									{
+										<!-- Edit Button -->
+										@* <a href="@Url.Action("Edit", "Form", new { id = item.ProjectID })" class="btn btn-warning btn-sm">Edit</a> *@
+
+										<a href="@Url.Action("EditTimesheet", "Timesheet", new { id = item.ProjectTimeSheetDetailID })" class="" data-toggle="tooltip" data-placement="top" title="Edit Timesheet Details" style="cursor:pointer"><i class="fas fa-pencil-alt"></i></a>
+
+										<!-- Delete Button -->
+										@* <a href="@Url.Action("Delete", "Form", new { id = item.ProjectID })" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a> *@
+										<a href="@Url.Action("DeleteTimesheet", "Timesheet", new { id = item.ProjectTimeSheetDetailID })" class="" data-toggle="tooltip" data-placement="top" title="Delete Timesheet Details" style="cursor:pointer" onclick="return confirmDeleteTimeSheet(this);">
+											<i class="fas fa-trash-alt"></i>
+										</a>
+									}
+								</td>
+								<td>@item.SLNo</td>
+								<td>@item.ProjectName</td>
+								<td>@item.ActivityName</td>
+								<td>@item.TaskDate.ToString(DateTimeFormatConstants.DDMMYYYY_SLASH_DATEFORMAT)</td>
+								<td class="px-4 py-2">@Html.Raw(item.TaskDescriptionRaw)</td>
+								<td>@(item.IsOnLeave == false ? "No" : "Yes")</td>
+								<td>@item.NoofHoursWorked</td>
+							</tr>
+						}
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
+}
+@await Html.PartialAsync("CommonControls/_BackToList")
+@await Html.PartialAsync("AlertNotification/_AlertNotification")

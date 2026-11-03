@@ -1,0 +1,12 @@
+{
+    "profiles": {
+        "EmployeeTimesheetReminderSchedulerNotification": {
+            "commandName": "Project",
+            "commandLineArgs": "EmployeeTimesheetReminderSchedulerNotification"
+        },
+        "EmployeeLeaveAndHolidayTimesheetSyncScheduler": {
+            "commandName": "Project",
+            "commandLineArgs": "EmployeeLeaveAndHolidayTimesheetSyncScheduler"
+        }
+    }
+}

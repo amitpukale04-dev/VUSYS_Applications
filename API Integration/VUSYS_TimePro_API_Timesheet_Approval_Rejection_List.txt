@@ -1,0 +1,568 @@
+
+now we will integrate Timesheet Approval Rejection List with API Integration under Manage Timesheet Menu. Shall share i my existing latest complete project code and API Details?
+
+
+I have attached my existing latest completed project code. Modify and Provide me full updated project code.
+
+I have attached screen screenshots for your reference. But you should follow our UI/UX and architecture standards. As per this application standards.
+
+This is similar to Timesheet Report 
+
+In Timesheet Approval Rejection List Below controls
+
+In tp-form-page-heading-actions it should have search Report Icon and cancel icon
+
+--First Row (3 Controls) All are Mandatory Fields
+
+1. Employee - Dropdown
+2. Month - Dropdown - By Default Current Month should be Displayed
+3. Year - Dropdown - By Default Current Year should be Displayed
+
+Use Sortable Table like Columns should be (Refer Employee Master)
+1. The Actions column should contain the following options:
+    - Approve / Reject (It should be Displayed like Third Screenshot like Edit and Delete)
+	- Download (It should be Displayed like Third Screenshot like Edit and Delete)
+	  
+	
+   1. Approve / Reject
+      When the user clicks Approve or Reject, open the Timesheet Approve/Reject popup, as shown in the attached first screenshot.
+	  The popup should contain the following fields and controls and It should Populate the data into respective textbox from that particular row
+       - EmployeeCode (Textbox Readonly), Timesheet Month (Textbox Readonly), Timesheet Year (Textbox Readonly),
+         Approval Status (Dropdown) and the dropdown items should be Reject (ValueText is 0 and DisplayText is Reject) and Approve (ValueText is 1 and DisplayText is Approve)
+	     Remarks (Textarea), 
+	  - View Timesheet Link Button - When the user clicks View Timesheet, open the Timesheet Details popup as shown in the attached second screenshot.
+	    The same popup functionality has already been implemented in the Download Timesheet screen when clicking View Timesheet. The existing implementation should be reused.
+	  - Save Button and Cancel Button.	  
+
+	 a). Reject Flow
+      - When the user selects Reject from the Approval Status dropdown and clicks Save it should Open the ConfirmModal.
+	  - And Display the Message as Are You Sure You Want To Reject This Timesheet ?
+	  - If the user clicks Yes, Confirm then call the /api/Timesheet/ApproveOrRejectTimesheet for that particular row
+	  
+     b) Approve Flow
+      - When the user selects Approve from the Approval Status dropdown and clicks Save it should Open the ConfirmModal.
+	  - And Display the Message as Are You Sure You Want To Approve This Timesheet ?
+	  - If the user clicks Yes, Confirm then call the /api/Timesheet/ApproveOrRejectTimesheet for that particular row
+ 
+		 
+	2. Download 
+	    - When we click on Download you should call /api/Timesheet/GetOrExportEmployeeTimesheetList API 
+		 
+2. SL No   
+3. Employee Code
+4. Name
+5. Month
+6. Year
+7. No. of Hours Worked
+8. Approval Status
+9. Approved/Rejected Details - Display View Details Link Button if ApprovedOrRejectedReason is not null and empty from /api/Timesheet/GetTimesheetSubmissionList for that particular row
+    - On click of that Link Button Open a Popup to Show the Details like ApprovedOrRejectedByUser, ApprovedOrRejectedDateTime and ApprovedOrRejectedReason
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Dropdown API
+
+--Employee
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "EmployeeProjectWithAll",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "ALL",
+        "ValueText": "0"
+      },
+      {
+        "DisplayText": "Amit P Pukale",
+        "ValueText": "VUT0011"
+      },
+      {
+        "DisplayText": "Anitha",
+        "ValueText": "VUT002"
+      },
+      {
+        "DisplayText": "Sanket",
+        "ValueText": "VUT003"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+--Month
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Month",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "January",
+        "ValueText": "January"
+      },
+      {
+        "DisplayText": "February",
+        "ValueText": "February"
+      },
+      {
+        "DisplayText": "March",
+        "ValueText": "March"
+      },
+      {
+        "DisplayText": "April",
+        "ValueText": "April"
+      },
+      {
+        "DisplayText": "May",
+        "ValueText": "May"
+      },
+      {
+        "DisplayText": "June",
+        "ValueText": "June"
+      },
+      {
+        "DisplayText": "July",
+        "ValueText": "July"
+      },
+      {
+        "DisplayText": "August",
+        "ValueText": "August"
+      },
+      {
+        "DisplayText": "September",
+        "ValueText": "September"
+      },
+      {
+        "DisplayText": "October",
+        "ValueText": "October"
+      },
+      {
+        "DisplayText": "November",
+        "ValueText": "November"
+      },
+      {
+        "DisplayText": "December",
+        "ValueText": "December"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+--Year
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "Year",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "2026",
+        "ValueText": "2026"
+      },
+      {
+        "DisplayText": "2025",
+        "ValueText": "2025"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+/api/Timesheet/GetTimesheetSubmissionList
+
+{
+  "employeeCode": "0",
+  "timesheetMonth": "July",
+  "timesheetYear": 2026,
+  "paramType": "GetAllEmployeeProjectTimesheetForApproval"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "TIMESHEET_APPROVAL_REJECTION_LIST_RESPONSE": [
+      {
+        "ProjectTimeSheetID": 1003,
+        "EmployeeCode": "VUT001",
+        "FullName": "Amit P Pukale",
+        "TimeSheetMonth": "July",
+        "TimeSheetYear": 2026,
+        "TotalHoursWorked": 8,
+        "TimesheetApprovalStatus": "Pending For Approval",
+        "ApprovedOrRejectedReason": "",
+        "ApprovedOrRejectedByUser": "",
+        "ApprovedOrRejectedDateTime": "",
+        "IsShowSendForApprovalButton": true,
+        "IsShowSendNotificationButton": false,
+        "IsSentForApproval": true,
+        "IsAvailableToResendForApproval": false,
+        "IsShowViewDetailsButton": false,
+        "IsShowApproveRejectButton": false
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "TIMESHEET_APPROVAL_REJECTION_LIST_RESPONSE": [
+      {
+        "Message": "Timesheet Approval List Not Found."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "TIMESHEET_SUBMISSION_RESPONSE": [
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      },
+      {
+        "Key": "TimesheetMonth",
+        "Message": "Enter The Timesheet Month."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Timesheet/GetOrExportEmployeeTimesheetList
+
+
+When we click on Download Timesheet from Actions
+
+Request Payload
+
+{
+  "employeeCode": "VUT001",
+  "timesheetMonth": "June",
+  "timesheetYear": 2026,
+  "projectTimeSheetID": 0,
+  "action": "Export"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_TIMESHEET_EXPORTED_RESPONSE": [
+      {
+        "FileName": "VUT001_TimeSheet_June_2026.xlsx",
+        "ContentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "FileBase64": "UEsDBBQAAAAIADBnGF2KTk6H"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "EMPLOYEE_TIMESHEET_EXPORTED_RESPONSE": [
+      {
+        "FileName": "",
+        "ContentType": "",
+        "FileBase64": ""
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      },
+      {
+        "Key": "TimesheetMonth",
+        "Message": "Enter The Timesheet Month."
+      },
+	  {
+        "Key": "Action",
+        "Message": "Enter The Action(View/Export/ExportDateWise)."
+      }
+    ]
+  }
+}
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+/api/Timesheet/GetOrExportEmployeeTimesheetList
+
+When we click on View Timesheet Icon
+
+Request Payload
+
+{
+  "employeeCode": "VUT002",
+  "timesheetMonth": "June",
+  "timesheetYear": 2026,
+  "projectTimeSheetID": 0,
+  "action": "View"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_TIMESHEET_RESPONSE": [
+      {
+        "SLNo": 1,
+        "EmployeeCode": "VUT002",
+        "Name": "Anitha",
+        "DisplayTaskDate": "05-06-2026",
+        "ClientName": "Sharpply",
+        "ProjectName": "Sharpply",
+        "ActivityName": "Frontend Development",
+        "TaskDescription": "<ol><li>&nbsp;Test</li></ol>",
+        "TotalHoursWorked": 8
+      },
+      {
+        "SLNo": 2,
+        "EmployeeCode": "VUT002",
+        "Name": "Anitha",
+        "DisplayTaskDate": "21-08-2026",
+        "ClientName": "Sharpply",
+        "ProjectName": "Sharpply",
+        "ActivityName": "Frontend Development",
+        "TaskDescription": "<ol><li>&nbsp;Frontend Task - Completed</li></ol>",
+        "TotalHoursWorked": 8
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "EMPLOYEE_TIMESHEET_RESPONSE": [
+      {
+        "Message": "Timesheet Data Not Found."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      },
+      {
+        "Key": "TimesheetMonth",
+        "Message": "Enter The Timesheet Month."
+      },
+	  {
+        "Key": "Action",
+        "Message": "Enter The Action(View/Export/ExportDateWise)."
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+Approve or Reject
+
+/api/Timesheet/ApproveOrRejectTimesheet
+
+
+Important Note: For approveStatus value should be Approve if the user has clicked on Approve from the Action column.
+For approveStatus value should be Reject if the user has clicked on Reject from the Action Column.
+
+Request Payload 
+
+{
+  "employeeCode": "VUT001",
+  "timesheetMonth": "July",
+  "timesheetYear": 2026,
+  "projectTimeSheetID": 0,
+  "remarks": "This Timesheet is Approved",
+  "userToken": "",
+  "source": "",
+  "approveStatus": "Approve"
+}
+
+
+Success Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "TIMESHEET_APPROVE_REJECT_RESPONSE": [
+      {
+        "Message": "The Timesheet Has Been Approved Successfully For July-2026, and an Email Notification Has Been Sent to the User !!!"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "TIMESHEET_APPROVE_REJECT_RESPONSE": [
+      {
+        "Message": "The Timesheet Has Already Been Approved For July-2026."
+      }
+    ]
+  }
+}
+
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "Remarks",
+        "Message": "Enter The Remarks."
+      },
+      {
+        "Key": "EmployeeCode",
+        "Message": "Enter The Employee Code."
+      },
+      {
+        "Key": "TimesheetMonth",
+        "Message": "Enter The Timesheet Month."
+      }
+    ]
+  }
+}
