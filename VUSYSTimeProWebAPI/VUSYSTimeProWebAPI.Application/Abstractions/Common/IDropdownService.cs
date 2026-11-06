@@ -119,6 +119,13 @@ namespace VUSYSTimeProWebAPI.Application.Abstractions.Common
         Task<DataSet> GetProjectListWithAllAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// This Method Is Used To Get All Client List.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task<DataSet> GetClientListWithAllAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// This Method Is Used To Get Project Status List.
         /// </summary>
         /// <param name="cancellationToken"></param>

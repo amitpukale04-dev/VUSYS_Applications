@@ -210,6 +210,11 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Persistence.Constants
         public static string EMPLOYEE_TIMESHEET_APPROVE_REJECT = "usp_VUSYS_EmployeeProjectTimesheetApproveReject";
 
         /// <summary>
+        /// TIMESHEET_REPORT_MANAGEMENT
+        /// </summary>
+        public static string TIMESHEET_REPORT_MANAGEMENT = "usp_VUSYS_TimesheetReportManagement";
+
+        /// <summary>
         /// SYNC_EMPLOYEE_LEAVE_HOLIDAY_TO_PROJECT_TIMESHEET
         /// </summary>
         public const string SYNC_EMPLOYEE_LEAVE_HOLIDAY_TO_PROJECT_TIMESHEET = "usp_VUSYS_SyncEmployeeLeaveAndHolidayToProjectTimeSheetDetails";

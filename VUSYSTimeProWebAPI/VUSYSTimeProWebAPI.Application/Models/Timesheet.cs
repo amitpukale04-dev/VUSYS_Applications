@@ -98,8 +98,15 @@ namespace VUSYSTimeProWebAPI.Application.Models
         public string ParamType { get; set; }
     }
 
-    public class ProjectTimesheetApproveRejection : TimesheetReportRequestParam
+    public class ProjectTimesheetApproveRejection : DownloadTimesheetReportRequestParam
     {
+        /// <summary>
+        /// Project ID
+        /// </summary>
+        [Display(Name = "Project ID")]
+        [Required(ErrorMessage = "Enter The Project ID.")]
+        public int ProjectID { get; set; }
+
         /// <summary>
         /// Project Time Sheet ID
         /// </summary>
@@ -112,7 +119,50 @@ namespace VUSYSTimeProWebAPI.Application.Models
         /// </summary>
         [DefaultValue("")]
         [Display(Name = "Action")]
-        [Required(ErrorMessage = "Enter The Action(View/Export).")]
+        [Required(ErrorMessage = "Enter The Action.")]
+        [RegularExpression("^(View|Export|ExportDateWise|ExportProjectWise)$", ErrorMessage = "Action Type Must Be View, Export, ExportDateWise Or ExportProjectWise.")]
+        public string Action { get; set; }
+    }
+
+    public class ProjectTimesheetDownload
+    {
+        /// <summary>
+        /// Project ID
+        /// </summary>
+        [Display(Name = "Project ID")]
+        [Required(ErrorMessage = "Enter The Project ID.")]
+        public int ProjectID { get; set; }
+
+        /// <summary>
+        /// Employee Code
+        /// </summary>
+        [DefaultValue("")]
+        [Display(Name = "Employee Code")]
+        public string EmployeeCode { get; set; }
+
+        /// <summary>
+        /// Timesheet Month
+        /// </summary>
+        [DefaultValue("")]
+        [Display(Name = "Timesheet Month")]
+        [Required(ErrorMessage = "Enter The Timesheet Month.")]
+        public string TimesheetMonth { get; set; }
+
+        /// <summary>
+        /// Timesheet Year
+        /// </summary>
+        [Display(Name = "Timesheet Year")]
+        [Required(ErrorMessage = "Enter The Timesheet Year.")]
+        [NumberGreaterThanZeroValidation(NumberPropertyName = "TimesheetYear", ErrorMessage = "Timesheet Year Should Be Greater Than 0.")]
+        public int TimesheetYear { get; set; }
+
+        /// <summary>
+        /// Action
+        /// </summary>
+        [DefaultValue("")]
+        [Display(Name = "Action")]
+        [Required(ErrorMessage = "Enter The Action.")]
+        [RegularExpression("^(ExportProjectWise)$", ErrorMessage = "Action Type Must Be ExportProjectWise.")]
         public string Action { get; set; }
     }
 

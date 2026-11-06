@@ -1,0 +1,167 @@
+
+In DownloadTimesheet.jsx
+
+I have attached my existing latest complete project code. Modify and Provide me full updated project code.
+
+This is the Existing Screen.
+
+Add Client Dropdown and it should be Searchable (Only if the Role is Admin). before Employee Dropdown
+ - and it should be Mandatory when we click on Download ProjectWise Timesheet Icon. 
+ - and it should not be Mandatory when we click on View Timesheet Icon, Download Timesheet Icon and Download DateWise Timesheet Icon
+
+1. Client - Dropdown - By Default it should be Select as All (This Dropdown should be displayed if the Role is Admin else dont display)
+
+Here Employee, TimesheetMonth and TimesheetYear are the Existing Controls.
+
+In Download Timesheet Below controls
+
+We have the Existing Icons like View Timesheet Icon, Download Timesheet Icon, Download DateWise Timesheet Icon, Download ProjectWise Timesheet Icon, and cancel icon
+
+1. When we Select All Employee and Click on View Timesheet Icon - It should Display the Validation Message Select the Specific Employee.
+2. When we Select All Employee and Click on Download Timesheet Icon - It should Display the Validation Message Select the Specific Employee.
+3. When we Select All Employee and Click on Download DateWise Timesheet Icon - It should Display the Validation Message Select the Specific Employee.
+4. When we Select All Employee and Click on Download ProjectWise Timesheet Icon - It should Not Display the Validation Message It should allow.
+
+When we click on Download ProjectWise Timesheet Icon it should call the API /api/Timesheet/GetOrExportEmployeeTimesheetList
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Dropdown API
+
+--Client
+
+/api/Master/GetDropdownItems
+
+Request Payload
+
+{
+  "sourceTable": "AllClient",
+  "argumentValue": "",
+  "argumentValue1": ""
+}
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "DisplayText": "ALL",
+        "ValueText": "0"
+      },
+      {
+        "DisplayText": "Sharpply",
+        "ValueText": "1"
+      },
+      {
+        "DisplayText": "StyleBox",
+        "ValueText": "2"
+      },
+      {
+        "DisplayText": "VUSYS",
+        "ValueText": "3"
+      },
+      {
+        "DisplayText": "VUSYS",
+        "ValueText": "4"
+      },
+      {
+        "DisplayText": "VUSYS_SHARP",
+        "ValueText": "7"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "DROPDOWN_LIST_RESPONSE": [
+      {
+        "ID": "0",
+        "Message": "No Data Available !!!"
+      }
+    ]
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+/api/Timesheet/GetOrExportEmployeeTimesheetList
+
+When we click on Download ProjectWise Timesheet Icon
+
+Here in the ProjectID pass the value as 0 if the Client Dropdown is select as All Else pass the selected value
+Here in the EmployeeCode pass the value as empty if the Employee Dropdown is select as All Else pass the selected value
+Here in the action pass the value as ExportProjectWise.
+
+Request Payload
+
+{
+  "employeeCode": "",
+  "timesheetMonth": "October",
+  "timesheetYear": 2026,
+  "projectID": 0,
+  "projectTimeSheetID": 0,
+  "action": "ExportProjectWise"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "EMPLOYEE_TIMESHEET_PROJECT_WISE_EXPORTED_RESPONSE": [
+      {
+        "FileName": "ProjectWise_TimeSheet_October_2026.xlsx",
+        "ContentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "FileBase64": "UEsDBBQAAAAIADBnGF2KTk6H"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "EMPLOYEE_TIMESHEET_PROJECT_WISE_EXPORTED_RESPONSE": [
+      {
+        "Message": "Timesheet Data Not Found."
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "TimesheetMonth",
+        "Message": "Enter The Timesheet Month."
+      },
+	  {
+        "Key": "Action",
+        "Message": "Enter The Action."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------

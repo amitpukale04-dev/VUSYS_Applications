@@ -35,6 +35,32 @@ namespace VUSYSTimeProWebAPI.Application.Models
         public int TimesheetYear { get; set; }
     }
 
+    public class DownloadTimesheetReportRequestParam
+    {
+        /// <summary>
+        /// Employee Code
+        /// </summary>
+        [DefaultValue("")]
+        [Display(Name = "Employee Code")]
+        public string EmployeeCode { get; set; }
+
+        /// <summary>
+        /// Timesheet Month
+        /// </summary>
+        [DefaultValue("")]
+        [Display(Name = "Timesheet Month")]
+        [Required(ErrorMessage = "Enter The Timesheet Month.")]
+        public string TimesheetMonth { get; set; }
+
+        /// <summary>
+        /// Timesheet Year
+        /// </summary>
+        [Display(Name = "Timesheet Year")]
+        [Required(ErrorMessage = "Enter The Timesheet Year.")]
+        [NumberGreaterThanZeroValidation(NumberPropertyName = "TimesheetYear", ErrorMessage = "Timesheet Year Should Be Greater Than 0.")]
+        public int TimesheetYear { get; set; }
+    }
+
     public class ProjectAllocatedConsumedReportRequestParam
     {
         /// <summary>

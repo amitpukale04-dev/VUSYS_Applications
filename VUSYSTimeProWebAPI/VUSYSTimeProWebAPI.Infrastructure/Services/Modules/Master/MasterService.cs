@@ -681,6 +681,10 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Master
                 {
                     finalDataSet = await _DropdownSvc.GetProjectListWithAllAsync(cancellationToken);
                 }
+                else if (_objDropdownRequestParam.SourceTable == "AllClient")
+                {
+                    finalDataSet = await _DropdownSvc.GetClientListWithAllAsync(cancellationToken);
+                }
                 else if (_objDropdownRequestParam.SourceTable == "ProjectStatus")
                 {
                     finalDataSet = await _DropdownSvc.GetProjectStatusListAsync(cancellationToken);

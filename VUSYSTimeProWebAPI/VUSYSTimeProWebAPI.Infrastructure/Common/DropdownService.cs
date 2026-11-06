@@ -737,6 +737,59 @@ public sealed class DropdownService : IDropdownService
     }
 
     /// <summary>
+    /// This Method Is Used To Get All Client List.
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<DataSet> GetClientListWithAllAsync(CancellationToken cancellationToken = default)
+    {
+        DataSet finalDataSet = new DataSet();
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            List<DropDownData> projectList = await _dbContext.ProjectList.AsNoTracking()
+                    .Where(c => c.IsDeleted == false)
+                    .OrderBy(c => c.ClientName)
+                    .Select(c => new DropDownData
+                    {
+                        ValueText = c.Id.ToString(),
+                        DisplayText = $"{c.ClientName} - {c.ProjectName}"
+                    })
+                    .ToListAsync(cancellationToken);
+
+            projectList.Insert(0, new DropDownData
+            {
+                ValueText = "0",
+                DisplayText = "ALL"
+            });
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (projectList != null && projectList.Count > 0)
+            {
+                DataTable dataTable = Helper.ConvertListToDataTable(projectList);
+                dataTable.TableName = CommonHelper.DROPDOWN_LIST_RESPONSE;
+                finalDataSet.Tables.Add(dataTable);
+            }
+            else
+            {
+                DataTable dataTable = new DataTable();
+                finalDataSet.Tables.Add(dataTable);
+                finalDataSet = Helper.CheckAndValidateDatasetTable(finalDataSet, Helper.ToProperCase(MessageTypeConstants.Error), CommonHelper.DROPDOWN_LIST_RESPONSE);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Helper.LogMessage(CommonHelper.KeyOption.APIErrorLog, LogNameSpaceConstants.InfrastructureCommonLogNamespace, $"{DropdownServiceLogClassName}.GetClientListWithAllAsync()", ex.Message, false);
+            throw;
+        }
+        return finalDataSet;
+    }
+
+    /// <summary>
     /// This Method Is Used To Get Project Status List.
     /// </summary>
     /// <param name="cancellationToken"></param>

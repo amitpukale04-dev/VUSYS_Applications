@@ -574,6 +574,131 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Timesheet
         }
 
         /// <summary>
+        /// This Method Is Used To Export Project Timesheet.
+        /// </summary>
+        /// <param name="_objProjectTimesheetDownload"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<DataSet> ExportEmployeeProjectTimesheet(ProjectTimesheetDownload _objProjectTimesheetDownload, CancellationToken cancellationToken = default)
+        {
+            DataSet finalDataSet = new DataSet();
+            List<string> columns = new List<string> { "Status", "FileName", "ContentType", "FileBase64" };
+            string TableName = string.Empty;
+            string ParamType = string.Empty;
+            try
+            {
+                TableName = _objProjectTimesheetDownload.Action switch
+                {
+                    "ExportProjectWise" => "EMPLOYEE_TIMESHEET_PROJECT_WISE_EXPORTED_RESPONSE",
+                    _ => "EMPLOYEE_TIMESHEET_PROJECT_WISE_EXPORTED_RESPONSE"
+                };
+                ParamType = _objProjectTimesheetDownload.Action switch
+                {
+                    "ExportProjectWise" => "DownloadTimesheetProjectWise",
+                    _ => "DownloadTimesheetProjectWise"
+                };
+                cancellationToken.ThrowIfCancellationRequested();
+                var parameters = new Dictionary<string, object>
+                {
+                    { "@ProjectID", _objProjectTimesheetDownload.ProjectID },
+                    { "@EmployeeCode", _objProjectTimesheetDownload.EmployeeCode },
+                    { "@TimeSheetMonth", _objProjectTimesheetDownload.TimesheetMonth },
+                    { "@TimeSheetYear", _objProjectTimesheetDownload.TimesheetYear },
+                    { "@ParamType", ParamType }
+                };
+                var ds = await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync(StoredProcedure.TIMESHEET_REPORT_MANAGEMENT, parameters, CONST.DBRetType.DATASET, cancellationToken) as DataSet;
+                cancellationToken.ThrowIfCancellationRequested();
+                if (Helper.CheckDataSetIsNullOrEmpty(ds))
+                {
+                    string DBStatus = Helper.ToProperCase(ds.Tables[0].Rows[0]["Status"].ToString());
+                    if (DBStatus == Helper.ToProperCase(MessageTypeConstants.Success))
+                    {
+                        const int NoOfColumns = 9;
+                        string Title = string.Empty;
+                        string SheetName = string.Empty;
+                        string InitialFileName = string.Empty;
+                        string FileName = string.Empty;
+                        string TitleMonthYear = _objProjectTimesheetDownload.TimesheetMonth + " " + Convert.ToString(_objProjectTimesheetDownload.TimesheetYear);
+                        string SheetMonthYear = _objProjectTimesheetDownload.TimesheetMonth + "_" + Convert.ToString(_objProjectTimesheetDownload.TimesheetYear);
+                        SheetName = "Project_TimeSheet_" + SheetMonthYear;
+                        InitialFileName = "ProjectWise_TimeSheet_" + SheetMonthYear;
+                        FileName = (_objProjectTimesheetDownload.Action == "ExportProjectWise" ? InitialFileName + FileHelper.GetFileExtension(FileTypes.Xlsx) : InitialFileName + FileHelper.GetFileExtension(FileTypes.Xlsx));
+                        Title = "Project Wise Timesheet - " + TitleMonthYear;
+
+                        string ContentType = _ContentTypeSvc.GetFileContentType(FileName);
+
+                        var TimeSheetDataTable = Helper.ConvertDataSetToDataTable(ds);
+                        if (Helper.CheckDataTableIsNullOrEmpty(TimeSheetDataTable))
+                        {
+                            foreach (DataRow row in TimeSheetDataTable.Rows)
+                            {
+                                string ClientName = row.Field<string>("ClientName");
+                                string ProjectName = row.Field<string>("ProjectName");
+                                string ActivityName = row.Field<string>("ActivityName");
+                                row["ClientName"] = CommonHelper.AddAmpersandToLast(ClientName);
+                                row["ProjectName"] = CommonHelper.AddAmpersandToLast(ProjectName);
+                                row["ActivityName"] = CommonHelper.AddAmpersandToLast(ActivityName);
+                            }
+                        }
+                        Helper.RenameDataTableColumnName(TimeSheetDataTable, "SLNo", "SL No");
+                        Helper.RenameDataTableColumnName(TimeSheetDataTable, "EmployeeCode", "Employee Code");
+                        Helper.RenameDataTableColumnName(TimeSheetDataTable, "DisplayTaskDate", "Task Date");
+                        Helper.RenameDataTableColumnName(TimeSheetDataTable, "ClientName", "Client");
+                        Helper.RenameDataTableColumnName(TimeSheetDataTable, "ProjectName", "Project");
+                        Helper.RenameDataTableColumnName(TimeSheetDataTable, "ActivityName", "Activity");
+                        Helper.RenameDataTableColumnName(TimeSheetDataTable, "TaskDescription", "Task Description");
+                        Helper.RenameDataTableColumnName(TimeSheetDataTable, "TotalHoursWorked", "No. of Hours Worked");
+                        Helper.RemoveColumnFromDataTable(TimeSheetDataTable, "Status");
+
+                        var ColumnsConvertToNumber = new string[] { "No. of Hours Worked" };
+                        var WordWrapColumnIndexes = new int[] { 1, 2, 3, 4, 5, 6, 7, 9 };
+                        string base64Excel = ExcelHelper.ExportToExcelBase64(TimeSheetDataTable, SheetName, Title, "A1:I1", 1, NoOfColumns, true, 2, true, 5, "#FFFFFF", FileName, true, ColumnsConvertToNumber, "#4F81BD", "#DCE6F1", true, true, "H", 8, WordWrapColumnIndexes);
+                        if (!string.IsNullOrEmpty(base64Excel))
+                        {
+                            var result = new FileHelper.Base64File(base64Excel, SheetName, FileHelper.GetFileExtension(FileTypes.Xlsx));
+                            //string Folder = CommonHelper.SaveFileToFolder(result.Base64, FileTypes.Xlsx, _webHostEnvironment);
+                            List<List<string>> rows = new List<List<string>>
+                            {
+                                new List<string> { Helper.ToProperCase(MessageTypeConstants.Success), FileName, ContentType, result.Base64 }
+                            };
+                            finalDataSet = Helper.GenerateCommonMessage(columns, rows, TableName);
+                        }
+                        else
+                        {
+                            List<List<string>> rows = new List<List<string>>
+                            {
+                                new List<string> { Helper.ToProperCase(MessageTypeConstants.Error), string.Empty, string.Empty, string.Empty }
+                            };
+                            finalDataSet = Helper.GenerateCommonMessage(columns, rows, TableName);
+                        }
+                    }
+                    else
+                    {
+                        List<List<string>> rows = new List<List<string>>
+                        {
+                            new List<string> { Helper.ToProperCase(MessageTypeConstants.Error), string.Empty, string.Empty, string.Empty }
+                        };
+                        finalDataSet = Helper.GenerateCommonMessage(columns, rows, TableName);
+                    }
+                }
+                else
+                {
+                    List<List<string>> rows = new List<List<string>>
+                    {
+                        new List<string> { Helper.ToProperCase(MessageTypeConstants.Error), string.Empty, string.Empty, string.Empty }
+                    };
+                    finalDataSet = Helper.GenerateCommonMessage(columns, rows, TableName);
+                }
+            }
+            catch (Exception ex)
+            {
+                Helper.LogMessage(CommonHelper.KeyOption.APIErrorLog, LogNameSpaceConstants.InfrastructureTimesheetLogNamespace, $"{TimesheetServiceLogClassName}.ExportEmployeeProjectTimesheet()", ex.Message, false);
+                throw;
+            }
+            return finalDataSet;
+        }
+
+        /// <summary>
         /// This Method Is Used To Check Timesheet Approval Status.
         /// </summary>
         /// <param name="_objCheckTimesheetApprovalStatusRequestParam"></param>

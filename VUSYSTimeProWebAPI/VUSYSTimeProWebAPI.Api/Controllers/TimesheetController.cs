@@ -228,7 +228,7 @@ namespace VUSYSTimeProWebAPI.Api.Controllers
         /// This Post Action Method Is Used To Get or Export Employee Timesheet List.
         /// </summary>
         /// <param name="_objProjectTimesheetApproveRejection"></param>
-        /// To Get or Export Employee Timesheet List Below Request Parameters is required Such as ProjectTimeSheetID, EmployeeCode, TimesheetMonth, TimesheetYear and Action(View/Export/ExportDateWise).
+        /// To Get or Export Employee Timesheet List Below Request Parameters is required Such as ProjectID, ProjectTimeSheetID, EmployeeCode, TimesheetMonth, TimesheetYear and Action(View/Export/ExportDateWise).
         /// <returns>
         /// A JSON-formatted string representing the Employee Timesheet List.
         /// </returns>
@@ -240,7 +240,32 @@ namespace VUSYSTimeProWebAPI.Api.Controllers
             {
                 if (ModelState.IsValid)
                 {
-                    ReturnResult = ObjectToJson.ConvertDataSetToJson(await _TimesheetService.GetOrExportEmployeeTimesheetList(_objProjectTimesheetApproveRejection, RequestCancellationToken));
+                    switch (_objProjectTimesheetApproveRejection.Action)
+                    {
+                        case "ExportProjectWise":
+                            break;
+                        default:
+                            if (string.IsNullOrEmpty(_objProjectTimesheetApproveRejection.EmployeeCode))
+                            {
+                                ModelState.AddModelError("EmployeeCode", "Enter The Employee Code.");
+                                ReturnResult = ModelErrorValidation.ConvertModelErrorsToJson(ModelState);
+                                if (string.IsNullOrEmpty(ReturnResult))
+                                {
+                                    return NotFound();
+                                }
+                                return Content(Util.JSONOK(ReturnResult), ContentTypeConstants.JSON_CONTENTTYPE);
+                            }
+                            break;
+                    }
+                    if(_objProjectTimesheetApproveRejection.Action == "ExportProjectWise")
+                    {
+                        ProjectTimesheetDownload _objProjectTimesheetDownload = Helper.ToCopyClassProperties<ProjectTimesheetApproveRejection, ProjectTimesheetDownload>(_objProjectTimesheetApproveRejection);
+                        ReturnResult = ObjectToJson.ConvertDataSetToJson(await _TimesheetService.ExportEmployeeProjectTimesheet(_objProjectTimesheetDownload, RequestCancellationToken));
+                    }
+                    else
+                    {
+                        ReturnResult = ObjectToJson.ConvertDataSetToJson(await _TimesheetService.GetOrExportEmployeeTimesheetList(_objProjectTimesheetApproveRejection, RequestCancellationToken));
+                    }
                     if (ReturnResult == null || ReturnResult == string.Empty)
                     {
                         return Unauthorized();

@@ -56,6 +56,14 @@ namespace VUSYSTimeProWebAPI.Application.Abstractions.Modules.Timesheet
         Task<DataSet> GetOrExportEmployeeTimesheetList(ProjectTimesheetApproveRejection _objProjectTimesheetApproveRejection, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// This Method Is Used To Export Project Timesheet.
+        /// </summary>
+        /// <param name="_objProjectTimesheetDownload"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task<DataSet> ExportEmployeeProjectTimesheet(ProjectTimesheetDownload _objProjectTimesheetDownload, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// This Method Is Used To Check Timesheet Approval Status.
         /// </summary>
         /// <param name="_objCheckTimesheetApprovalStatusRequestParam"></param>
