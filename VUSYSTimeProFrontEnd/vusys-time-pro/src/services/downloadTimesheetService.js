@@ -54,9 +54,7 @@ const stripHtml = (value = "") => {
       .trim();
   }
 
-  const listItemMatches = [
-    ...source.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi),
-  ];
+  const listItemMatches = [...source.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)];
 
   if (listItemMatches.length) {
     return listItemMatches
@@ -88,9 +86,7 @@ const normalizeTimesheetRow = (row = {}) => ({
   clientName: normalizeString(row?.ClientName ?? row?.clientName),
   projectName: normalizeString(row?.ProjectName ?? row?.projectName),
   activityName: normalizeString(row?.ActivityName ?? row?.activityName),
-  taskDescription: stripHtml(
-    row?.TaskDescription ?? row?.taskDescription,
-  ),
+  taskDescription: stripHtml(row?.TaskDescription ?? row?.taskDescription),
   totalHoursWorked: normalizeNumber(
     row?.TotalHoursWorked ?? row?.totalHoursWorked,
   ),
@@ -100,12 +96,15 @@ const EXPORT_RESPONSE_TABLES = Object.freeze({
   export: API_RESPONSE_TABLE.EMPLOYEE_TIMESHEET_EXPORTED_RESPONSE,
   exportdatewise:
     API_RESPONSE_TABLE.EMPLOYEE_TIMESHEET_DATE_WISE_EXPORTED_RESPONSE,
+  exportprojectwise:
+    API_RESPONSE_TABLE.EMPLOYEE_TIMESHEET_PROJECT_WISE_EXPORTED_RESPONSE,
 });
 
 export async function getOrExportEmployeeTimesheetList({
   employeeCode = "",
   timesheetMonth = "",
   timesheetYear = "",
+  projectID = 0,
   projectTimeSheetID = 0,
   action = "View",
 } = {}) {
@@ -115,6 +114,7 @@ export async function getOrExportEmployeeTimesheetList({
       employeeCode: normalizeString(employeeCode),
       timesheetMonth: normalizeString(timesheetMonth),
       timesheetYear: normalizeNumber(timesheetYear),
+      projectID: normalizeNumber(projectID),
       projectTimeSheetID: normalizeNumber(projectTimeSheetID),
       action: normalizeString(action),
     },

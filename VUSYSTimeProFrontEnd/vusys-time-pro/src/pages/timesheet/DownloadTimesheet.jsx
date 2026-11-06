@@ -26,12 +26,14 @@ import { ROUTE_CONSTANTS } from "../../constants/RouteConstants";
 
 const DOWNLOAD_TIMESHEET_API_FIELD_MAPPINGS = {
   employeeCode: { apiKeys: ["EmployeeCode"] },
+  clientID: { apiKeys: ["ClientID", "ProjectID"] },
   timesheetMonth: { apiKeys: ["TimesheetMonth"] },
   timesheetYear: { apiKeys: ["TimesheetYear"] },
   action: { apiKeys: ["Action"] },
 };
 
 const blankFilters = {
+  clientID: "0",
   employeeCode: "",
   timesheetMonth: "",
   timesheetYear: "",
@@ -54,6 +56,7 @@ export default function DownloadTimesheet() {
 
   const [filters, setFilters] = useState(blankFilters);
   const [employeeOptions, setEmployeeOptions] = useState([]);
+  const [clientOptions, setClientOptions] = useState([]);
   const [monthOptions, setMonthOptions] = useState([]);
   const [yearOptions, setYearOptions] = useState([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(true);
@@ -71,7 +74,12 @@ export default function DownloadTimesheet() {
 
     if (!dropdownLoadPromiseRef.current) {
       dropdownLoadPromiseRef.current = Promise.all([
-        getDropdownItems({ sourceTable: DROPDOWN_SOURCE_TABLE.EMPLOYEE }),
+        adminUser
+          ? getDropdownItems({ sourceTable: DROPDOWN_SOURCE_TABLE.ALL_CLIENT })
+          : Promise.resolve({ options: [] }),
+        getDropdownItems({
+          sourceTable: DROPDOWN_SOURCE_TABLE.EMPLOYEE_PROJECT_WITH_ALL,
+        }),
         getDropdownItems({ sourceTable: DROPDOWN_SOURCE_TABLE.MONTH }),
         getDropdownItems({ sourceTable: DROPDOWN_SOURCE_TABLE.YEAR }),
       ]);
@@ -84,13 +92,17 @@ export default function DownloadTimesheet() {
       setLoadingDropdowns(true);
 
       try {
-        const [employeeResult, monthResult, yearResult] =
+        const [clientResult, employeeResult, monthResult, yearResult] =
           await dropdownLoadPromiseRef.current;
 
         if (!active) return;
 
         const loggedInEmployeeCode = getLoggedInEmployeeCode(user);
         let resolvedEmployeeOptions = employeeResult.options;
+
+        if (adminUser) {
+          setClientOptions(clientResult.options);
+        }
 
         if (!adminUser) {
           resolvedEmployeeOptions = employeeResult.options.filter(
@@ -122,7 +134,14 @@ export default function DownloadTimesheet() {
         setEmployeeOptions(resolvedEmployeeOptions);
         setMonthOptions(monthResult.options);
         setYearOptions(yearResult.options);
+        const clientOption = clientResult.options.find(
+          (option) =>
+            normalizeText(option?.value) === "0" ||
+            normalizeText(option?.label) === "all",
+        );
+
         setFilters({
+          clientID: String(clientOption?.value ?? "0"),
           employeeCode: String(
             employeeOption?.value ?? (adminUser ? "" : loggedInEmployeeCode),
           ),
@@ -161,23 +180,55 @@ export default function DownloadTimesheet() {
   };
 
   const executeTimesheetAction = async (action) => {
-    if (!validate(filters) || processingAction) return;
+    if (processingAction) return;
+
+    const isProjectWise = action === "ExportProjectWise";
+    const isAllEmployee =
+      normalizeText(filters.employeeCode) === "0" ||
+      employeeOptions.some(
+        (option) =>
+          normalizeText(option?.value) ===
+            normalizeText(filters.employeeCode) &&
+          normalizeText(option?.label) === "all",
+      );
+
+    const isFormValid = validate(filters);
+
+    if (!isProjectWise && isAllEmployee) {
+      setFieldError("employeeCode", "Select the Specific Employee.");
+    }
+
+    if (isProjectWise && adminUser && !String(filters.clientID ?? "").trim()) {
+      setFieldError("clientID", "Select The Client.");
+    }
+
+    if (
+      !isFormValid ||
+      (!isProjectWise && isAllEmployee) ||
+      (isProjectWise && adminUser && !String(filters.clientID ?? "").trim())
+    )
+      return;
 
     const actionText =
       action === "View"
         ? "Loading Timesheet Details..."
         : action === "ExportDateWise"
           ? "Downloading DateWise Timesheet..."
-          : "Downloading Timesheet...";
+          : action === "ExportProjectWise"
+            ? "Downloading ProjectWise Timesheet..."
+            : "Downloading Timesheet...";
 
     const loaderRequestId = showFullPageLoader(actionText);
     setProcessingAction(action);
 
     try {
       const result = await getOrExportEmployeeTimesheetList({
-        employeeCode: filters.employeeCode,
+        employeeCode:
+          isProjectWise && isAllEmployee ? "" : filters.employeeCode,
         timesheetMonth: filters.timesheetMonth,
         timesheetYear: filters.timesheetYear,
+        projectID:
+          isProjectWise && adminUser ? Number(filters.clientID || 0) : 0,
         projectTimeSheetID: 0,
         action,
       });
@@ -295,11 +346,7 @@ export default function DownloadTimesheet() {
               <button
                 type="button"
                 className="tp-form-page-icon-button"
-                onClick={() =>
-                  ToastService.information(
-                    "ProjectWise Timesheet API details are required to complete this download.",
-                  )
-                }
+                onClick={() => executeTimesheetAction("ExportProjectWise")}
                 disabled={controlsDisabled}
                 title="Download ProjectWise Timesheet"
                 aria-label="Download ProjectWise Timesheet"
@@ -323,7 +370,23 @@ export default function DownloadTimesheet() {
 
         <div className="tp-card tp-employee-form-card tp-employee-form-card-attached tp-download-timesheet-card">
           <div className="row g-3 tp-download-timesheet-filters">
-            <div className="col-md-4">
+            {adminUser && (
+              <div className="col-md-3">
+                <SearchableDropdown
+                  name="clientID"
+                  label="Client"
+                  value={filters.clientID}
+                  onChange={updateFilter}
+                  options={clientOptions}
+                  columns={[{ key: "label", label: "Client" }]}
+                  error={errors.clientID}
+                  placeholder="Select client"
+                  disabled={controlsDisabled}
+                />
+              </div>
+            )}
+
+            <div className={adminUser ? "col-md-3" : "col-md-4"}>
               <SearchableDropdown
                 name="employeeCode"
                 label="Employee"
@@ -338,7 +401,7 @@ export default function DownloadTimesheet() {
               />
             </div>
 
-            <div className="col-md-4">
+            <div className={adminUser ? "col-md-3" : "col-md-4"}>
               <SearchableDropdown
                 name="timesheetMonth"
                 label="Timesheet Month"
@@ -353,7 +416,7 @@ export default function DownloadTimesheet() {
               />
             </div>
 
-            <div className="col-md-4">
+            <div className={adminUser ? "col-md-3" : "col-md-4"}>
               <SearchableDropdown
                 name="timesheetYear"
                 label="Timesheet Year"
