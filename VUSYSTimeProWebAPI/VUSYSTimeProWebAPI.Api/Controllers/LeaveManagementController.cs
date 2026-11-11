@@ -512,6 +512,45 @@ namespace VUSYSTimeProWebAPI.Api.Controllers
             return Content(Util.JSONOK(ReturnResult), ContentTypeConstants.JSON_CONTENTTYPE);
         }
 
+        /// <summary>
+        /// This Post Action Method Is Used To Calculate and Get Total Number of Leave Days.
+        /// </summary>
+        /// <param name="_objGetTotalNoofLeaveDaysRequestParam"></param>
+        /// To Calculate and Get Total Number of Leave Days List Below Request Parameters is required Such as EmployeeCode, LeaveTypeID, FromDate, ToDate and IsHalfDay.
+        /// <returns>
+        /// A JSON-formatted string representing the Calculated Total Number of Leave Days.
+        /// </returns>
+        [HttpPost, ActionName("CalculateAndGetTotalNoofLeaveDays")]
+        public async Task<ActionResult<string>> CalculateAndGetTotalNoofLeaveDays(GetTotalNoofLeaveDaysRequestParam _objGetTotalNoofLeaveDaysRequestParam)
+        {
+            string ReturnResult = string.Empty;
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    ReturnResult = ObjectToJson.ConvertDataSetToJson(await _LeaveManagementService.GetTotalNoofLeaveDays(_objGetTotalNoofLeaveDaysRequestParam, RequestCancellationToken));
+                    if (ReturnResult == null || ReturnResult == string.Empty)
+                    {
+                        return Unauthorized();
+                    }
+                }
+                else
+                {
+                    ReturnResult = ModelErrorValidation.ConvertModelErrorsToJson(ModelState);
+                    if (ReturnResult == null || ReturnResult == string.Empty)
+                    {
+                        return NotFound();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Helper.LogMessage(CommonHelper.KeyOption.APIErrorLog, ControllerLogNamespace, $"{ControllerLogName}.CalculateAndGetTotalNoofLeaveDays()", ex.Message, false);
+                throw;
+            }
+            return Content(Util.JSONOK(ReturnResult), ContentTypeConstants.JSON_CONTENTTYPE);
+        }
+
         #endregion [Leave Application]
     }
 }

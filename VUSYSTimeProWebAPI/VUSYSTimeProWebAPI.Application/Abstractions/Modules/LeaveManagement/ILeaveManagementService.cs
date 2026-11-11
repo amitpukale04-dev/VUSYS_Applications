@@ -91,6 +91,14 @@ namespace VUSYSTimeProWebAPI.Application.Abstractions.Modules.LeaveManagement
         /// <returns></returns>
         Task<DataSet> CancelLeaveRequest(LeaveApplicationApproveRejectCancelRequestParam _objLeaveApplicationApproveRejectCancelRequestParam, CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// This Method Is Used To Get Total No of Leave Days.
+        /// </summary>
+        /// <param name="_objGetTotalNoofLeaveDaysRequestParam"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task<DataSet> GetTotalNoofLeaveDays(GetTotalNoofLeaveDaysRequestParam _objGetTotalNoofLeaveDaysRequestParam, CancellationToken cancellationToken = default);
+
         #endregion [Leave Application]
     }
 }
