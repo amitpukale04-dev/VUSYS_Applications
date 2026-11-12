@@ -248,7 +248,7 @@ export default function LeaveReport() {
   if (!canOpenScreen) return <AccessDenied />;
 
   return (
-    <div className="tp-employee-form-page tp-leave-report-page">
+    <div className="tp-screen-form-page tp-leave-report-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="calendar" size={17} />
@@ -289,7 +289,7 @@ export default function LeaveReport() {
         </div>
       </div>
 
-      <div className="tp-card tp-employee-form-card tp-employee-form-card-attached tp-leave-report-card">
+      <div className="tp-card tp-form-card tp-form-card-attached tp-leave-report-card">
         {actionError && (
           <div className="alert alert-danger" role="alert">
             {actionError}

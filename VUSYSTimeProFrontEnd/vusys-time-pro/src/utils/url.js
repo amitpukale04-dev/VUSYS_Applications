@@ -145,6 +145,9 @@ export const leaveManagement = Object.freeze({
   get_pending_leave_request_list: buildApiUrl(
     "/api/LeaveManagement/GetPendingLeaveRequestList",
   ),
+  calculate_and_get_total_no_of_leave_days: buildApiUrl(
+    "/api/LeaveManagement/CalculateAndGetTotalNoofLeaveDays",
+  ),
   get_current_year_leave_balance: buildApiUrl(
     "/api/LeaveManagement/GetCurrentYearLeaveBalanceBasedOnLeaveType",
   ),

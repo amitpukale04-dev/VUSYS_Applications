@@ -240,7 +240,7 @@ export default function MyLeaveRequest() {
   if (!canOpenMyLeaveRequestList) return <AccessDenied />;
 
   return (
-    <div className="tp-employee-form-page tp-my-leave-request-page">
+    <div className="tp-screen-form-page tp-my-leave-request-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="leaveType" size={18} />
@@ -276,7 +276,7 @@ export default function MyLeaveRequest() {
           </button>
         </div>
       </div>
-      <div className="tp-card tp-log-timesheet-card tp-employee-form-card-attached">
+      <div className="tp-card tp-log-timesheet-card tp-form-card-attached">
         <SortableTable
           refreshTrigger={gridRefreshTrigger}
           columns={columns}

@@ -577,7 +577,7 @@ export default function LogTimesheetFormPageBackup() {
   if (loading) return null;
 
   return (
-    <div className="tp-employee-form-page tp-log-timesheet-form-page">
+    <div className="tp-screen-form-page tp-log-timesheet-form-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="timeEntry" size={18} />
@@ -658,7 +658,7 @@ export default function LogTimesheetFormPageBackup() {
         </div>
       </div>
 
-      <div className="tp-card tp-log-timesheet-form-card tp-employee-form-card-attached">
+      <div className="tp-card tp-log-timesheet-form-card tp-form-card-attached">
         <div className="row g-3">
           <div className="col-md-4">
             <SearchableDropdown

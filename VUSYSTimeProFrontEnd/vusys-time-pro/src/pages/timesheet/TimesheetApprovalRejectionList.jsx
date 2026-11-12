@@ -515,7 +515,7 @@ export default function TimesheetApprovalRejectionList() {
   if (!canOpenScreen) return <AccessDenied />;
 
   return (
-    <div className="tp-employee-form-page tp-timesheet-approval-rejection-page">
+    <div className="tp-screen-form-page tp-timesheet-approval-rejection-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="timesheetApproval" size={18} />
@@ -547,7 +547,7 @@ export default function TimesheetApprovalRejectionList() {
         </div>
       </div>
 
-      <div className="tp-card tp-employee-form-card tp-employee-form-card-attached tp-timesheet-approval-rejection-card">
+      <div className="tp-card tp-form-card tp-form-card-attached tp-timesheet-approval-rejection-card">
         <div className="row g-3 tp-timesheet-approval-rejection-filters">
           <div className="col-md-4">
             <SearchableDropdown

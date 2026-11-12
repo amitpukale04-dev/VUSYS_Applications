@@ -356,7 +356,7 @@ export default function EmailConfigurationFormPage() {
   }
 
   return (
-    <div className="tp-employee-form-page tp-email-configuration-form-page">
+    <div className="tp-screen-form-page tp-email-configuration-form-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="settings" size={16} />
@@ -419,7 +419,7 @@ export default function EmailConfigurationFormPage() {
 
       <form
         id="email-configuration-form"
-        className="tp-card tp-employee-form-card tp-employee-form-card-attached"
+        className="tp-card tp-form-card tp-form-card-attached"
         onSubmit={save}
         noValidate
       >

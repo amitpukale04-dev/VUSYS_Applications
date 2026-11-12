@@ -282,7 +282,7 @@ export default function AllocatedConsumedReport() {
   if (!canOpenScreen) return <AccessDenied />;
 
   return (
-    <div className="tp-employee-form-page tp-allocated-consumed-report-page">
+    <div className="tp-screen-form-page tp-allocated-consumed-report-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="utilization" size={17} />
@@ -323,7 +323,7 @@ export default function AllocatedConsumedReport() {
         </div>
       </div>
 
-      <div className="tp-card tp-employee-form-card tp-employee-form-card-attached tp-allocated-consumed-report-card">
+      <div className="tp-card tp-form-card tp-form-card-attached tp-allocated-consumed-report-card">
         <div className="row g-3 tp-allocated-consumed-report-filters">
           <div className="col-md-4">
             <SearchableDropdown

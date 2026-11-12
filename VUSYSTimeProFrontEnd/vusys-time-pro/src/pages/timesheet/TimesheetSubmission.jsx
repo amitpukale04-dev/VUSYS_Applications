@@ -385,7 +385,7 @@ export default function TimesheetSubmission() {
   if (!canOpenScreen) return <AccessDenied />;
 
   return (
-    <div className="tp-employee-form-page tp-timesheet-submission-page">
+    <div className="tp-screen-form-page tp-timesheet-submission-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="timesheetSubmit" size={18} />
@@ -417,7 +417,7 @@ export default function TimesheetSubmission() {
         </div>
       </div>
 
-      <div className="tp-card tp-employee-form-card tp-employee-form-card-attached tp-timesheet-submission-card">
+      <div className="tp-card tp-form-card tp-form-card-attached tp-timesheet-submission-card">
         <div className="row g-3 tp-timesheet-submission-filters">
           <div className="col-md-4">
             <SearchableDropdown

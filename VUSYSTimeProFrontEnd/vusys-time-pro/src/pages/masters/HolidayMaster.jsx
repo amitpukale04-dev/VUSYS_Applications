@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { InlineEditableTable } from "../../components/common/InlineEditable";
 import ConfirmModal from "../../components/common/ConfirmModal";
+import SvgIcon from "../../components/common/SvgIcon";
+import { useTabs } from "../../context/TabsContext";
+import { ROUTE_CONSTANTS } from "../../constants/RouteConstants";
 import AccessDenied from "../../components/common/AccessDenied";
 import useUserSecurityPermission from "../../hooks/useUserSecurityPermission";
 import { getDropdownItems } from "../../services/dropdownService";
@@ -32,6 +35,8 @@ const HOLIDAY_API_FIELD_MAPPINGS = {
 };
 
 export default function HolidayMaster() {
+  const { closeTab } = useTabs();
+  const holidayGridRef = useRef(null);
   const { hasPermission, isLoading: securityAccessLoading } =
     useUserSecurityPermission();
   const canOpenHolidayList = hasPermission("Holiday Master", "Open");
@@ -334,15 +339,60 @@ export default function HolidayMaster() {
     return <AccessDenied />;
   }
 
-  // ==========================================================
-  // UI
-  // ==========================================================
-
   return (
-    <div>
-      <div className="tp-card tp-grid-card tp-grid-card-modern">
-        <div className="tp-grid-card-body">
-          <div className="tp-holiday-year-filter">
+    <div className="tp-screen-form-page tp-holiday-master-page">
+      <div className="tp-form-page-heading tp-form-titlebar">
+        <div className="tp-form-titlebar-title">
+          <SvgIcon name="holiday" size={18} />
+          <h1>Holiday List</h1>
+        </div>
+        <div className="tp-form-page-heading-actions">
+          <button
+            type="button"
+            className="tp-form-page-icon-button"
+            disabled
+            title="Download Holiday Master PDF (API integration pending)"
+            aria-label="Download Holiday Master PDF (API integration pending)"
+          >
+            <SvgIcon name="downloadHolidayPdf" size={18} />
+          </button>
+          <button
+            type="button"
+            className="tp-form-page-icon-button"
+            onClick={() => holidayGridRef.current?.refresh()}
+            disabled={loading || saving || deleting}
+            title="Refresh Holiday List"
+            aria-label="Refresh Holiday List"
+          >
+            <SvgIcon name="refresh" size={18} />
+          </button>
+          {canCreateHoliday && (
+            <button
+              type="button"
+              className="tp-form-page-icon-button"
+              onClick={() => holidayGridRef.current?.add()}
+              disabled={loading || saving || deleting}
+              title="Add Holiday"
+              aria-label="Add Holiday"
+            >
+              <SvgIcon name="add" size={18} />
+            </button>
+          )}
+          <button
+            type="button"
+            className="tp-form-page-icon-button"
+            onClick={() => closeTab(ROUTE_CONSTANTS.MASTER.HOLIDAY_MASTER)}
+            disabled={saving || deleting}
+            title="Cancel"
+            aria-label="Cancel"
+          >
+            <SvgIcon name="close" size={18} />
+          </button>
+        </div>
+      </div>
+      <div className="tp-card tp-holiday-master-card tp-form-card-attached">
+        <div className="row g-3 tp-holiday-master-filters">
+          <div className="col-md-3">
             <SearchableDropdown
               name="holidayYearFilter"
               label="Holiday Year"
@@ -363,7 +413,10 @@ export default function HolidayMaster() {
               disabled={loading}
             />
           </div>
+        </div>
+        <div className="tp-holiday-master-grid">
           <InlineEditableTable
+            ref={holidayGridRef}
             columns={columns}
             data={holidays}
             keyField="id"
@@ -382,7 +435,7 @@ export default function HolidayMaster() {
             showEditAction={canEditHoliday}
             showDeleteAction={canEditHoliday}
             showRowMore={false}
-            showAddAction={canCreateHoliday}
+            showAddAction={false}
             addActionLabel="Add Holiday"
             addActionIconOnly
             newRowFactory={createHolidayRow}
@@ -390,7 +443,7 @@ export default function HolidayMaster() {
             rowValidationErrors={rowValidationErrors}
             onCellChange={handleCellChange}
             onRowCancel={() => setRowValidationErrors({})}
-            showRefreshAction
+            showRefreshAction={false}
             onRefresh={() => loadHolidays(year, { showMessage: false })}
             refreshing={loading}
             loading={loading}

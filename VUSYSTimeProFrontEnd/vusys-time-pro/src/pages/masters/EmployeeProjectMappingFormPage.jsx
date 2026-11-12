@@ -436,7 +436,7 @@ export default function EmployeeProjectMappingFormPage() {
   }
 
   return (
-    <div className="tp-employee-form-page">
+    <div className="tp-screen-form-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="project" size={16} />
@@ -499,7 +499,7 @@ export default function EmployeeProjectMappingFormPage() {
 
       <form
         id="employee-project-mapping-form"
-        className="tp-card tp-employee-form-card tp-employee-form-card-attached"
+        className="tp-card tp-form-card tp-form-card-attached"
         onSubmit={save}
         noValidate
       >

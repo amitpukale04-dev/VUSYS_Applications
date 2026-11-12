@@ -270,7 +270,7 @@ export default function TimesheetReport() {
   }
 
   return (
-    <div className="tp-employee-form-page tp-timesheet-report-page">
+    <div className="tp-screen-form-page tp-timesheet-report-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="report" size={17} />
@@ -301,7 +301,7 @@ export default function TimesheetReport() {
         </div>
       </div>
 
-      <div className="tp-card tp-employee-form-card tp-employee-form-card-attached tp-timesheet-report-card">
+      <div className="tp-card tp-form-card tp-form-card-attached tp-timesheet-report-card">
         <div className="row g-3 tp-timesheet-report-filters">
           <div className="col-md-4">
             <SearchableDropdown

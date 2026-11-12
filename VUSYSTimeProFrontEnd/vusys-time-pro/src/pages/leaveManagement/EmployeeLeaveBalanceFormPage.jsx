@@ -467,7 +467,7 @@ export default function EmployeeLeaveBalanceFormPage() {
   if (loading) return null;
 
   return (
-    <div className="tp-employee-form-page tp-employee-leave-balance-form-page">
+    <div className="tp-screen-form-page tp-employee-leave-balance-form-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="leaveBalance" size={16} />
@@ -530,7 +530,7 @@ export default function EmployeeLeaveBalanceFormPage() {
 
       <form
         id="employeeLeaveBalance-form"
-        className="tp-card tp-employee-form-card tp-employee-form-card-attached"
+        className="tp-card tp-form-card tp-form-card-attached"
         onSubmit={save}
         noValidate
       >

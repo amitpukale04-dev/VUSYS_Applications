@@ -222,7 +222,7 @@ export default function EmployeeLeaveBalanceMaster() {
   // ==========================================================
 
   return (
-    <div className="tp-employee-form-page tp-log-timesheet-page">
+    <div className="tp-screen-form-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="leaveBalance" size={16} />
@@ -290,9 +290,9 @@ export default function EmployeeLeaveBalanceMaster() {
         </div>
       </div>
 
-      <div className="tp-card tp-grid-card tp-grid-card-modern tp-employee-form-card-attached">
+      <div className="tp-card tp-grid-card tp-grid-card-modern tp-form-card-attached">
         <div className="tp-grid-card-body">
-          <div className="row g-3 mb-3">
+          <div className="row g-3 mb-3 tp-employee-leave-balance-filters">
             <div className="col-md-3">
               <SearchableDropdown
                 name="leaveYear"

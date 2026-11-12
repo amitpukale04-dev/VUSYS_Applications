@@ -251,7 +251,7 @@ export default function LeaveApprovalRejectionList() {
   if (!canOpenScreen) return <AccessDenied />;
 
   return (
-    <div className="tp-employee-form-page tp-leave-approval-rejection-page">
+    <div className="tp-screen-form-page tp-leave-approval-rejection-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="approval" size={18} />
@@ -281,9 +281,9 @@ export default function LeaveApprovalRejectionList() {
         </div>
       </div>
 
-      <div className="tp-card tp-employee-form-card tp-employee-form-card-attached tp-leave-approval-rejection-list-card">
+      <div className="tp-card tp-form-card tp-form-card-attached tp-leave-approval-rejection-list-card">
         <div className="row g-3 tp-leave-approval-rejection-list-filters">
-          <div className="col-md-4">
+          <div className="col-md-3">
             <SearchableDropdown
               name="employeeCode"
               label="Employee"

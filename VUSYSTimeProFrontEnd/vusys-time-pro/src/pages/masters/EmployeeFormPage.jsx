@@ -544,7 +544,7 @@ export default function EmployeeFormPage() {
   const previewSource = getPreviewSource();
 
   return (
-    <div className="tp-employee-form-page">
+    <div className="tp-screen-form-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="employees" size={16} />
@@ -605,7 +605,7 @@ export default function EmployeeFormPage() {
 
       <form
         id="employee-form"
-        className="tp-card tp-employee-form-card tp-employee-form-card-attached"
+        className="tp-card tp-form-card tp-form-card-attached"
         onSubmit={save}
         noValidate
       >

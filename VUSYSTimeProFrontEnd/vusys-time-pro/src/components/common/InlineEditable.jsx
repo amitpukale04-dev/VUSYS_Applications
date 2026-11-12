@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import SortableTable from "./SortableTable";
 import SvgIcon from "./SvgIcon";
 import DirtyStateModal from "./DirtyStateModal";
@@ -238,56 +245,59 @@ export default function InlineEditable({
   );
 }
 
-export function InlineEditableTable({
-  columns = [],
-  data = [],
-  keyField = "id",
-  onDataChange,
-  enablePagination = true,
-  enableSorting = true,
-  enableGlobalSearch = true,
-  globalSearchPlaceholder = "Search all columns...",
-  enableColumnFilters = true,
-  stickyHeader = true,
-  freezeColumns = 0,
-  pageSizeOptions = null,
-  defaultPageSize = 30,
-  maxHeight = 430,
-  minTableHeight = 235,
-  showActions = false,
-  actionColumnWidth = "112px",
-  showRowMore = false,
-  showEditAction = true,
-  showDeleteAction = true,
-  onView,
-  onEdit,
-  onDelete,
-  onRowSave,
-  onRowCancel,
-  rowValidationErrors = {},
-  onCellChange,
-  newRowFactory,
-  toolbarExtra = null,
-  showAddAction = false,
-  addActionLabel = "Add",
-  addActionIconOnly = false,
-  onAdd,
-  showRefreshAction = false,
-  onRefresh,
-  refreshing = false,
-  loading = false,
-  loadingText = "Loading records...",
-  serverSide = false,
-  totalRecords = 0,
-  initialPageNumber = 1,
-  searchDebounceMs = 350,
-  onQueryChange,
-  onPageChange,
-  onPageSizeChange,
-  onSortChange,
-  onSearchChange,
-  onFilterChange,
-}) {
+export const InlineEditableTable = forwardRef(function InlineEditableTable(
+  {
+    columns = [],
+    data = [],
+    keyField = "id",
+    onDataChange,
+    enablePagination = true,
+    enableSorting = true,
+    enableGlobalSearch = true,
+    globalSearchPlaceholder = "Search all columns...",
+    enableColumnFilters = true,
+    stickyHeader = true,
+    freezeColumns = 0,
+    pageSizeOptions = null,
+    defaultPageSize = 30,
+    maxHeight = 430,
+    minTableHeight = 235,
+    showActions = false,
+    actionColumnWidth = "112px",
+    showRowMore = false,
+    showEditAction = true,
+    showDeleteAction = true,
+    onView,
+    onEdit,
+    onDelete,
+    onRowSave,
+    onRowCancel,
+    rowValidationErrors = {},
+    onCellChange,
+    newRowFactory,
+    toolbarExtra = null,
+    showAddAction = false,
+    addActionLabel = "Add",
+    addActionIconOnly = false,
+    onAdd,
+    showRefreshAction = false,
+    onRefresh,
+    refreshing = false,
+    loading = false,
+    loadingText = "Loading records...",
+    serverSide = false,
+    totalRecords = 0,
+    initialPageNumber = 1,
+    searchDebounceMs = 350,
+    onQueryChange,
+    onPageChange,
+    onPageSizeChange,
+    onSortChange,
+    onSearchChange,
+    onFilterChange,
+  },
+  ref,
+) {
   const { runWithFullPageLoader } = useFullPageLoader();
   const { registerTabDirtyState } = useTabs();
   const location = useLocation();
@@ -468,6 +478,12 @@ export function InlineEditableTable({
     executeRefresh();
   };
 
+  // Allow page titlebars to reuse the grid's existing Add/Refresh behavior.
+  useImperativeHandle(ref, () => ({
+    add: handleAddAction,
+    refresh: handleRefresh,
+  }));
+
   const discardPendingChanges = async () => {
     const pending = pendingActionRef.current;
     setDirtyOpen(false);
@@ -643,4 +659,4 @@ export function InlineEditableTable({
       />
     </>
   );
-}
+});

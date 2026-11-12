@@ -202,6 +202,14 @@ const paths = {
       <path d="m8 12 5 6M13 12l-5 6" />
     </>
   ),
+  downloadHolidayPdf: (
+    <>
+      <path d="M5 2.5h9l5 5v14H5z" />
+      <path d="M14 2.5v5h5" />
+      <path d="M8 12h8M8 15h8" />
+      <path d="M12 17v3m-2-2 2 2 2-2" />
+    </>
+  ),
   downloadReport: (
     <>
       <path d="M5 3h10l4 4v6" />

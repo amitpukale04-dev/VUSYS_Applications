@@ -4553,7 +4553,7 @@ textarea.tp-form-control {
   padding-right: 16px
 }
 
-.tp-employee-form-page {
+.tp-screen-form-page {
   width: min(1180px, 100%);
   margin: 0 auto
 }
@@ -4610,23 +4610,23 @@ textarea.tp-form-control {
   box-shadow: none
 }
 
-.tp-employee-form-card {
+.tp-form-card {
   padding: 24px;
   min-height: calc(100vh - var(--tp-header-h) - var(--tp-tabs-h) - 145px)
 }
 
-.tp-employee-form-card .tp-form-control-wrap input:disabled,
-.tp-employee-form-card .tp-form-control:disabled,
-.tp-employee-form-card textarea:disabled,
-.tp-employee-form-card .tp-searchable-select:disabled {
+.tp-form-card .tp-form-control-wrap input:disabled,
+.tp-form-card .tp-form-control:disabled,
+.tp-form-card textarea:disabled,
+.tp-form-card .tp-searchable-select:disabled {
   opacity: 1;
   color: var(--tp-text);
   background: color-mix(in srgb, var(--tp-bg) 88%, var(--tp-card));
   cursor: default
 }
 
-.tp-employee-form-card .tp-form-switch input:disabled~span,
-.tp-employee-form-card .tp-radio-group .disabled {
+.tp-form-card .tp-form-switch input:disabled~span,
+.tp-form-card .tp-radio-group .disabled {
   opacity: .72;
   cursor: default
 }
@@ -4727,7 +4727,7 @@ textarea.tp-form-control {
     font-size: 1.3rem
   }
 
-  .tp-employee-form-card {
+  .tp-form-card {
     padding: 16px;
     min-height: auto
   }
@@ -4754,7 +4754,7 @@ textarea.tp-form-control {
 
 /* Employee Add / View / Edit title bar */
 
-.tp-employee-form-page .tp-form-titlebar {
+.tp-screen-form-page .tp-form-titlebar {
   min-height: 46px;
   margin: 0;
   padding: 0 14px 0 18px;
@@ -4794,11 +4794,19 @@ textarea.tp-form-control {
   flex: 0 0 auto;
 }
 
-.tp-employee-form-page .tp-form-titlebar .tp-form-page-heading-actions {
+.tp-form-card-attached {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-radius: 0 0 16px 16px;
+  border-top: 0;
+}
+
+.tp-screen-form-page .tp-form-titlebar .tp-form-page-heading-actions {
   gap: 2px;
 }
 
-.tp-employee-form-page .tp-form-titlebar .tp-form-page-icon-button {
+.tp-screen-form-page .tp-form-titlebar .tp-form-page-icon-button {
   width: 38px;
   height: 38px;
   border: 0;
@@ -4808,20 +4816,14 @@ textarea.tp-form-control {
   box-shadow: none;
 }
 
-.tp-employee-form-page .tp-form-titlebar .tp-form-page-icon-button:hover {
+.tp-screen-form-page .tp-form-titlebar .tp-form-page-icon-button:hover {
   transform: none;
   background: rgba(255, 255, 255, .12);
   box-shadow: none;
 }
 
-.tp-employee-form-card-attached {
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  border-top: 0;
-}
-
 @media(max-width:767px) {
-  .tp-employee-form-page .tp-form-titlebar {
+  .tp-screen-form-page .tp-form-titlebar {
     min-height: 44px;
     padding: 0 8px 0 12px;
   }
@@ -4830,7 +4832,7 @@ textarea.tp-form-control {
     font-size: .94rem
   }
 
-  .tp-employee-form-page .tp-form-titlebar .tp-form-page-icon-button {
+  .tp-screen-form-page .tp-form-titlebar .tp-form-page-icon-button {
     width: 36px;
     height: 36px
   }
@@ -4838,17 +4840,17 @@ textarea.tp-form-control {
 
 /* Employee form titlebar action refinements */
 
-.tp-employee-form-page {
+.tp-screen-form-page {
   width: 100%;
   max-width: none;
   margin: 0;
 }
 
-.tp-employee-form-page .tp-form-titlebar {
+.tp-screen-form-page .tp-form-titlebar {
   background: linear-gradient(135deg, var(--tp-primary), var(--tp-primary-2));
 }
 
-.tp-employee-form-page .tp-form-titlebar .tp-form-page-icon-button:disabled {
+.tp-screen-form-page .tp-form-titlebar .tp-form-page-icon-button:disabled {
   opacity: .38;
   cursor: not-allowed;
   transform: none;
@@ -4856,14 +4858,8 @@ textarea.tp-form-control {
   box-shadow: none;
 }
 
-.tp-employee-form-page .tp-form-titlebar .tp-form-page-icon-button:disabled:hover {
+.tp-screen-form-page .tp-form-titlebar .tp-form-page-icon-button:disabled:hover {
   background: transparent;
-}
-
-.tp-employee-form-card-attached {
-  width: 100%;
-  max-width: none;
-  margin: 0;
 }
 
 /* Employee full-width form, single-scroll layout, session icon and dirty guard */
@@ -4897,20 +4893,13 @@ body,
   padding: 10px 6px 10px
 }
 
-.tp-employee-form-page {
+.tp-screen-form-page {
   width: 100%;
   max-width: none;
   margin: 0
 }
 
-.tp-employee-form-card-attached {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  border-radius: 0 0 16px 16px
-}
-
-.tp-employee-form-card {
+.tp-form-card {
   min-height: calc(100vh - var(--tp-header-h) - var(--tp-tabs-h) - 66px);
   padding: 22px 24px
 }
@@ -5041,7 +5030,7 @@ body,
     padding: 6px
   }
 
-  .tp-employee-form-card {
+  .tp-form-card {
     padding: 16px;
     min-height: auto
   }
@@ -8370,6 +8359,7 @@ body,
 
 .tp-download-timesheet-filters {
   padding: 2px 4px 18px;
+  border-bottom: 1px solid var(--tp-border);
 }
 
 .tp-download-timesheet-details-modal {
@@ -9664,23 +9654,30 @@ html[data-theme="dark"] .tp-offline-page-badge,
 }
 
 /* Holiday Master year selection */
-.tp-holiday-year-filter {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin: 0 0 14px;
+
+.tp-holiday-master-filters {
+  padding: 2px 4px 18px;
+  border-bottom: 1px solid var(--tp-border);
 }
 
-.tp-holiday-year-filter label {
-  font-weight: 700;
-  font-size: .8rem;
-  margin: 0;
+.tp-holiday-master-grid {
+  padding-top: 14px;
 }
 
-.tp-holiday-year-filter select {
-  width: 160px;
-  max-width: 100%;
+.tp-holiday-master-page {
+  width: 100%;
+  max-width: none;
+}
+
+.tp-holiday-master-card {
+  padding: 18px;
+}
+
+@media (max-width: 767.98px) {
+
+  .tp-holiday-master-card {
+    padding: 14px;
+  }
 }
 
 .tp-inline-editor textarea {
@@ -9699,22 +9696,6 @@ html[data-theme="dark"] .tp-offline-page-badge,
   border-color: #ef4444;
 }
 
-/* Holiday Master filter uses the same searchable dropdown as Timesheet Year. */
-.tp-holiday-year-filter {
-  position: relative;
-  display: block;
-  width: min(340px, 100%);
-  margin-bottom: 14px;
-}
-
-.tp-holiday-year-filter .tp-form-field {
-  width: 100%;
-}
-
-.tp-holiday-year-filter .tp-searchable-dropdown {
-  z-index: 110;
-}
-
 /* Match inline textarea validation to text inputs. */
 .tp-inline-editor textarea {
   font: inherit;
@@ -9731,6 +9712,15 @@ html[data-theme="dark"] .tp-offline-page-badge,
   border-color: #dc3545 !important;
   background: rgba(220, 53, 69, .035);
   box-shadow: 0 0 0 3px rgba(220, 53, 69, .09) !important;
+}
+
+/* ============================================================
+   EMPLOYEE LEAVE BALANCE LIST
+   ============================================================ */
+
+.tp-employee-leave-balance-filters {
+  padding: 2px 4px 18px;
+  border-bottom: 1px solid var(--tp-border);
 }
 
 /* ============================================================
@@ -10274,6 +10264,11 @@ html[data-theme="dark"] .tp-offline-page-badge,
    ============================================================ */
 .tp-leave-approval-rejection-list-filters {
   margin-bottom: 16px;
+  border-bottom: 1px solid var(--tp-border);
+}
+
+.tp-leave-approval-rejection-list-card {
+  padding: 20px 18px 18px;
 }
 
 .tp-leave-approval-rejection-list-grid {
@@ -10467,7 +10462,7 @@ html[data-theme="dark"] .tp-offline-page-badge,
 .tp-grid-card-body,
 .tp-data-grid,
 .tp-form-page,
-.tp-employee-form-page {
+.tp-screen-form-page {
   min-width: 0;
   max-width: 100%;
 }

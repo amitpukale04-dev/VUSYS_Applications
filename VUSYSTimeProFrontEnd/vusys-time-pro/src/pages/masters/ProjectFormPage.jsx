@@ -406,7 +406,7 @@ export default function ProjectFormPage() {
   }
 
   return (
-    <div className="tp-employee-form-page tp-project-form-page">
+    <div className="tp-screen-form-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="project" size={16} />
@@ -467,7 +467,7 @@ export default function ProjectFormPage() {
 
       <form
         id="project-form"
-        className="tp-card tp-employee-form-card tp-employee-form-card-attached"
+        className="tp-card tp-form-card tp-form-card-attached"
         onSubmit={save}
         noValidate
       >

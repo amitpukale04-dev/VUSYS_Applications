@@ -126,6 +126,34 @@ export async function getCurrentYearLeaveBalance(employeeCode, leaveTypeID) {
 }
 
 // ============================================================
+// CALCULATE TOTAL NO OF LEAVE DAYS
+// ============================================================
+
+export async function calculateAndGetTotalNoofLeaveDays(values) {
+  const response = await apiClient.post(
+    leaveManagement.calculate_and_get_total_no_of_leave_days,
+    {
+      employeeCode: normalizeString(values.employeeCode),
+      leaveTypeID: normalizeNumber(values.leaveTypeID),
+      fromDate: values.fromDate,
+      toDate: values.toDate,
+      isHalfDay: normalizeBoolean(values.isHalfDay),
+    },
+  );
+  const details = readResponse(
+    response?.data || {},
+    API_RESPONSE_TABLE.TOTAL_NO_OF_LEAVE_DAYS_RESPONSE,
+    "Unable to calculate Total No of Leave Days.",
+    true,
+  );
+  if (!details) throw new Error("Total No of Leave Days data not found.");
+  return {
+    totalLeaveDays: normalizeNumber(details.TotalNoofLeaveDays),
+    currentLeaveBalance: normalizeNumber(details.CurrentLeaveBalance),
+  };
+}
+
+// ============================================================
 // APPLY / CANCEL LEAVE REQUEST
 // ============================================================
 
@@ -159,11 +187,7 @@ export async function applyLeaveRequest(values) {
   );
 }
 
-export async function cancelMyLeaveRequest({
-  id,
-  employeeCode,
-  remarks,
-}) {
+export async function cancelMyLeaveRequest({ id, employeeCode, remarks }) {
   const response = await apiClient.post(
     leaveManagement.approve_reject_cancel_leave_request,
     {

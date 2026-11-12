@@ -504,7 +504,7 @@ export default function TimesheetApprovalRejection() {
   }
 
   return (
-    <div className="tp-employee-form-page tp-timesheet-approval-rejection-url-page">
+    <div className="tp-screen-form-page tp-timesheet-approval-rejection-url-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="timesheetApproval" size={18} />
@@ -545,7 +545,7 @@ export default function TimesheetApprovalRejection() {
 
       <form
         id="timesheet-approval-rejection-url-form"
-        className="tp-card tp-employee-form-card tp-employee-form-card-attached tp-timesheet-approval-rejection-url-card"
+        className="tp-card tp-form-card tp-form-card-attached tp-timesheet-approval-rejection-url-card"
         onSubmit={requestSaveConfirmation}
         noValidate
       >

@@ -371,7 +371,7 @@ export default function LeaveTypeFormPage() {
   if (loading) return null;
 
   return (
-    <div className="tp-employee-form-page tp-leave-type-form-page">
+    <div className="tp-screen-form-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="leaveType" size={16} />
@@ -434,7 +434,7 @@ export default function LeaveTypeFormPage() {
 
       <form
         id="leaveType-form"
-        className="tp-card tp-employee-form-card tp-employee-form-card-attached"
+        className="tp-card tp-form-card tp-form-card-attached"
         onSubmit={save}
         noValidate
       >

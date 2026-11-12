@@ -299,7 +299,7 @@ export default function DownloadTimesheet() {
 
   return (
     <>
-      <div className="tp-employee-form-page tp-download-timesheet-page">
+      <div className="tp-screen-form-page tp-download-timesheet-page">
         <div className="tp-form-page-heading tp-form-titlebar">
           <div className="tp-form-titlebar-title">
             <SvgIcon name="timesheet" size={17} />
@@ -368,7 +368,7 @@ export default function DownloadTimesheet() {
           </div>
         </div>
 
-        <div className="tp-card tp-employee-form-card tp-employee-form-card-attached tp-download-timesheet-card">
+        <div className="tp-card tp-form-card tp-form-card-attached tp-download-timesheet-card">
           <div className="row g-3 tp-download-timesheet-filters">
             {adminUser && (
               <div className="col-md-3">

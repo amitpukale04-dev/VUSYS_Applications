@@ -320,7 +320,7 @@ export default function LeaveApprovalRejection() {
   if (!canApproveLeave) return <AccessDenied />;
 
   return (
-    <div className="tp-employee-form-page tp-leave-approval-rejection-url-page">
+    <div className="tp-screen-form-page tp-leave-approval-rejection-url-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="ApproveRejectIcon" size={18} />
@@ -359,7 +359,7 @@ export default function LeaveApprovalRejection() {
 
       <form
         id="leave-approval-rejection-url-form"
-        className="tp-card tp-employee-form-card tp-employee-form-card-attached tp-leave-approval-rejection-url-card"
+        className="tp-card tp-form-card tp-form-card-attached tp-leave-approval-rejection-url-card"
         onSubmit={requestSaveConfirmation}
         noValidate
       >

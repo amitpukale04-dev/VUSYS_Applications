@@ -13,10 +13,11 @@ import AccessDenied from "../../components/common/AccessDenied";
 import ToastService from "../../services/toastService";
 import { showApiError } from "../../utils/showApiError";
 import { applyApiValidationErrors } from "../../utils/CustomAPIValidation";
-import { toDateOnly, calculateLeaveDays } from "../../utils/dateUtils";
+import { toDateOnly } from "../../utils/dateUtils";
 import { getDropdownItems } from "../../services/dropdownService";
 import {
   applyLeaveRequest,
+  calculateAndGetTotalNoofLeaveDays,
   getCurrentYearLeaveBalance,
   getMyLeaveRequestDetails,
 } from "../../services/myLeaveRequestService";
@@ -82,6 +83,10 @@ export default function MyLeaveRequestFormPage() {
   const originalRef = useRef("");
   const pendingActionRef = useRef(null);
   const balanceRequestRef = useRef(0);
+  const leaveDaysRequestRef = useRef(0);
+  const [calculatingLeaveDays, setCalculatingLeaveDays] = useState(false);
+  const [leaveDaysCalculationFailed, setLeaveDaysCalculationFailed] =
+    useState(false);
   const { errors, validate, clearError, setFieldError } = useFormValidation(
     myLeaveRequestValidationRules,
   );
@@ -90,11 +95,6 @@ export default function MyLeaveRequestFormPage() {
       Boolean(originalRef.current) &&
       JSON.stringify(form) !== originalRef.current,
     [form],
-  );
-  const totalLeaveDays = calculateLeaveDays(
-    form.fromDate,
-    form.toDate,
-    form.isHalfDay,
   );
 
   useEffect(() => {
@@ -201,6 +201,73 @@ export default function MyLeaveRequestFormPage() {
     };
   }, [employeeCode, form.employeeCode, form.leaveTypeID, isAddMode]);
 
+  // ============================================================
+  // CALCULATE TOTAL LEAVE DAYS FROM API - APPLY MODE ONLY
+  // ============================================================
+
+  useEffect(() => {
+    if (!isAddMode || loading) return;
+
+    const requestId = ++leaveDaysRequestRef.current;
+    const hasValidDates =
+      form.fromDate && form.toDate && form.toDate >= form.fromDate;
+    const canCalculate =
+      employeeCode && normalizeNumber(form.leaveTypeID) > 0 && hasValidDates;
+
+    if (!canCalculate) {
+      setCalculatingLeaveDays(false);
+      setLeaveDaysCalculationFailed(false);
+      setForm((current) =>
+        current.totalLeaveDays === 0
+          ? current
+          : { ...current, totalLeaveDays: 0 },
+      );
+      return;
+    }
+
+    setCalculatingLeaveDays(true);
+    setLeaveDaysCalculationFailed(false);
+    setForm((current) => ({ ...current, totalLeaveDays: 0 }));
+
+    calculateAndGetTotalNoofLeaveDays({
+      employeeCode,
+      leaveTypeID: form.leaveTypeID,
+      fromDate: form.fromDate,
+      toDate: form.toDate,
+      isHalfDay: form.isHalfDay,
+    })
+      .then((result) => {
+        if (requestId !== leaveDaysRequestRef.current) return;
+        setForm((current) => ({
+          ...current,
+          totalLeaveDays: result.totalLeaveDays,
+        }));
+        setLeaveDaysCalculationFailed(false);
+      })
+      .catch((error) => {
+        if (requestId !== leaveDaysRequestRef.current) return;
+        setLeaveDaysCalculationFailed(true);
+        setForm((current) => ({ ...current, totalLeaveDays: 0 }));
+        showApiError(error, "Unable to calculate Total No of Leave Days.");
+      })
+      .finally(() => {
+        if (requestId === leaveDaysRequestRef.current)
+          setCalculatingLeaveDays(false);
+      });
+
+    return () => {
+      leaveDaysRequestRef.current += 1;
+    };
+  }, [
+    employeeCode,
+    form.leaveTypeID,
+    form.fromDate,
+    form.toDate,
+    form.isHalfDay,
+    isAddMode,
+    loading,
+  ]);
+
   const update = (event) => {
     const { name, type, checked, value } = event.target;
     setForm((current) => ({
@@ -263,7 +330,7 @@ export default function MyLeaveRequestFormPage() {
   }
 
   return (
-    <div className="tp-employee-form-page tp-my-leave-request-form-page">
+    <div className="tp-screen-form-page">
       <div className="tp-form-page-heading tp-form-titlebar">
         <div className="tp-form-titlebar-title">
           <SvgIcon name="leaveType" size={18} />
@@ -309,7 +376,7 @@ export default function MyLeaveRequestFormPage() {
       </div>
       <form
         id="my-leave-request-form"
-        className="tp-card tp-employee-form-card tp-employee-form-card-attached"
+        className="tp-card tp-form-card tp-form-card-attached"
         onSubmit={save}
         noValidate
       >
@@ -388,9 +455,8 @@ export default function MyLeaveRequestFormPage() {
               name="totalLeaveDays"
               required
               label="Total No of Leave Days"
-              value={
-                isAddMode ? String(totalLeaveDays) : String(form.totalLeaveDays)
-              }
+              value={String(form.totalLeaveDays)}
+              error={errors.totalLeaveDays}
               disabled
             />
           </div>
