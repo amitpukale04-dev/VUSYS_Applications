@@ -215,6 +215,14 @@ namespace VUSYSTimeProWebAPI.Application.Abstractions.Modules.Master
         /// <returns></returns>
         Task<DataSet> GetHolidayDetailOrList(HolidayDetailsRequestParam _objHolidayDetailsRequestParam, CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// This Method Is Used To Export Holiday List To PDF.
+        /// </summary>
+        /// <param name="_objHolidayDetailsExportToPDFRequestParam"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task<DataSet> ExportHolidayListToPDF(HolidayDetailsExportToPDFRequestParam _objHolidayDetailsExportToPDFRequestParam, CancellationToken cancellationToken = default);
+
         #endregion [Holiday Master]
 
         #region [Leave Type Master]

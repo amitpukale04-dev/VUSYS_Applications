@@ -114,6 +114,17 @@ namespace VUSYSTimeProWebAPI.Application.Models
         public int HolidayYear { get; set; }
     }
 
+    public class HolidayDetailsExportToPDFRequestParam
+    {
+        /// <summary>
+        /// Holiday Year
+        /// </summary>
+        [Display(Name = "Holiday Year")]
+        [Required(ErrorMessage = "Enter The Holiday Year.")]
+        [NumberGreaterThanZeroValidation(NumberPropertyName = "HolidayYear", ErrorMessage = "Holiday Year Should Be Greater Than 0.")]
+        public int HolidayYear { get; set; }
+    }
+
     public class HolidayRequestParameterCommon : HolidayCommon, IRequestParameterCommonModel
     {
         /// <summary>

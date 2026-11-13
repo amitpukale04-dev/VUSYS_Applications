@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>#CompanyName# - Holiday List #HolidayYear#</title>
+    <style>
+        :root {
+            --brand: #563D7C;
+            --brand-dark: #3D295B;
+            --brand-light: #F3EFF8;
+            --ink: #292536;
+            --muted: #746D80;
+            --line: #DED8E8;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 5mm 13mm 10mm 13mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 9pt;
+            color: #292536;
+            background: #ffffff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* A natural-height document avoids pushing the final row onto another page. */
+        .paper {
+            position: relative;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .report {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Logo and company title share the same left starting edge. */
+        .header {
+            width: 100%;
+            display: block;
+            border-bottom: 3px solid #563D7C;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+        }
+
+        /* The supplied logo PNG has wide transparent margins. Clip those
+           margins inside this left-aligned viewport so the VUT artwork is
+           visibly larger without changing the Base64 binding. */
+        .header-logo {
+            display: block;
+            position: relative;
+            width: 116px;
+            height: 83px;
+            overflow: hidden;
+            margin: 0 0 3px 0;
+            padding: 0;
+        }
+
+            .header-logo img {
+                display: block;
+                width: 280px !important;
+                max-width: none !important;
+                max-height: none !important;
+                height: auto !important;
+                margin-left: -82px !important;
+                object-fit: contain;
+            }
+
+        .header-company {
+            display: block;
+            margin: 0;
+            padding: 0;
+        }
+
+        .company-name {
+            margin: 0;
+            font-size: 18pt;
+            line-height: 1.15;
+            font-weight: 800;
+            letter-spacing: .4px;
+            color: #563D7C;
+        }
+
+        .company-subtitle {
+            margin: 4px 0 0;
+            color: #746D80;
+            font-size: 8pt;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+
+        .title-block {
+            margin: 0 0 14px;
+            text-align: center;
+        }
+
+        .eyebrow {
+            color: #563D7C;
+            font-size: 8pt;
+            font-weight: bold;
+            letter-spacing: 1.7px;
+            text-transform: uppercase;
+        }
+
+        .report-title {
+            color: #3D295B;
+            font-size: 15pt;
+            line-height: 1.25;
+            font-weight: 800;
+            margin: 6px 0 8px;
+        }
+
+        .title-accent {
+            width: 45px;
+            height: 3px;
+            background: #563D7C;
+            margin: 0 auto;
+        }
+
+        /* Watermark: centred (horizontally and vertically) over the table area.
+           An absolute layer stretched over the table frame + flex centring keeps it
+           in the middle however many holiday rows there are, and above the cells. */
+        .watermark-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+            opacity: 0.22;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+            .watermark-container img {
+                display: block;
+                width: 140mm !important;
+                height: auto !important;
+                max-width: 100% !important;
+                max-height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                object-fit: contain;
+            }
+
+        .table-frame {
+            position: relative;
+            z-index: 1;
+        }
+
+        .holiday-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            border: 1px solid #DED8E8;
+        }
+
+            .holiday-table thead {
+                display: table-header-group;
+            }
+
+            .holiday-table th {
+                padding: 9px 10px;
+                background: #563D7C;
+                color: #ffffff;
+                text-align: left;
+                font-size: 8.5pt;
+                border-right: 1px solid #806B9C;
+            }
+
+                .holiday-table th:last-child {
+                    border-right: 0;
+                }
+
+            .holiday-table td {
+                padding: 9px 10px;
+                font-size: 8.7pt;
+                line-height: 1.25;
+                vertical-align: middle;
+                border-bottom: 1px solid #DED8E8;
+                overflow-wrap: break-word;
+            }
+
+            .holiday-table tbody tr:nth-child(even) td {
+                background: #F3EFF8;
+            }
+
+            .holiday-table tbody tr:last-child td {
+                border-bottom: 0;
+            }
+
+            .holiday-table tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            .holiday-table .col-date {
+                width: 23%;
+            }
+
+            .holiday-table .col-day {
+                width: 18%;
+            }
+
+            .holiday-table .col-occasion {
+                width: 36%;
+            }
+
+            .holiday-table .col-remarks {
+                width: 23%;
+            }
+
+            .holiday-table td:first-child {
+                font-weight: bold;
+                color: #3D295B;
+            }
+
+        /* Footer follows the table, avoiding an otherwise nearly empty last page. */
+        .footer {
+            position: relative;
+            z-index: 1;
+            margin-top: 13px;
+            padding-top: 8px;
+            border-top: 2px solid #563D7C;
+            color: #746D80;
+            font-size: 7.6pt;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .footer-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+            .footer-table td {
+                padding: 0;
+                vertical-align: top;
+                line-height: 1.45;
+            }
+
+        .footer-left {
+            width: 70%;
+        }
+
+        .footer-right {
+            width: 30%;
+            text-align: right;
+        }
+
+        .footer-brand {
+            color: #563D7C;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+
+        .footer-meta {
+            margin-top: 6px;
+            font-size: 7.2pt;
+        }
+
+        @media screen {
+            body {
+                background: #F0EEF3;
+                padding: 18px 10px;
+            }
+
+            .paper {
+                width: 210mm;
+                min-height: 297mm;
+                padding: 12mm 13mm 13mm;
+                background: #ffffff;
+                box-shadow: 0 5px 25px rgba(30, 20, 45, .13);
+            }
+        }
+
+        @media screen and (max-width: 850px) {
+            body {
+                padding: 0;
+            }
+
+            .paper {
+                width: 100%;
+                min-height: 100vh;
+                padding: 18px 12px;
+                box-shadow: none;
+            }
+
+            .header-logo {
+                width: 105px;
+                height: 76px;
+                margin-bottom: 3px;
+            }
+
+                .header-logo img {
+                    width: 255px !important;
+                    margin-left: -75px !important;
+                    max-width: none !important;
+                    max-height: none !important;
+                }
+
+            .company-name {
+                font-size: 14pt;
+            }
+
+            .report-title {
+                font-size: 12pt;
+            }
+
+            .holiday-table th, .holiday-table td {
+                padding: 7px 5px;
+                font-size: 7.4pt;
+            }
+
+            .footer {
+                font-size: 7pt;
+            }
+        }
+
+        @media print {
+            html, body {
+                width: auto;
+                background: #ffffff;
+            }
+
+            .paper {
+                width: auto;
+                min-height: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="paper">
+        <main class="report">
+            <header class="header">
+                <div class="header-logo">#CompanyLogo#</div>
+                <div class="header-company">
+                    <h1 class="company-name">#CompanyName#</h1>
+                    <p class="company-subtitle">Grow Together</p>
+                </div>
+            </header>
+
+            <section class="title-block">
+                <div class="eyebrow">Annual Holiday Calendar</div>
+                <h2 class="report-title">LIST OF HOLIDAYS FOR THE YEAR #HolidayYear#</h2>
+                <div class="title-accent"></div>
+            </section>
+
+            <div class="table-frame">
+                <div class="watermark-container" aria-hidden="true">#CompanyWatermarkLogo#</div>
+                <table class="holiday-table">
+                    <thead>
+                        <tr>
+                            <th class="col-date">Date</th>
+                            <th class="col-day">Day</th>
+                            <th class="col-occasion">Occasion</th>
+                            <th class="col-remarks">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        #HolidayRows#
+                    </tbody>
+                </table>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <table class="footer-table">
+                <tr>
+                    <td class="footer-left">
+                        <div class="footer-brand">#CompanyName#</div>
+                        <div>78, 3rd Cross Rd, Chandra Layout, Bangalore 560040</div>
+                        <div>vusys@vusys.in &nbsp; | &nbsp; +91-9845033169</div>
+                    </td>
+                    <td class="footer-right">
+                        <div class="footer-brand">https://www.vusys.in</div>
+                        <div>#FooterText#</div>
+                    </td>
+                </tr>
+            </table>
+            <div class="footer-meta">Please contact HR for clarification regarding holidays.</div>
+        </footer>
+
+    </div>
+</body>
+</html>

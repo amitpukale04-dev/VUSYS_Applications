@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Text;
 using CommonLibCore10;
 using CommonLibCore10.Constants;
 using Microsoft.AspNetCore.Hosting;
@@ -11,6 +12,7 @@ using VUSYSTimeProWebAPI.Application.Abstractions.Security;
 using VUSYSTimeProWebAPI.Application.Models;
 using VUSYSTimeProWebAPI.Infrastructure.Common;
 using VUSYSTimeProWebAPI.Infrastructure.Persistence.Constants;
+using static CommonLibCore10.CONST;
 
 namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Master
 {
@@ -21,6 +23,7 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Master
         private readonly IDropdownService _DropdownSvc;
         private readonly IPasswordHashService _PasswordHashSvc;
         private readonly IEmailService _EmailSvc;
+        private readonly IContentTypeService _ContentTypeSvc;
         private readonly IWebHostEnvironment _webHostEnvironment;
 
         /// <summary>
@@ -30,15 +33,17 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Master
         /// <param name="DropdownSvc"></param>
         /// <param name="PasswordHashSvc"></param>
         /// <param name="EmailSvc"></param>
+        /// <param name="ContentTypeSvc"></param>
         /// <param name="webHostEnvironment"></param>
         /// <exception cref="ArgumentNullException"></exception>
         public MasterService(SQLDBHelper SQLDBHelper, IDropdownService DropdownSvc, IPasswordHashService PasswordHashSvc, 
-            IEmailService EmailSvc, IWebHostEnvironment webHostEnvironment)
+            IEmailService EmailSvc, IContentTypeService ContentTypeSvc, IWebHostEnvironment webHostEnvironment)
         {
             _objSQLDBHelper = SQLDBHelper ?? throw new ArgumentNullException(nameof(SQLDBHelper));
             _DropdownSvc = DropdownSvc ?? throw new ArgumentNullException(nameof(DropdownSvc));
             _PasswordHashSvc = PasswordHashSvc ?? throw new ArgumentNullException(nameof(PasswordHashSvc));
             _EmailSvc = EmailSvc ?? throw new ArgumentNullException(nameof(EmailSvc));
+            _ContentTypeSvc = ContentTypeSvc ?? throw new ArgumentNullException(nameof(ContentTypeSvc));
             _webHostEnvironment = webHostEnvironment ?? throw new ArgumentNullException(nameof(webHostEnvironment));
         }
 
@@ -1029,6 +1034,149 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Master
             catch (Exception ex)
             {
                 Helper.LogMessage(CommonHelper.KeyOption.APIErrorLog, LogNameSpaceConstants.InfrastructureMasterLogNamespace, $"{MasterServiceLogClassName}.GetHolidayDetailOrList()", ex.Message, false);
+                throw;
+            }
+            return finalDataSet;
+        }
+
+        /// <summary>
+        /// This Method Is Used To Export Holiday List To PDF.
+        /// </summary>
+        /// <param name="_objHolidayDetailsExportToPDFRequestParam"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<DataSet> ExportHolidayListToPDF(HolidayDetailsExportToPDFRequestParam _objHolidayDetailsExportToPDFRequestParam, CancellationToken cancellationToken = default)
+        {
+            DataSet finalDataSet = new DataSet();
+            List<string> columns = new List<string> { "HolidayYear", "Status", "Message", "HolidayListPDFFileName", "HolidayListPDFBase64" };
+            string TableName = "HOLIDAY_LIST_PDF_RESPONSE";
+            string TempHolidayListHtmlFilePath = string.Empty;
+            string HolidayListPDFDocumentBase64 = string.Empty;
+            string HolidayYear = _objHolidayDetailsExportToPDFRequestParam.HolidayYear.ToString();
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var parameters = new Dictionary<string, object>
+                {
+                    { "@Id", 0 },
+                    { "@HolidayYear", _objHolidayDetailsExportToPDFRequestParam.HolidayYear },
+                    { "@Type", "GetAllHolidayListForExport" }
+                };
+                var ds = await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync(StoredProcedure.HOLIDAY_DETAIL_LIST, parameters, CONST.DBRetType.DATASET, cancellationToken) as DataSet;
+                cancellationToken.ThrowIfCancellationRequested();
+                if (Helper.CheckDataSetIsNullOrEmpty(ds))
+                {
+                    var row = ds.Tables[0].Rows[0];
+                    string DBStatus = Helper.ToProperCase(Convert.ToString(row["Status"]));
+                    if (DBStatus == Helper.ToProperCase(MessageTypeConstants.Success))
+                    {
+                        string HolidayMasterListPDFTemplate = await CommonHelper.ReadHTMLTemplateUsingStreamReaderAsync(_webHostEnvironment, "HolidayMasterListPDFTemplate.html");
+                        StringBuilder holidayRows = new StringBuilder();
+
+                        foreach (DataTable table in ds.Tables)
+                        {
+                            foreach (DataRow HolidayRow in table.Rows)
+                            {
+                                holidayRows.Append($@"
+                                <tr>
+                                    <td>{Helper.EncodeHTMLText(Convert.ToString(HolidayRow["HolidayDate"]))}</td>
+                                    <td>{Helper.EncodeHTMLText(Convert.ToString(HolidayRow["DayName"]))}</td>
+                                    <td>{Helper.EncodeHTMLText(Convert.ToString(HolidayRow["HolidayName"]))}</td>
+                                    <td>{Helper.EncodeHTMLText(Convert.ToString(HolidayRow["Remarks"]))}</td>
+                                </tr>");
+                            }
+                        }
+
+                        HolidayMasterListPDFTemplate = HolidayMasterListPDFTemplate.Replace("#CompanyName#", "VUSYS TECHNOLOGY")
+                            .Replace("#HolidayYear#", HolidayYear)
+                            .Replace("#FooterText#", $"Holiday Calendar - {HolidayYear}")
+                            .Replace("#HolidayRows#", holidayRows.ToString());
+
+                        string WaterMarkLogoFileName = "VUSYS_WaterMarkLogo.png";
+                        string WaterMarklogoPath = Path.Combine(CommonHelper.GetActualPath(_webHostEnvironment, "Content"), "Images", WaterMarkLogoFileName);
+                        if (File.Exists(WaterMarklogoPath))
+                        {
+                            string WaterMarkLogoBase64 = FileHelper.ConvertFileToBase64(WaterMarklogoPath);
+                            if (!string.IsNullOrEmpty(WaterMarkLogoBase64))
+                            {
+                                string WaterMarkLogoImageFileContentType = _ContentTypeSvc.GetFileContentType(WaterMarkLogoFileName);
+                                string WaterMarkimgSrc = $"data:{WaterMarkLogoImageFileContentType};base64,{WaterMarkLogoBase64}";
+                                string WaterMarkLogoImage = $@"<img src='{WaterMarkimgSrc}' alt='' aria-hidden='true'/>";
+                                HolidayMasterListPDFTemplate = HolidayMasterListPDFTemplate.Replace("#CompanyWatermarkLogo#", WaterMarkLogoImage);
+                            }
+                        }
+
+                        string LogoFileName = "VUSYS_HeaderLogo.png";
+                        string logoPath = Path.Combine(CommonHelper.GetActualPath(_webHostEnvironment, "Content"), "Images", LogoFileName);
+                        if (File.Exists(logoPath))
+                        {
+                            string LogoBase64 = FileHelper.ConvertFileToBase64(logoPath);
+                            if (!string.IsNullOrEmpty(LogoBase64))
+                            {
+                                string LogoImageFileContentType = _ContentTypeSvc.GetFileContentType(LogoFileName);
+                                string imgSrc = $"data:{LogoImageFileContentType};base64,{LogoBase64}";
+                                string LogoImage = $@"<img src='{imgSrc}' alt='VUSYS Technology Logo'/>";
+                                HolidayMasterListPDFTemplate = HolidayMasterListPDFTemplate.Replace("#CompanyLogo#", LogoImage);
+                            }
+                        }
+
+                        string tempFolderPath = CommonHelper.GetActualPath(_webHostEnvironment, "TempPDFFiles");
+                        var TempfileName = "TempHolidayMasterListPDFTemplate.html";
+                        string PDFFileName = $"VUSYS_HolidayList_{HolidayYear}";
+                        TempHolidayListHtmlFilePath = Path.Combine(tempFolderPath, TempfileName);
+                        Helper.DeleteFile(TempHolidayListHtmlFilePath);
+                        File.WriteAllText(TempHolidayListHtmlFilePath, HolidayMasterListPDFTemplate);
+                        byte[] pdfBytes = PDFHelper.ConvertHTMLToPDF(TempHolidayListHtmlFilePath, true, false, null, false, null, false, null, null);
+                        if (pdfBytes.Length > 0)
+                        {
+                            string pdfBase64 = Convert.ToBase64String(pdfBytes);
+                            if (!string.IsNullOrEmpty(pdfBase64))
+                            {
+                                //string Folder = CommonHelper.SaveFileToFolder(pdfBase64, FileTypes.Pdf, _webHostEnvironment);
+                                var result = new FileHelper.Base64File(pdfBase64, PDFFileName, FileHelper.GetFileExtension(FileTypes.Pdf));
+                                HolidayListPDFDocumentBase64 = result.Base64;
+                            }
+                        }
+                        if (!string.IsNullOrEmpty(HolidayListPDFDocumentBase64))
+                        {
+                            HolidayListPDFDocumentBase64 = Helper.CleanBase64(HolidayListPDFDocumentBase64);
+                            List<List<string>> rows = new List<List<string>>
+                            {
+                                new List<string> { HolidayYear, Helper.ToProperCase(MessageTypeConstants.Success), $"Holiday List {HolidayYear} PDF Downloaded Successfully !!!", $"{PDFFileName}.{FileTypes.Pdf}", HolidayListPDFDocumentBase64 }
+                            };
+                            finalDataSet = Helper.GenerateCommonMessage(columns, rows, TableName);
+                        }
+                        else
+                        {
+                            List<List<string>> rows = new List<List<string>>
+                            {
+                                new List<string> { HolidayYear, Helper.ToProperCase(MessageTypeConstants.Error), $"Failed To Download Holiday List {HolidayYear} PDF !!!", string.Empty, string.Empty }
+                            };
+                            finalDataSet = Helper.GenerateCommonMessage(columns, rows, TableName);
+                        }
+                    }
+                    else
+                    {
+                        string Message = ds.Tables[0].Rows[0]["Message"].ToString();
+                        List<List<string>> rows = new List<List<string>>
+                        {
+                            new List<string> { HolidayYear, Helper.ToProperCase(MessageTypeConstants.Error), Message, string.Empty, string.Empty }
+                        };
+                        finalDataSet = Helper.GenerateCommonMessage(columns, rows, TableName);
+                    }
+                }
+                else
+                {
+                    List<List<string>> rows = new List<List<string>>
+                    {
+                        new List<string> { HolidayYear, Helper.ToProperCase(MessageTypeConstants.Error), ResponseMessageConstants.NoDataFound, string.Empty, string.Empty }
+                    };
+                    finalDataSet = Helper.GenerateCommonMessage(columns, rows, TableName);
+                }
+            }
+            catch (Exception ex)
+            {
+                Helper.LogMessage(CommonHelper.KeyOption.APIErrorLog, LogNameSpaceConstants.InfrastructureMasterLogNamespace, $"{MasterServiceLogClassName}.ExportHolidayListToPDF()", ex.Message, false);
                 throw;
             }
             return finalDataSet;

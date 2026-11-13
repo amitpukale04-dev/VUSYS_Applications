@@ -1207,6 +1207,45 @@ namespace VUSYSTimeProWebAPI.Api.Controllers
             return Content(Util.JSONListOK(ReturnResult), ContentTypeConstants.JSON_CONTENTTYPE);
         }
 
+        /// <summary>
+        /// This Post Action Method Is Used To Export Holiday Details To PDF.
+        /// </summary>
+        /// <param name="_objHolidayDetailsExportToPDFRequestParam"></param>
+        /// To Export Holiday Details To PDF Below Request Parameters is required Such as Holiday Year.
+        /// <returns>
+        /// A JSON-formatted string representing the Holiday Details PDF Base64.
+        /// </returns>
+        [HttpPost, ActionName("ExportHolidayListToPDF")]
+        public async Task<ActionResult<string>> ExportHolidayListToPDF(HolidayDetailsExportToPDFRequestParam _objHolidayDetailsExportToPDFRequestParam)
+        {
+            string ReturnResult = string.Empty;
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    ReturnResult = ObjectToJson.ConvertDataSetToJson(await _MasterService.ExportHolidayListToPDF(_objHolidayDetailsExportToPDFRequestParam, RequestCancellationToken));
+                    if (ReturnResult == null || ReturnResult == string.Empty)
+                    {
+                        return Unauthorized();
+                    }
+                }
+                else
+                {
+                    ReturnResult = ModelErrorValidation.ConvertModelErrorsToJson(ModelState);
+                    if (ReturnResult == null || ReturnResult == string.Empty)
+                    {
+                        return NotFound();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Helper.LogMessage(CommonHelper.KeyOption.APIErrorLog, ControllerLogNamespace, $"{ControllerLogName}.ExportHolidayListToPDF()", ex.Message, false);
+                throw;
+            }
+            return Content(Util.JSONOK(ReturnResult), ContentTypeConstants.JSON_CONTENTTYPE);
+        }
+
         #endregion [Holiday Master]
 
         #region [Leave Type Master]
