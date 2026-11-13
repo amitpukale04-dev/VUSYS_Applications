@@ -3,6 +3,7 @@ import { InlineEditableTable } from "../../components/common/InlineEditable";
 import ConfirmModal from "../../components/common/ConfirmModal";
 import SvgIcon from "../../components/common/SvgIcon";
 import { useTabs } from "../../context/TabsContext";
+import { useFullPageLoader } from "../../context/FullPageLoaderContext";
 import { ROUTE_CONSTANTS } from "../../constants/RouteConstants";
 import AccessDenied from "../../components/common/AccessDenied";
 import useUserSecurityPermission from "../../hooks/useUserSecurityPermission";
@@ -11,9 +12,11 @@ import {
   getHolidayList,
   getHolidayDetails,
   saveAndUpdateHolidayDetails,
+  exportHolidayListToPDF,
 } from "../../services/holidayService";
 import ToastService from "../../services/toastService";
 import { SearchableDropdown } from "../../components/forms/FormElements";
+import { exportBase64File } from "../../utils/fileExportUtils";
 import { formatDDMMMYYYY } from "../../utils/dateUtils";
 import { normalizeNumber } from "../../utils/valueUtils";
 import {
@@ -22,6 +25,8 @@ import {
 } from "../../utils/CustomAPIValidation";
 import { showApiError } from "../../utils/showApiError";
 import { getCreatedOrUpdatedBy } from "../../utils/userSession";
+import { holidayValidationRules } from "../../validation/holidayValidationRules";
+import useFormValidation from "../../hooks/useFormValidation";
 
 const loggedInUserId = normalizeNumber(getCreatedOrUpdatedBy());
 
@@ -36,6 +41,7 @@ const HOLIDAY_API_FIELD_MAPPINGS = {
 
 export default function HolidayMaster() {
   const { closeTab } = useTabs();
+  const { showFullPageLoader, hideFullPageLoader } = useFullPageLoader();
   const holidayGridRef = useRef(null);
   const { hasPermission, isLoading: securityAccessLoading } =
     useUserSecurityPermission();
@@ -47,9 +53,12 @@ export default function HolidayMaster() {
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
   const [deleteRow, setDeleteRow] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [rowValidationErrors, setRowValidationErrors] = useState({});
+  const { errors, validate, clearError, clearErrors, setFieldError } =
+    useFormValidation(holidayValidationRules);
 
   const handleCellChange = (_row, fieldName) => {
     clearRowValidationError(setRowValidationErrors, fieldName);
@@ -147,6 +156,42 @@ export default function HolidayMaster() {
   }, [canOpenHolidayList, loadHolidays, securityAccessLoading]);
 
   // ==========================================================
+  // DOWNLOAD HOLIDAY MASTER PDF
+  // ==========================================================
+
+  const handleDownloadHolidayPDF = async () => {
+    if (exportingPDF) return;
+    if (!validate({ holidayYear: year })) return;
+
+    const loaderRequestId = showFullPageLoader(
+      "Downloading Holiday Master PDF...",
+    );
+    setExportingPDF(true);
+
+    try {
+      const result = await exportHolidayListToPDF(year);
+      exportBase64File({
+        base64Content: result.fileBase64,
+        contentType: result.contentType,
+        fileName: result.fileName,
+      });
+    } catch (error) {
+      if (error?.isApiValidationError) {
+        applyApiValidationErrors(
+          error.validationErrors || [],
+          HOLIDAY_API_FIELD_MAPPINGS,
+          setFieldError,
+        );
+      } else {
+        showApiError(error, "Unable to download Holiday Master PDF.");
+      }
+    } finally {
+      setExportingPDF(false);
+      hideFullPageLoader(loaderRequestId);
+    }
+  };
+
+  // ==========================================================
   // GRID COLUMNS
   // ==========================================================
 
@@ -240,6 +285,7 @@ export default function HolidayMaster() {
   const saveHolidayRow = async (row, { isNew }) => {
     if (saving) return;
     setRowValidationErrors({});
+    clearErrors();
     setSaving(true);
 
     try {
@@ -350,16 +396,20 @@ export default function HolidayMaster() {
           <button
             type="button"
             className="tp-form-page-icon-button"
-            disabled
-            title="Download Holiday Master PDF (API integration pending)"
-            aria-label="Download Holiday Master PDF (API integration pending)"
+            onClick={handleDownloadHolidayPDF}
+            disabled={loading || saving || deleting || exportingPDF}
+            title="Download Holiday Master PDF"
+            aria-label="Download Holiday Master PDF"
           >
             <SvgIcon name="downloadHolidayPdf" size={18} />
           </button>
           <button
             type="button"
             className="tp-form-page-icon-button"
-            onClick={() => holidayGridRef.current?.refresh()}
+            onClick={() => {
+              clearErrors();
+              holidayGridRef.current?.refresh();
+            }}
             disabled={loading || saving || deleting}
             title="Refresh Holiday List"
             aria-label="Refresh Holiday List"
@@ -394,11 +444,13 @@ export default function HolidayMaster() {
         <div className="row g-3 tp-holiday-master-filters">
           <div className="col-md-3">
             <SearchableDropdown
-              name="holidayYearFilter"
+              name="holidayYear"
               label="Holiday Year"
               required
               value={year}
+              error={errors.holidayYear}
               onChange={(event) => {
+                clearError("holidayYear");
                 const next = event.target.value;
                 setYear(next);
                 void loadHolidays(next);

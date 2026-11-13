@@ -71,6 +71,7 @@ export const master = Object.freeze({
   get_leave_type_details: buildApiUrl("/api/Master/GetLeaveTypeDetails"),
   get_leave_type_list: buildApiUrl("/api/Master/GetLeaveTypeList"),
   get_holiday_list: buildApiUrl("/api/Master/GetHolidayList"),
+  export_holiday_list_to_pdf: buildApiUrl("/api/Master/ExportHolidayListToPDF"),
   get_holiday_details: buildApiUrl("/api/Master/GetHolidayDetails"),
   save_and_update_holiday_details: buildApiUrl(
     "/api/Master/SaveAndUpdateHolidayDetails",

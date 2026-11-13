@@ -171,3 +171,45 @@ export async function saveAndUpdateHolidayDetails({
     message,
   };
 }
+
+// ============================================================
+// EXPORT HOLIDAY LIST TO PDF
+// ============================================================
+
+export async function exportHolidayListToPDF(holidayYear) {
+  const response = await apiClient.post(master.export_holiday_list_to_pdf, {
+    holidayYear: normalizeNumber(holidayYear),
+  });
+
+  const payload = response?.data || {};
+  const status = getApiResponseStatus(payload);
+  const details = getApiResponseFirstRow(
+    payload,
+    API_RESPONSE_TABLE.HOLIDAY_LIST_PDF_RESPONSE,
+  );
+  const fileBase64 = normalizeString(
+    details?.FileBase64 ?? details?.fileBase64,
+  ).trim();
+
+  // The API may return Status=Success with empty file data when no holidays exist.
+  if (status !== COMMON_CONSTANTS.SUCCESS || !fileBase64) {
+    const error = new Error(
+      getMessage(payload, details, "Holiday List Not Found To Download"),
+    );
+    error.name = "HolidayPdfExportError";
+    error.payload = payload;
+    error.details = details;
+    throw error;
+  }
+
+  return {
+    message: getMessage(
+      payload,
+      details,
+      "Holiday List PDF Downloaded Successfully.",
+    ),
+    fileName: normalizeString(details?.FileName ?? details?.fileName),
+    contentType: normalizeString(details?.ContentType ?? details?.contentType),
+    fileBase64,
+  };
+}
