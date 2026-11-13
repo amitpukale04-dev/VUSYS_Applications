@@ -1048,7 +1048,7 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Master
         public async Task<DataSet> ExportHolidayListToPDF(HolidayDetailsExportToPDFRequestParam _objHolidayDetailsExportToPDFRequestParam, CancellationToken cancellationToken = default)
         {
             DataSet finalDataSet = new DataSet();
-            List<string> columns = new List<string> { "HolidayYear", "Status", "Message", "HolidayListPDFFileName", "HolidayListPDFBase64" };
+            List<string> columns = new List<string> { "Status", "Message", "FileName", "ContentType", "FileBase64" };
             string TableName = "HOLIDAY_LIST_PDF_RESPONSE";
             string TempHolidayListHtmlFilePath = string.Empty;
             string HolidayListPDFDocumentBase64 = string.Empty;
@@ -1123,6 +1123,8 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Master
                         string tempFolderPath = CommonHelper.GetActualPath(_webHostEnvironment, "TempPDFFiles");
                         var TempfileName = "TempHolidayMasterListPDFTemplate.html";
                         string PDFFileName = $"VUSYS_HolidayList_{HolidayYear}";
+                        string FileName = $"{PDFFileName}.{FileTypes.Pdf}";
+                        string ContentType = _ContentTypeSvc.GetFileContentType(FileName);
                         TempHolidayListHtmlFilePath = Path.Combine(tempFolderPath, TempfileName);
                         Helper.DeleteFile(TempHolidayListHtmlFilePath);
                         File.WriteAllText(TempHolidayListHtmlFilePath, HolidayMasterListPDFTemplate);
@@ -1142,7 +1144,7 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Master
                             HolidayListPDFDocumentBase64 = Helper.CleanBase64(HolidayListPDFDocumentBase64);
                             List<List<string>> rows = new List<List<string>>
                             {
-                                new List<string> { HolidayYear, Helper.ToProperCase(MessageTypeConstants.Success), $"Holiday List {HolidayYear} PDF Downloaded Successfully !!!", $"{PDFFileName}.{FileTypes.Pdf}", HolidayListPDFDocumentBase64 }
+                                new List<string> { Helper.ToProperCase(MessageTypeConstants.Success), $"Holiday List {HolidayYear} PDF Downloaded Successfully !!!", FileName, ContentType, HolidayListPDFDocumentBase64 }
                             };
                             finalDataSet = Helper.GenerateCommonMessage(columns, rows, TableName);
                         }
@@ -1150,7 +1152,7 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Master
                         {
                             List<List<string>> rows = new List<List<string>>
                             {
-                                new List<string> { HolidayYear, Helper.ToProperCase(MessageTypeConstants.Error), $"Failed To Download Holiday List {HolidayYear} PDF !!!", string.Empty, string.Empty }
+                                new List<string> { Helper.ToProperCase(MessageTypeConstants.Error), $"Failed To Download Holiday List {HolidayYear} PDF !!!", string.Empty, string.Empty, string.Empty }
                             };
                             finalDataSet = Helper.GenerateCommonMessage(columns, rows, TableName);
                         }
@@ -1160,7 +1162,7 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Master
                         string Message = ds.Tables[0].Rows[0]["Message"].ToString();
                         List<List<string>> rows = new List<List<string>>
                         {
-                            new List<string> { HolidayYear, Helper.ToProperCase(MessageTypeConstants.Error), Message, string.Empty, string.Empty }
+                            new List<string> { Helper.ToProperCase(MessageTypeConstants.Error), Message, string.Empty, string.Empty, string.Empty }
                         };
                         finalDataSet = Helper.GenerateCommonMessage(columns, rows, TableName);
                     }
@@ -1169,7 +1171,7 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Master
                 {
                     List<List<string>> rows = new List<List<string>>
                     {
-                        new List<string> { HolidayYear, Helper.ToProperCase(MessageTypeConstants.Error), ResponseMessageConstants.NoDataFound, string.Empty, string.Empty }
+                        new List<string> { Helper.ToProperCase(MessageTypeConstants.Error), ResponseMessageConstants.NoDataFound, string.Empty, string.Empty, string.Empty }
                     };
                     finalDataSet = Helper.GenerateCommonMessage(columns, rows, TableName);
                 }

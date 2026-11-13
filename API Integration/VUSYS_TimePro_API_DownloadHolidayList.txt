@@ -1,0 +1,75 @@
+
+In HolidayMaster.jsx
+
+I have attached my existing latest complete project code. Modify and Provide me full updated project code.
+
+This is the Existing Screen.
+
+When we click on Download Holiday Master PDF button icon
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+/api/Master/ExportHolidayListToPDF
+
+When we click on Download Holiday Master PDF button icon
+
+Here in the holidayYear pass the selected value from the Holiday Year Dropdown
+
+Request Payload
+
+{
+  "holidayYear": 2026
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "HOLIDAY_LIST_PDF_RESPONSE": [
+      {
+        "Message": "Holiday List 2026 PDF Downloaded Successfully !!!",
+        "FileName": "VUSYS_HolidayList_2026.Pdf",
+        "ContentType": "application/pdf",
+        "FileBase64": "JVBERi0xLjcK"
+      }
+    ]
+  }
+}
+
+Error Response
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "HOLIDAY_LIST_PDF_RESPONSE": [
+      {
+        "Message": "Holiday List Not Found To Download",
+        "FileName": "",
+        "ContentType": "",
+        "FileBase64": ""
+      }
+    ]
+  }
+}
+
+API Validation Response
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "ValidationErrors": [
+      {
+        "Key": "HolidayYear",
+        "Message": "Enter The Holiday Year."
+      }
+    ]
+  }
+}
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------
