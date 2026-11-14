@@ -35,6 +35,8 @@ var app = builder.Build();
 
 CommonHelper.Initialise(app.Services.GetRequiredService<MyApplicationKeysOptions>());
 
+CommonHelper.GeminiAIInitialise(app.Services.GetRequiredService<GeminiAIKeysOptions>());
+
 // ----------------------------------------------------
 // Warm up ODBC database connection
 // ----------------------------------------------------

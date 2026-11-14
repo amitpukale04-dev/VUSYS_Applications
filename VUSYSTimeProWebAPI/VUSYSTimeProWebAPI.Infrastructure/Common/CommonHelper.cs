@@ -25,6 +25,15 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Common
             private set;
         } = new();
 
+        /// <summary>
+        /// Gemini AI Key configuration values.
+        /// </summary>
+        public static GeminiAIKeysOptions GeminiAIKeyOption
+        {
+            get;
+            private set;
+        } = new();
+
         static CommonHelper()
         {
             Helper.EncryptDecryptKey = "VUSYSTimePro@123456$Key@1912$@^!";
@@ -59,6 +68,14 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Common
         public static void Initialise(MyApplicationKeysOptions applicationKeysOptions)
         {
             KeyOption = applicationKeysOptions ?? throw new ArgumentNullException(nameof(applicationKeysOptions));
+        }
+
+        /// <summary>
+        /// Initialises Gemini AI Key configuration used by static helpers.
+        /// </summary>
+        public static void GeminiAIInitialise(GeminiAIKeysOptions applicationKeysOptions)
+        {
+            GeminiAIKeyOption = applicationKeysOptions ?? throw new ArgumentNullException(nameof(applicationKeysOptions));
         }
 
         /// <summary>

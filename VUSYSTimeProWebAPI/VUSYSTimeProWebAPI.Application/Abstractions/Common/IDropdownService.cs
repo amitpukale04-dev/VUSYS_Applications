@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using VUSYSTimeProWebAPI.Application.Models;
+using VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
 
 namespace VUSYSTimeProWebAPI.Application.Abstractions.Common
 {
@@ -173,6 +174,13 @@ namespace VUSYSTimeProWebAPI.Application.Abstractions.Common
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task<DataSet> GetLeaveTypeListAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// This Method Is Used To Get Available Leave Type List For AI.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task<IReadOnlyCollection<AILeaveTypeOptionM>> GetAvailableLeaveTypesForAIAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// This Method Is Used To Get Leave Balance Based on Leave Type, Employee Code and Leave Year.

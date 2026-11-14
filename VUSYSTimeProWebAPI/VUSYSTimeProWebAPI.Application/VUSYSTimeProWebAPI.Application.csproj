@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="16.2.0" />
+    <PackageReference Include="AutoMapper" Version="17.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="10.0.13" />
   </ItemGroup>
 
@@ -25,7 +25,6 @@
     <Folder Include="Abstractions\Modules\OTPService\" />
     <Folder Include="Abstractions\Modules\Reports\" />
     <Folder Include="Abstractions\Services\" />
-    <Folder Include="Common\Options\" />
     <Folder Include="Models\Authentication\" />
     <Folder Include="Models\Configuration\" />
   </ItemGroup>

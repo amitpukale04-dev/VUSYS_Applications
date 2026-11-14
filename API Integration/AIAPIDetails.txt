@@ -1,0 +1,103 @@
+
+/api/AIAgentLeaveManagement/ProcessAILeaveManagementRequest
+
+
+{
+  "message": "Apply Leave for coming Monday for personal work."
+}
+
+Success Response:
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "AI_LEAVE_MANAGEMENT_RESPONSE": [
+      {
+        "Message": "Review and confirm the leave application.",
+        "ConfirmationToken": "A2EEF4E040BF73AEFCFF3A12BBF335C050D07B090D44C1F92DF48E5184C9AAF4",
+        "Intent": "ApplyLeave",
+        "LeaveType": "Privileage Leave",
+        "FromDate": "2026-11-16",
+        "ToDate": "2026-11-16",
+        "LeaveRequestID": "",
+        "Reason": "personal work",
+        "Remarks": ""
+      }
+    ]
+  }
+}
+
+Error Response:
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "AI_LEAVE_MANAGEMENT_RESPONSE": [
+      {
+        "Message": "Invalid leave date range.",
+        "ConfirmationToken": "",
+        "Intent": "ApplyLeave",
+        "LeaveType": "Privileage Leave",
+        "FromDate": "2026-11-16",
+        "ToDate": "2026-11-16",
+        "LeaveRequestID": "",
+        "Reason": "personal work",
+        "Remarks": ""
+      }
+    ]
+  }
+}
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+HTTPPost
+
+/api/AIAgentLeaveManagement/ConfirmAILeaveManagementAction
+
+Request Payload
+
+{
+  "confirmationToken": "DABE7050A83D6D230F3A26D9F1757F2ADFC6B7F9698D123958A95F3636B3AF2D"
+}
+
+
+
+Success Response 
+
+{
+  "message": "OK",
+  "Status": "Success",
+  "data": {
+    "LEAVE_REQUEST_RESPONSE": [
+      {
+        "Message": "Leave Request Submitted Successfully, and an Email Notification Has Been Sent to the Approver !!!"
+      }
+    ]
+  }
+}
+
+
+Error Response 
+
+{
+  "message": "OK",
+  "Status": "Error",
+  "data": {
+    "AI_LEAVE_MANAGEMENT_RESPONSE": [
+      {
+        "Message": "Invalid, expired or already used confirmation token.",
+        "ConfirmationToken": "",
+        "Intent": "",
+        "LeaveType": "",
+        "FromDate": "",
+        "ToDate": "",
+        "LeaveRequestID": "",
+        "Reason": "",
+        "Remarks": ""
+      }
+    ]
+  }
+}

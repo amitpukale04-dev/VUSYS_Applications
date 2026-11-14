@@ -5,6 +5,7 @@ using CommonLibCore10.Constants;
 using Microsoft.EntityFrameworkCore;
 using VUSYSTimeProWebAPI.Application.Abstractions.Common;
 using VUSYSTimeProWebAPI.Application.Models;
+using VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
 using VUSYSTimeProWebAPI.Infrastructure.Persistence.EntityFramework;
 
 namespace VUSYSTimeProWebAPI.Infrastructure.Common;
@@ -1122,6 +1123,39 @@ public sealed class DropdownService : IDropdownService
             throw;
         }
         return finalDataSet;
+    }
+
+    /// <summary>
+    /// This Method Is Used To Get Available Leave Type List For AI.
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<IReadOnlyCollection<AILeaveTypeOptionM>> GetAvailableLeaveTypesForAIAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _dbContext.LeaveTypeMasterList
+            .AsNoTracking()
+            .Where(c => c.IsDeleted == false)
+            .OrderBy(c => c.LeaveType)
+            .Select(c => new AILeaveTypeOptionM
+            {
+                ID = c.Id,
+                LeaveTypeCode = c.LeaveTypeCode,
+                LeaveType = c.LeaveType,
+                LeaveTypeDescription = c.LeaveTypeDescription
+            })
+            .ToListAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Helper.LogMessage(CommonHelper.KeyOption.APIErrorLog, LogNameSpaceConstants.InfrastructureCommonLogNamespace, $"{DropdownServiceLogClassName}.GetAvailableLeaveTypesForAIAsync()", ex.Message, false);
+            throw;
+        }
     }
 
     /// <summary>

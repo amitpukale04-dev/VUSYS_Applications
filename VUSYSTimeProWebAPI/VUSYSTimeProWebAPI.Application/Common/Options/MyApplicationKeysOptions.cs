@@ -111,6 +111,11 @@
         public string ResetPasswordLinkExpiryInMinutes { get; set; }
 
         /// <summary>
+        /// Is Enable AI Assistant
+        /// </summary>
+        public string IsEnableAIAssistant { get; set; }
+
+        /// <summary>
         /// Request DB Script Logging Enabled
         /// </summary>
         public string RequestDBScriptLoggingEnabled { get; set; }

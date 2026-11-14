@@ -3,46 +3,48 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using VUSYSTimeProWebAPI.Application.Abstractions.Modules.OTPService;
-using VUSYSTimeProWebAPI.Infrastructure.Persistence.EntityFramework;
 using SimpleCrypto;
+using VUSYSTimeProWebAPI.Application.Abstractions.AIAgents.LeaveManagement;
 using VUSYSTimeProWebAPI.Application.Abstractions.Authentication;
 using VUSYSTimeProWebAPI.Application.Abstractions.Caching;
 using VUSYSTimeProWebAPI.Application.Abstractions.Common;
 using VUSYSTimeProWebAPI.Application.Abstractions.Email;
 using VUSYSTimeProWebAPI.Application.Abstractions.FileUploads;
+using VUSYSTimeProWebAPI.Application.Abstractions.Modules.Configuration;
+using VUSYSTimeProWebAPI.Application.Abstractions.Modules.Employee;
+using VUSYSTimeProWebAPI.Application.Abstractions.Modules.FrontEndUserTabs;
+using VUSYSTimeProWebAPI.Application.Abstractions.Modules.LeaveManagement;
 using VUSYSTimeProWebAPI.Application.Abstractions.Modules.Master;
+using VUSYSTimeProWebAPI.Application.Abstractions.Modules.OTPService;
+using VUSYSTimeProWebAPI.Application.Abstractions.Modules.Project;
+using VUSYSTimeProWebAPI.Application.Abstractions.Modules.Reports;
+using VUSYSTimeProWebAPI.Application.Abstractions.Modules.Timesheet;
 using VUSYSTimeProWebAPI.Application.Abstractions.Modules.Users;
 using VUSYSTimeProWebAPI.Application.Abstractions.Persistence;
 using VUSYSTimeProWebAPI.Application.Abstractions.Security;
 using VUSYSTimeProWebAPI.Application.Abstractions.Users;
 using VUSYSTimeProWebAPI.Application.Common.Options;
 using VUSYSTimeProWebAPI.Application.Models.Authentication;
+using VUSYSTimeProWebAPI.Infrastructure.AIAgents.LeaveManagement;
 using VUSYSTimeProWebAPI.Infrastructure.Authentication;
 using VUSYSTimeProWebAPI.Infrastructure.Caching;
 using VUSYSTimeProWebAPI.Infrastructure.Common;
 using VUSYSTimeProWebAPI.Infrastructure.Email;
 using VUSYSTimeProWebAPI.Infrastructure.Persistence.Connections;
+using VUSYSTimeProWebAPI.Infrastructure.Persistence.EntityFramework;
 using VUSYSTimeProWebAPI.Infrastructure.Security;
 using VUSYSTimeProWebAPI.Infrastructure.Services.FileUploads;
+using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Configuration;
+using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Employee;
+using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.FrontEndUserTabs;
+using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.LeaveManagement;
 using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Master;
 using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.OTPService;
+using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Project;
+using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Reports;
+using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Timesheet;
 using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Users;
 using VUSYSTimeProWebAPI.Infrastructure.Users;
-using VUSYSTimeProWebAPI.Application.Abstractions.Modules.Configuration;
-using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Configuration;
-using VUSYSTimeProWebAPI.Application.Abstractions.Modules.Employee;
-using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Employee;
-using VUSYSTimeProWebAPI.Application.Abstractions.Modules.Project;
-using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Project;
-using VUSYSTimeProWebAPI.Application.Abstractions.Modules.Timesheet;
-using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Timesheet;
-using VUSYSTimeProWebAPI.Application.Abstractions.Modules.Reports;
-using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Reports;
-using VUSYSTimeProWebAPI.Application.Abstractions.Modules.LeaveManagement;
-using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.LeaveManagement;
-using VUSYSTimeProWebAPI.Application.Abstractions.Modules.FrontEndUserTabs;
-using VUSYSTimeProWebAPI.Infrastructure.Services.Modules.FrontEndUserTabs;
 
 namespace VUSYSTimeProWebAPI.Infrastructure;
 
@@ -111,6 +113,9 @@ public static class DependencyInjection
             MyApplicationKeysOptions applicationKeys =
                 serviceProvider.GetRequiredService<MyApplicationKeysOptions>();
 
+            GeminiAIKeysOptions geminiAIKeys =
+                serviceProvider.GetRequiredService<GeminiAIKeysOptions>();
+
             string decryptedConnectionString =
                 dbConnectionHelper
                     .GetDBConnectionStringAsync("DevOrProd")
@@ -169,6 +174,14 @@ public static class DependencyInjection
 
         // Timesheet
         services.AddScoped<ITimesheetService, TimesheetService>();
+
+        // AI Agents
+        services.AddHttpClient<IGitHubModelsAIService, GitHubModelsAIService>(client => client.Timeout = TimeSpan.FromSeconds(60));
+        services.AddHttpClient<IGeminiAIService, GeminiAIService>(client => client.Timeout = TimeSpan.FromMinutes(5));
+        services.AddScoped<IAILeaveSecurityContext, AILeaveSecurityContext>();
+        services.AddScoped<IAILeaveTypeResolver, AILeaveTypeResolver>();
+        services.AddSingleton<IAILeaveConfirmationStore, InMemoryAILeaveConfirmationStore>();
+        services.AddScoped<IAILeaveManagementAgentService, AILeaveManagementAgentService>();
 
         // Leave Management
         services.AddScoped<ILeaveManagementService, LeaveManagementService>();

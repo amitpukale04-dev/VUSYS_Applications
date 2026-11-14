@@ -74,6 +74,13 @@ namespace VUSYSTimeProWebAPI.Api
 
             services.AddSingleton(sp => sp.GetRequiredService<IOptions<MyApplicationKeysOptions>>().Value);
 
+            services.AddOptions<GeminiAIKeysOptions>()
+                .Bind(configuration.GetSection(GeminiAIKeysOptions.SectionName))
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+            services.AddSingleton(sp => sp.GetRequiredService<IOptions<GeminiAIKeysOptions>>().Value);
+
             services.AddHttpContextAccessor();
 
             services.AddScoped<JwtAuthorizationFilter>();

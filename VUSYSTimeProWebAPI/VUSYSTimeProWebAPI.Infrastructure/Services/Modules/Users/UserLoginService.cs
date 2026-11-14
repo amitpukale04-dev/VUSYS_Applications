@@ -143,6 +143,7 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Users
                                     ProfileImageBase64 = $"data:{DefaultImageContentType};base64,{Convert.ToBase64String(_myData)}";
                                 }
 
+                                Helper.AddNewColumnToDataTable(dt, "is_enable_ai_assistant", typeof(bool));
                                 Helper.AddNewColumnToDataTable(dt, "user_role", typeof(string));
                                 Helper.AddNewColumnToDataTable(dt, "otp", typeof(string));
                                 Helper.AddNewColumnToDataTable(dt, "security_access_ids_array", typeof(object));
@@ -177,6 +178,7 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Users
 
                                 foreach (DataRow row in dt.Rows)
                                 {
+                                    row.SetField("is_enable_ai_assistant", Convert.ToBoolean(CommonHelper.KeyOption.IsEnableAIAssistant));
                                     row.SetField("user_role", UserRole);
                                     row.SetField("otp", IsOTPEmailSent ? EncodedOTP : string.Empty);
                                     row.SetField("UserImage", ProfileImageBase64);
