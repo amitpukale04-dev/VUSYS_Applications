@@ -1,5 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Data;
+using System.Globalization;
+using CommonLibCore10;
+using CommonLibCore10.Constants;
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using VUSYSTimeProWebAPI.Application.Abstractions.AIAgents.LeaveManagement;
@@ -10,8 +13,14 @@ using VUSYSTimeProWebAPI.Infrastructure.Persistence.EntityFramework;
 
 namespace VUSYSTimeProWebAPI.Infrastructure.AIAgents.LeaveManagement;
 
-public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbContext db, IDropdownService dropdown) : IAILeaveSecurityContext
+public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbContext db, IDropdownService dropdown, SQLDBHelper _objSQLDBHelper) : IAILeaveSecurityContext
 {
+    /// <summary>
+    /// This Method Is Used To Get User Identity.
+    /// </summary>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    /// <exception cref="UnauthorizedAccessException"></exception>
     public async Task<AILeaveActor> GetActorAsync(CancellationToken ct = default)
     {
         if (!current.IsAuthenticated || string.IsNullOrWhiteSpace(current.EmployeeCode))
@@ -23,16 +32,160 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
         return new AILeaveActor(user.Id, user.EmployeeCode, user.IsApprover == true);
     }
 
+    private const string AILeaveStoredProcedure = "usp_VUSYS_AILeaveManagement_GetLeaveRequestDetails";
+    private const string AILeaveResponseTable = "AI_LEAVE_REQUEST_DETAILS_RESPONSE";
+
     /// <summary>
-    /// This Method Is Used To Get Leave Request.
+    /// This Method Is Used To Get Leave Request Using Stored Procedure.
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    public async Task<AILeaveRequestSnapshot?> GetLeaveRequestAsync(int id, CancellationToken ct = default) =>
-        await db.LeaveApplicationList.AsNoTracking().Where(x => x.Id == id && !x.IsDeleted)
-            .Select(x => new AILeaveRequestSnapshot(x.Id, x.EmployeeCode, x.LeaveStatus)).FirstOrDefaultAsync(ct);
-    
+    public async Task<AILeaveRequestSnapshot?> GetLeaveRequestAsync(int id, CancellationToken ct = default)
+    {
+        AILeaveRequestDetailsM? details = await GetLeaveRequestDetailsAsync(id, ct);
+        return details is null ? null : new AILeaveRequestSnapshot(details.LeaveRequestID, details.EmployeeCode, details.LeaveStatus);
+    }
+
+    /// <summary>
+    /// This Method Is Used To Search Leave Requests Using Stored Procedure.
+    /// </summary>
+    public async Task<IReadOnlyList<AILeaveRequestDetailsM>> SearchLeaveRequestsAsync(
+        AILeaveRequestSearchCriteriaM criteria, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(criteria);
+        ct.ThrowIfCancellationRequested();
+
+        if (!criteria.ExactDateRange)
+            throw new NotSupportedException("The AI leave stored procedure currently supports exact date-range matching only.");
+
+        if (criteria.LeaveRequestID is not > 0 &&
+            (string.IsNullOrWhiteSpace(criteria.FromDate) || string.IsNullOrWhiteSpace(criteria.ToDate)))
+            return Array.Empty<AILeaveRequestDetailsM>();
+
+        // Do not allow an unrestricted search.
+        if (criteria.LeaveRequestID is not > 0 &&
+            string.IsNullOrWhiteSpace(criteria.EmployeeCode) && string.IsNullOrWhiteSpace(criteria.EmployeeName))
+            return Array.Empty<AILeaveRequestDetailsM>();
+
+        return await ExecuteLeaveRequestLookupAsync("SearchLeaveRequestsForAI", criteria, ct);
+    }
+
+    /// <summary>
+    /// This Method Is Used To Get Leave Request Details For Review Using Stored Procedure.
+    /// </summary>
+    public async Task<AILeaveRequestDetailsM?> GetLeaveRequestDetailsAsync(int leaveRequestID, CancellationToken ct = default)
+    {
+        if (leaveRequestID <= 0) return null;
+        IReadOnlyList<AILeaveRequestDetailsM> records = await ExecuteLeaveRequestLookupAsync(
+            "GetLeaveRequestDetailsForAI", new AILeaveRequestSearchCriteriaM { LeaveRequestID = leaveRequestID }, ct);
+        return records.FirstOrDefault();
+    }
+
+    /// <summary>
+    /// This Method Is Used To Execute AI Leave Request Stored Procedure And Map DataSet.
+    /// </summary>
+    private async Task<IReadOnlyList<AILeaveRequestDetailsM>> ExecuteLeaveRequestLookupAsync(
+        string paramType, AILeaveRequestSearchCriteriaM criteria, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        DateTime? fromDate = ParseIsoDate(criteria.FromDate);
+        DateTime? toDate = ParseIsoDate(criteria.ToDate);
+        if (fromDate.HasValue && toDate.HasValue && fromDate.Value > toDate.Value)
+            throw new ArgumentException("From Date Cannot Be Greater Than To Date.");
+
+        var parameters = new Dictionary<string, object>
+        {
+            { "@Id", criteria.LeaveRequestID.GetValueOrDefault() },
+            { "@EmployeeCode", criteria.EmployeeCode?.Trim() ?? string.Empty },
+            { "@EmployeeName", criteria.EmployeeName?.Trim() ?? string.Empty },
+            { "@FromDate", fromDate.HasValue ? fromDate.Value : DBNull.Value },
+            { "@ToDate", toDate.HasValue ? toDate.Value : DBNull.Value },
+            { "@LeaveStatus", DBNull.Value },
+            { "@ParamType", paramType },
+            { "@Intent", criteria.Intent?.Trim() ?? string.Empty },
+        };
+
+        DataSet? finalDataSet = await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync(
+            AILeaveStoredProcedure, parameters, CONST.DBRetType.DATASET, ct) as DataSet;
+        ct.ThrowIfCancellationRequested();
+
+        // Preserve the existing DataSet validation convention.
+        finalDataSet = Helper.CheckAndValidateDatasetTable(finalDataSet, AILeaveResponseTable);
+        if (finalDataSet is null || finalDataSet.Tables.Count == 0)
+            return Array.Empty<AILeaveRequestDetailsM>();
+
+        DataTable? table = finalDataSet.Tables.Contains(AILeaveResponseTable)
+            ? finalDataSet.Tables[AILeaveResponseTable] : finalDataSet.Tables[0];
+        if (table is null || table.Rows.Count == 0)
+            return Array.Empty<AILeaveRequestDetailsM>();
+
+        // Error responses from the SP have Status/Message, not leave detail columns.
+        if (!table.Columns.Contains("LeaveRequestID"))
+        {
+            string status = GetString(table.Rows[0], "Status");
+            if (string.Equals(status, "Error", StringComparison.OrdinalIgnoreCase))
+            {
+                string message = GetString(table.Rows[0], "Message");
+                if (message.Contains("Not Found", StringComparison.OrdinalIgnoreCase))
+                    return Array.Empty<AILeaveRequestDetailsM>();
+                throw new InvalidOperationException(string.IsNullOrWhiteSpace(message)
+                    ? "AI leave request lookup failed." : message);
+            }
+            throw new InvalidOperationException("Unexpected AI leave request stored procedure response.");
+        }
+
+        var records = table.Rows.Cast<DataRow>().Select(row => new AILeaveRequestDetailsM
+        {
+            LeaveRequestID = GetInt(row, "LeaveRequestID"),
+            EmployeeCode = GetString(row, "EmployeeCode"),
+            EmployeeName = GetString(row, "EmployeeName"),
+            LeaveTypeID = GetInt(row, "LeaveTypeID"),
+            LeaveType = GetString(row, "LeaveType"),
+            FromDate = GetString(row, "FromDate"),
+            ToDate = GetString(row, "ToDate"),
+            IsHalfDay = GetBool(row, "IsHalfDay"),
+            TotalLeaveDays = GetDecimal(row, "TotalLeaveDays"),
+            Reason = GetString(row, "Reason"),
+            LeaveStatus = GetInt(row, "LeaveStatus"),
+            Remarks = GetString(row, "Remarks")
+        }).Where(x => x.LeaveRequestID > 0).GroupBy(x => x.LeaveRequestID)
+          .Select(x => x.First()).ToList();
+
+        // The SP uses TOP (51); 51 results mean the selection may be incomplete.
+        if (records.Count >= 51)
+            throw new InvalidOperationException("Too many matching leave requests. Narrow the employee name or date range.");
+
+        if (!string.IsNullOrWhiteSpace(criteria.EmployeeName))
+        {
+            string name = criteria.EmployeeName.Trim();
+            var exact = records.Where(x => string.Equals(x.EmployeeName.Trim(), name, StringComparison.OrdinalIgnoreCase)).ToList();
+            records = exact.Count > 0 ? exact : records.Where(x =>
+                x.EmployeeName.Contains(name, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        return records;
+    }
+
+    private static DateTime? ParseIsoDate(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        return DateTime.ParseExact(value.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture);
+    }
+
+    private static string GetString(DataRow row, string column) =>
+        row.Table.Columns.Contains(column) && row[column] != DBNull.Value
+            ? Convert.ToString(row[column], CultureInfo.InvariantCulture) ?? string.Empty
+            : string.Empty;
+
+    private static int GetInt(DataRow row, string column) =>
+        int.TryParse(GetString(row, column), NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) ? value : 0;
+
+    private static decimal GetDecimal(DataRow row, string column) =>
+        decimal.TryParse(GetString(row, column), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal value) ? value : 0m;
+
+    private static bool GetBool(DataRow row, string column)
+    {
+        string value = GetString(row, column);
+        return value == "1" || bool.TryParse(value, out bool parsed) && parsed;
+    }
+
     /// <summary>
     /// This Method Is Used To Check For Approver.
     /// </summary>
@@ -133,6 +286,28 @@ public sealed class InMemoryAILeaveConfirmationStore : IAILeaveConfirmationStore
     /// <param name="action"></param>
     /// <returns></returns>
     public bool TryConsume(string token, out AILeavePendingAction? action)
+    {
+        action = null;
+        if (string.IsNullOrWhiteSpace(token) || !_items.TryRemove(token, out var item)) return false;
+        if (item.ExpiresAt <= DateTimeOffset.UtcNow) return false;
+        action = item;
+        return true;
+    }
+}
+
+/// <summary>Single-process implementation. Use atomic distributed storage for multiple instances.</summary>
+public sealed class InMemoryAILeaveClarificationStore : IAILeaveClarificationStore
+{
+    private readonly ConcurrentDictionary<string, AILeavePendingClarification> _items = new();
+
+    public string Add(AILeavePendingClarification action)
+    {
+        string token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        _items[token] = action;
+        return token;
+    }
+
+    public bool TryConsume(string token, out AILeavePendingClarification? action)
     {
         action = null;
         if (string.IsNullOrWhiteSpace(token) || !_items.TryRemove(token, out var item)) return false;

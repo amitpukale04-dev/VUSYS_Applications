@@ -36,7 +36,7 @@ public interface IAILeaveSecurityContext
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<AILeaveActor> GetActorAsync(CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// This Method Is Used To Get Leave Request.
     /// </summary>
@@ -44,7 +44,7 @@ public interface IAILeaveSecurityContext
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<AILeaveRequestSnapshot?> GetLeaveRequestAsync(int id, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// This Method Is Used To Check For Approve.
     /// </summary>
@@ -52,6 +52,18 @@ public interface IAILeaveSecurityContext
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<bool> CanApproveAsync(AILeaveActor actor, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// This Method Is Used To Search Leave Requests By ID, Employee Or Dates.
+    /// </summary>
+    Task<IReadOnlyList<AILeaveRequestDetailsM>> SearchLeaveRequestsAsync(
+        AILeaveRequestSearchCriteriaM criteria, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// This Method Is Used To Get Leave Request Details For Review.
+    /// </summary>
+    Task<AILeaveRequestDetailsM?> GetLeaveRequestDetailsAsync(
+        int leaveRequestID, CancellationToken cancellationToken = default);
 }
 public interface IAILeaveTypeResolver
 {
@@ -94,7 +106,7 @@ public interface IAILeaveManagementAgentService
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<DataSet> ProcessAILeaveManagementRequest(AILeaveManagementRequestParam request, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// This Method Is Used To Confirm AI Leave Management Action.
     /// </summary>
@@ -102,4 +114,11 @@ public interface IAILeaveManagementAgentService
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<DataSet> ConfirmAILeaveManagementAction(AILeaveManagementConfirmRequestParam request, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Single-use store for unresolved leave questions.</summary>
+public interface IAILeaveClarificationStore
+{
+    string Add(AILeavePendingClarification action);
+    bool TryConsume(string token, out AILeavePendingClarification? action);
 }

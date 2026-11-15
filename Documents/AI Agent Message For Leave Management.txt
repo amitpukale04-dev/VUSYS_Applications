@@ -1,0 +1,133 @@
+--Apply Leave
+
+1. I want to apply for Casual Leave on 20 November 2026 because of personal work.
+2. Please apply for Sick Leave on 20 November 2026 as I am not feeling well.
+3. Apply for Earned Leave on 20 November 2026 for personal reasons.
+4. I need Casual Leave on 23 November 2026 for a family function.
+5. Kindly submit my leave application for 25 November 2026. Leave type: Casual Leave. Reason: Personal work.
+6. Apply for Casual Leave on 20 November 2026 because I have a family function to attend.
+7. Please apply for Sick Leave on 23 November 2026 as I have a medical appointment.
+8. I want to take Casual Leave on 25 November 2026 because I need to travel to my hometown.
+9. Apply for Earned Leave on 27 November 2026 because I have some important personal commitments.
+10. Kindly apply for Casual Leave on 30 November 2026 as I need to attend a wedding ceremony.
+11. Apply for Casual Leave from 20 November 2026 to 22 November 2026 because of a family function.
+12. Please apply for Sick Leave from 23 November 2026 to 25 November 2026 as I need medical rest.
+13. I want to apply for Earned Leave from 1 December 2026 to 5 December 2026 for a family vacation.
+14. Kindly submit Casual Leave from 10 December 2026 to 12 December 2026 because I am travelling.
+15. Apply for Earned Leave from 21 December 2026 to 24 December 2026 for personal reasons.
+16. Apply for first-half Casual Leave on 20 November 2026 because I have a morning appointment.
+17. Please apply for second-half Casual Leave on 23 November 2026 as I need to attend a family function.
+18. I need morning half-day Sick Leave on 25 November 2026 because of a doctor appointment.
+19. Apply for afternoon half-day Casual Leave on 27 November 2026 for personal work.
+20. Kindly submit a first-half Casual Leave application for 30 November 2026 because of a bank appointment.
+21. Can you apply for Casual Leave on 20 November 2026? I have some personal work.
+22. I won't be available on 23 November 2026. Please apply for Casual Leave because of a family commitment.
+23. I need a day off on 25 November 2026. Apply for Casual Leave as I have personal work.
+24. Please help me submit Sick Leave for 27 November 2026 because I am unwell.
+25. I am planning to take Casual Leave on 30 November 2026 for a family event. Can you apply for it?
+26. Apply for Casual Leave tomorrow because of personal work.
+27. I need Sick Leave for the next two days because I am not feeling well.
+28. Please apply for Casual Leave next Monday for a family function.
+29. I need half-day Casual Leave tomorrow for a medical appointment.
+30. Apply for leave on 20 November 2026 because of personal work.
+
+
+--Cancel
+
+1. Cancel my leave for 20 November 2026.
+2. Please cancel my leave request dated 20 November 2026.
+3. I want to cancel my leave on 20 November 2026.
+4. Kindly cancel my pending leave application for 20 November 2026.
+5. Cancel the leave I applied for on 20 November 2026.
+6. Cancel my leave for 20 November 2026 because my plans have changed.
+7. Please cancel my leave on 20 November 2026. Reason: Personal work has been postponed.
+8. Cancel my pending leave request for 20 November 2026 because I am available to work.
+9. I want to cancel my leave for 20 November 2026. Reason: My appointment has been rescheduled.
+10. Kindly cancel my leave on 20 November 2026 as I no longer need the day off.
+11. Cancel my leave from 20 November 2026 to 22 November 2026.
+12. Please cancel my leave application from 1 December to 3 December 2026.
+13. Cancel my approved leave from 24 November 2026 to 26 November 2026 because my travel plans changed.
+14. I want to withdraw my leave request from 10 December 2026 to 12 December 2026.
+15. Kindly cancel my leave scheduled between 15 December and 17 December 2026.
+16. Cancel my leave request ID 2011.
+17. Please cancel leave application number 2011.
+18. Cancel the pending leave request with ID 2011.
+19. I want to withdraw my leave application 2011 because my plans have changed.
+20. Kindly cancel leave request 2011. Reason: Leave is no longer required.
+21. Can you cancel my leave for 20 November 2026?
+22. I don't need leave on 20 November 2026 anymore. Please cancel it.
+23. My plans have changed, so please withdraw my leave for 20 November 2026.
+24. I will be working on 20 November 2026. Cancel my leave request for that day.
+25. Go ahead and cancel my leave on 20 November 2026 because I am available.
+26. Cancel my first-half leave on 20 November 2026.
+27. Please cancel my morning half-day leave for 20 November 2026.
+28. Cancel my second-half leave on 20 November 2026 because my appointment was cancelled.
+29. I want to withdraw my afternoon half-day leave dated 20 November 2026.
+30. Kindly cancel my half-day leave for 20 November 2026 as I will be working.
+
+--Approve
+
+1. Approve Rahul Sharma's leave for 20 November 2026.
+2. Please approve the leave request of Rahul Sharma for 20 November 2026.
+3. Approve the pending leave application submitted by Rahul Sharma for 20 November 2026.
+4. I want to approve Rahul Sharma's leave on 20 November 2026.
+5. Kindly approve Rahul Sharma's leave dated 20 November 2026.
+6. Approve Rahul Sharma's leave for 20 November 2026. Remarks: Approved.
+7. Please approve Rahul Sharma's leave on 20 November 2026. Remarks: Leave approved as requested.
+8. Approve the pending leave request of Rahul Sharma for 20 November 2026 with remarks: Approved by manager.
+9. Kindly approve Rahul Sharma's leave for 20 November 2026. My remarks are: Approved based on the leave request.
+10. Approve Rahul Sharma's leave on 20 November 2026 and add remarks: Approved after reviewing the request.
+11. Approve Rahul Sharma's leave from 20 November 2026 to 22 November 2026. Remarks: Approved.
+12. Please approve the leave application of Rahul Sharma from 1 December to 3 December 2026. Remarks: Leave approved.
+13. Approve Rahul Sharma's pending leave for 24 November 2026 through 26 November 2026. Remarks: Approved by manager.
+14. Kindly approve Rahul Sharma's leave between 10 December and 12 December 2026. Remarks: Approved.
+15. I want to approve Rahul Sharma's leave from 15 December 2026 to 17 December 2026. Remarks: Leave approved.
+16. Approve leave request ID 2011. Remarks: Approved.
+17. Please approve leave application number 2011. Remarks: Leave approved.
+18. Approve the pending leave request with ID 2011. Remarks: Approved by manager.
+19. Kindly approve leave request 2011 after reviewing its details. Remarks: Approved.
+20. I want to approve leave application 2011. Remarks: Approved as requested.
+21. Can you approve Rahul Sharma's leave for 20 November 2026? Remarks: Approved.
+22. Rahul Sharma has applied for leave on 20 November 2026. Please approve it. Remarks: Approved.
+23. Go ahead and approve Rahul Sharma's leave on 20 November 2026. Remarks: Approved.
+24. Please process the approval for Rahul Sharma's leave dated 20 November 2026. Remarks: Approved.
+25. Rahul Sharma's leave for 20 November 2026 looks fine. Approve it with remarks: Approved.
+26. Approve Rahul Sharma's first-half leave on 20 November 2026. Remarks: Approved.
+27. Please approve Rahul Sharma's morning half-day leave for 20 November 2026. Remarks: Approved.
+28. Approve Rahul Sharma's second-half leave on 20 November 2026. Remarks: Leave approved.
+29. Kindly approve Rahul Sharma's afternoon half-day leave dated 20 November 2026. Remarks: Approved.
+30. Approve Rahul Sharma's half-day leave for 20 November 2026. Remarks: Approved by manager.
+
+
+--Reject
+
+1. Reject Rahul Sharma's leave request for 20 November 2026. Remarks: Leave cannot be approved.
+2. Please reject Rahul Sharma's pending leave application for 20 November 2026. Remarks: Insufficient staffing.
+3. Reject the leave request submitted by Rahul Sharma for 20 November 2026. Remarks: Project deadline.
+4. I want to reject Rahul Sharma's leave on 20 November 2026. Remarks: Work commitments.
+5. Kindly reject Rahul Sharma's leave dated 20 November 2026. Remarks: Leave not approved.
+6. Reject Rahul Sharma's leave for 20 November 2026. Remarks: Critical project delivery is scheduled.
+7. Please reject Rahul Sharma's leave on 20 November 2026 because his presence is required for production deployment.
+8. Reject Rahul Sharma's pending leave for 20 November 2026. Reason: Insufficient team availability.
+9. Kindly reject Rahul Sharma's leave application for 20 November 2026. Remarks: The team is already short-staffed.
+10. Reject Rahul Sharma's leave on 20 November 2026 with remarks: Leave cannot be accommodated due to operational requirements.
+11. Reject Rahul Sharma's leave from 20 November 2026 to 22 November 2026. Remarks: Project deadline.
+12. Please reject Rahul Sharma's leave application from 1 December to 3 December 2026. Remarks: Insufficient staffing.
+13. Reject Rahul Sharma's pending leave from 24 November 2026 through 26 November 2026. Remarks: Critical client meeting.
+14. Kindly reject Rahul Sharma's leave between 10 December and 12 December 2026. Remarks: Team availability constraints.
+15. I want to reject Rahul Sharma's leave from 15 December 2026 to 17 December 2026. Remarks: Production support required.
+16. Reject leave request ID 2011. Remarks: Project deadline.
+17. Please reject leave application number 2011. Remarks: Insufficient staffing.
+18. Reject the pending leave request with ID 2011. Remarks: Critical work scheduled.
+19. Kindly reject leave request 2011 after reviewing its details. Remarks: Leave cannot be accommodated.
+20. I want to reject leave application 2011. Remarks: Business requirements.
+21. Can you reject Rahul Sharma's leave for 20 November 2026? Remarks: Team shortage.
+22. Rahul Sharma has applied for leave on 20 November 2026. Please decline it because of an urgent release.
+23. Go ahead and reject Rahul Sharma's leave on 20 November 2026. Remarks: Production deployment.
+24. Please process the rejection of Rahul Sharma's leave dated 20 November 2026. Remarks: Client commitments.
+25. Rahul Sharma's leave for 20 November 2026 cannot be approved. Reject it with remarks: Resource constraints.
+26. Reject Rahul Sharma's first-half leave on 20 November 2026. Remarks: Morning client meeting.
+27. Please reject Rahul Sharma's morning half-day leave for 20 November 2026. Remarks: Team meeting scheduled.
+28. Reject Rahul Sharma's second-half leave on 20 November 2026. Remarks: Production deployment.
+29. Kindly reject Rahul Sharma's afternoon half-day leave dated 20 November 2026. Remarks: Critical work pending.
+30. Reject Rahul Sharma's half-day leave for 20 November 2026. Remarks: Insufficient staffing.

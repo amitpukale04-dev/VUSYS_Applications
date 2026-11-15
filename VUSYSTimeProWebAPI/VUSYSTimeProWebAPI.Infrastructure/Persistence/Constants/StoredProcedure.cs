@@ -258,6 +258,11 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Persistence.Constants
         /// </summary>
         public const string LEAVE_APPLICATION_APPROVE_REJECT_CANCEL = "usp_VUSYS_LeaveApplication_ApproveRejectCancel";
 
+        /// <summary>
+        /// AI_LEAVE_MANAGEMENT_GET_LEAVE_DETAILS
+        /// </summary>
+        public const string AI_LEAVE_MANAGEMENT_GET_LEAVE_DETAILS = "usp_VUSYS_AILeaveManagement_GetLeaveRequestDetails";
+
         #endregion [Leave Management API]
 
         #region [Report API]

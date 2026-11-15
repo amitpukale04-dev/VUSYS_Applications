@@ -479,13 +479,15 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
         - Extract Reason from the employee's message.
         - Do not invent a reason when none is provided.
         - LeaveRequestID must be null.
+        - EmployeeName must be null unless explicitly supplied.
         - Remarks must be null unless the schema
           explicitly requires otherwise.
 
         APPROVE LEAVE:
 
         - Intent must be "ApproveLeave".
-        - Extract the explicit LeaveRequestID.
+        - Extract LeaveRequestID only when explicitly supplied; otherwise null.
+        - Extract EmployeeName and FromDate/ToDate when supplied.
         - Extract optional Remarks.
         - LeaveType must be null.
         - Do not classify any leave type.
@@ -493,7 +495,8 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
         REJECT LEAVE:
 
         - Intent must be "RejectLeave".
-        - Extract the explicit LeaveRequestID.
+        - Extract LeaveRequestID only when explicitly supplied; otherwise null.
+        - Extract EmployeeName and FromDate/ToDate when supplied.
         - Extract rejection Remarks.
         - LeaveType must be null.
         - Do not classify any leave type.
@@ -501,7 +504,9 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
         CANCEL LEAVE:
 
         - Intent must be "CancelLeave".
-        - Extract the explicit LeaveRequestID.
+        - Extract LeaveRequestID only when explicitly supplied; otherwise null.
+        - Extract FromDate/ToDate when supplied.
+        - EmployeeName must be null unless explicitly supplied.
         - Extract cancellation Remarks.
         - LeaveType must be null.
         - Do not classify any leave type.
@@ -530,6 +535,12 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
            extract both dates accurately.
 
         6. Never invent missing dates.
+
+        7. For ApproveLeave, RejectLeave and CancelLeave, also extract
+           dates when the message describes an existing leave request.
+
+        8. Extract the employee name exactly as mentioned; never guess
+           employee identity from the message context.
 
         HALF-DAY LEAVE RULES:
 
@@ -595,12 +606,13 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
             HalfDayType = new { type = new[] { "string", "null" } },
             Reason = new { type = new[] { "string", "null" } },
             LeaveRequestID = new { type = new[] { "integer", "null" } },
+            EmployeeName = new { type = new[] { "string", "null" } },
             Remarks = new { type = new[] { "string", "null" } }
         },
         required = new[]
         {
             "Intent", "LeaveType", "FromDate", "ToDate", "IsHalfDay", "HalfDayType",
-            "Reason", "LeaveRequestID", "Remarks"
+            "Reason", "LeaveRequestID", "EmployeeName", "Remarks"
         },
         additionalProperties = false
     };
