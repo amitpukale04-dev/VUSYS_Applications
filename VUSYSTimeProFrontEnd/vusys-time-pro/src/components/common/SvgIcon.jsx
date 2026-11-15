@@ -1,4 +1,18 @@
 const paths = {
+  aiAssistant: (
+    <>
+      <path d="m12 2 1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z" />
+      <path d="m19 17 .8 2.2L22 20l-2.2.8L19 23l-.8-2.2L16 20l2.2-.8L19 17Z" />
+    </>
+  ),
+  arrowLeft: <path d="m15 18-6-6 6-6M9 12h12" />,
+  minus: <path d="M5 12h14" />,
+  send: (
+    <>
+      <path d="m22 2-7 20-4-9-9-4 20-7Z" />
+      <path d="M22 2 11 13" />
+    </>
+  ),
   leaveManagement: (
     <>
       <path d="M4 20V6a2 2 0 0 1 2-2h8l4 4v12H4Z" />

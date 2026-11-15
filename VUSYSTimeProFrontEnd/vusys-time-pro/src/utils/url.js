@@ -214,6 +214,15 @@ export const timesheet = Object.freeze({
   ),
 });
 
+export const aiLeaveManagement = Object.freeze({
+  process: buildApiUrl(
+    "/api/AIAgentLeaveManagement/ProcessAILeaveManagementRequest",
+  ),
+  confirm: buildApiUrl(
+    "/api/AIAgentLeaveManagement/ConfirmAILeaveManagementAction",
+  ),
+});
+
 export const apiUrl = (path = "") => buildApiUrl(path);
 
 export const ensureBaseUrl = () => {

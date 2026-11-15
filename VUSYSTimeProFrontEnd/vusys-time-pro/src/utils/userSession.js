@@ -46,6 +46,10 @@ const stripProfileImageFromUser = (user = {}) => {
   return userWithoutProfileImage;
 };
 
+export const normalizeAIAssistantFlag = (value) =>
+  value === true ||
+  (typeof value === "string" && value.trim().toLowerCase() === "true");
+
 const normalizeUser = (details = {}) => {
   const profileImage = getProfileImageValue(details);
   const detailsWithoutProfileImage = stripProfileImageFromUser(details);
@@ -68,6 +72,9 @@ const normalizeUser = (details = {}) => {
     employeeCode: details.EmployeeCode ?? details.employeeCode ?? "",
     employeeID: details.EmployeeCode ?? details.employeeID ?? "",
     roleId: details.RoleID ?? details.roleId ?? "",
+    isAIAssistantEnabled: normalizeAIAssistantFlag(
+      details.is_enable_ai_assistant ?? details.isAIAssistantEnabled,
+    ),
     role: details.UserRole ?? details.user_role ?? details.role ?? "Employee",
     isReset: Boolean(details.IsReset ?? details.isReset),
     isApprover: Boolean(details.IsApprover ?? details.isApprover),
@@ -234,9 +241,7 @@ export function getUserName() {
 
 export function getUserEmailID() {
   const user = getUser();
-  return String(
-    user?.email || user?.EmailID || user?.emailID || "",
-  );
+  return String(user?.email || user?.EmailID || user?.emailID || "");
 }
 
 /** Returns the normalized security access IDs for the authenticated user. */
@@ -253,8 +258,8 @@ export function getSecurityAccessIds() {
 
 /**
  * Returns Logged In Employee Code.
- * @param {*} user 
- * @returns 
+ * @param {*} user
+ * @returns
  */
 export const getLoggedInEmployeeCode = (user) =>
   String(
@@ -265,17 +270,16 @@ export const getLoggedInEmployeeCode = (user) =>
       "",
   ).trim();
 
-
-  /**
-   * Returns Logged In Employee Name
-   * @param {*} user 
-   * @returns 
-   */
-  export const getLoggedInEmployeeName = (user) =>
-    String(
-      user?.fullName ??
-        user?.name ??
-        user?.FullName ??
-        user?.userName ??
-        "Employee",
-    ).trim();
+/**
+ * Returns Logged In Employee Name
+ * @param {*} user
+ * @returns
+ */
+export const getLoggedInEmployeeName = (user) =>
+  String(
+    user?.fullName ??
+      user?.name ??
+      user?.FullName ??
+      user?.userName ??
+      "Employee",
+  ).trim();

@@ -35,8 +35,8 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
             if (!DateOnly.TryParseExact(action.FromDate, DateTimeFormatConstants.YYYYMMDD_DATEFORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var from) ||
                 !DateOnly.TryParseExact(action.ToDate, DateTimeFormatConstants.YYYYMMDD_DATEFORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var to) || to < from)
                 return Result(ErrorStatus, "Invalid leave date range.", action: action);
-            if (action.IsHalfDay && (from != to || string.IsNullOrWhiteSpace(action.HalfDayType)))
-                return Result(ErrorStatus, "Specify one date and the half-day type.", action: action);
+            if (action.IsHalfDay && (from != to))
+                return Result(ErrorStatus, "Specify one date", action: action);
             int? leaveType = AILeaveTypeResolver.ResolveLeaveTypeID(action.LeaveType, availableLeaveTypes);
             if (leaveType is null)
             {

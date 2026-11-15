@@ -9,6 +9,7 @@ import ScrollToTop from "../common/ScrollToTop";
 import { useAuth } from "../../context/AuthContext";
 import { APP_CONFIG } from "../../utils/environmentConfig";
 import { ROUTE_CONSTANTS } from "../../constants/RouteConstants";
+import AIAssistantWidget from "../aiAssistant/AIAssistantWidget";
 
 export default function AppLayout() {
   const pageContentRef = useRef(null);
@@ -117,6 +118,7 @@ export default function AppLayout() {
           <Outlet />
         </main>
         <Footer />
+        <AIAssistantWidget />
         <ScrollToTop
           scrollContainerRef={pageContentRef}
           visibilityThreshold={260}

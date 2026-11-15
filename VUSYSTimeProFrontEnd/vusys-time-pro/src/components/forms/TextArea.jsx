@@ -12,6 +12,8 @@ export default function TextArea({
   readOnly = false,
   rows = 3,
   maxLength,
+  onKeyDown,
+  ariaLabel,
 }) {
   const inputId = id || name;
   return (
@@ -31,6 +33,8 @@ export default function TextArea({
         readOnly={readOnly}
         rows={rows}
         maxLength={maxLength}
+        onKeyDown={onKeyDown}
+        aria-label={ariaLabel}
         className={`tp-form-control ${error ? "is-invalid" : ""}`}
       />
       {error && <div className="tp-field-error">{error}</div>}
