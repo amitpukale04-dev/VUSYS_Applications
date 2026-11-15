@@ -156,6 +156,15 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
                     return Result(ErrorStatus, "Self-approval is not allowed.", action: action);
             }
 
+            // Bind the resolved ID and dates to the confirmation token.
+            action.LeaveRequestID = target.LeaveRequestID;
+            action.EmployeeName = target.EmployeeName;
+            action.FromDate = target.FromDate;
+            action.ToDate = target.ToDate;
+            action.TotalLeaveDays = target.TotalLeaveDays;
+            action.LeaveType = target.LeaveType;
+            action.Reason = target.Reason;
+
             // The existing leave-action DTO requires Remarks for all three operations.
             // Never invent remarks on the employee's behalf.
             if (string.IsNullOrWhiteSpace(action.Remarks))
@@ -163,11 +172,7 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
                     "Review the leave details and provide remarks before confirming this action.",
                     new[] { target }, action: action);
 
-            // Bind the resolved ID and dates to the confirmation token.
-            action.LeaveRequestID = target.LeaveRequestID;
-            action.EmployeeName = target.EmployeeName;
-            action.FromDate = target.FromDate;
-            action.ToDate = target.ToDate;
+            
             string token = store.Add(new AILeavePendingAction(actor.UserId, actor.EmployeeCode, action, null,
                 target.EmployeeCode, DateTimeOffset.UtcNow.AddMinutes(5)));
             return ResultWithDetails(SuccessStatus,
@@ -211,7 +216,7 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
                 FromDate = action.FromDate!,
                 ToDate = action.ToDate!,
                 IsHalfDay = action.IsHalfDay,
-                HalfDayType = action.HalfDayType ?? "",
+                HalfDayType = action.HalfDayType,
                 Reason = action.Reason!,
                 CreatedBy = actor.UserId,
                 ActionBy = actor.UserId,
@@ -331,10 +336,10 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
     private static DataSet Result(string status, string message, string token = "", AILeaveManagementActionM? action = null, string clarificationToken = "")
     {
         var ds = new DataSet(); var t = new DataTable("AI_LEAVE_MANAGEMENT_RESPONSE");
-        foreach (string col in new[] { "Status", "Message", "ConfirmationToken", "Intent", "LeaveType", "FromDate", "ToDate", "LeaveRequestID", "EmployeeName", "Reason", "Remarks", "ClarificationToken", "IsHalfDay", "HalfDayType" })
+        foreach (string col in new[] { "Status", "Message", "ConfirmationToken", "Intent", "LeaveType", "FromDate", "ToDate", "LeaveRequestID", "EmployeeName", "Reason", "Remarks", "ClarificationToken", "IsHalfDay", "HalfDayType", "TotalLeaveDays", "LeaveStatus" })
             t.Columns.Add(col, typeof(string));
         t.Rows.Add(status, message, token, action?.Intent ?? "", action?.LeaveType ?? "", action?.FromDate ?? "",
-            action?.ToDate ?? "", action?.LeaveRequestID?.ToString() ?? "", action?.EmployeeName ?? "", action?.Reason ?? "", action?.Remarks ?? "", clarificationToken, action?.IsHalfDay.ToString() ?? "False", action?.HalfDayType ?? "");
+            action?.ToDate ?? "", action?.LeaveRequestID?.ToString() ?? "", action?.EmployeeName ?? "", action?.Reason ?? "", action?.Remarks ?? "", clarificationToken, action?.IsHalfDay.ToString() ?? "False", action?.HalfDayType ?? "", action?.TotalLeaveDays.ToString() ?? "", action?.LeaveStatus.ToString() ?? "");
         ds.Tables.Add(t); return ds;
     }
 }

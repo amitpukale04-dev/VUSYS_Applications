@@ -68,9 +68,24 @@ public sealed class AILeaveManagementActionM
     public string? Reason { get; set; }
 
     /// <summary>
+    /// Total Leave Days
+    /// </summary>
+    public decimal TotalLeaveDays { get; set; }
+
+    /// <summary>
+    /// Leave Status
+    /// </summary>
+    public int LeaveStatus { get; set; }
+
+    /// <summary>
     /// Leave Request ID
     /// </summary>
     public int? LeaveRequestID { get; set; }
+
+    /// <summary>
+    /// Employee Code
+    /// </summary>
+    public string EmployeeCode { get; set; } = string.Empty;
 
     /// <summary>
     /// Employee Name (for lookup when LeaveRequestID is omitted)
