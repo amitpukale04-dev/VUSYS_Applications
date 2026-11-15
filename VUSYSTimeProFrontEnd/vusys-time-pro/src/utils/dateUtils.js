@@ -79,7 +79,7 @@ export const parseDateTime = (input) => {
     .split(":")
     .map((x) => parseInt(x || "0", 10));
 
-  // ✅ Create Date with manual order (year, monthIndex, day)
+  // Create Date with manual order (year, monthIndex, day)
   const dt = new Date(yyyy, mm - 1, dd, HH, MM, SS);
 
   return isNaN(dt.getTime()) ? null : dt;
@@ -204,8 +204,8 @@ export function validateNotFutureDate(
 
 /**
  * This Function is Used To Resolve Current Month
- * @param {*} monthOptions 
- * @returns 
+ * @param {*} monthOptions
+ * @returns
  */
 export const resolveCurrentMonth = (monthOptions = []) => {
   const currentDate = new Date();
@@ -224,11 +224,10 @@ export const resolveCurrentMonth = (monthOptions = []) => {
   );
 };
 
-
 /**
  * This Function Is Used To Resolve Current Year.
- * @param {*} yearOptions 
- * @returns 
+ * @param {*} yearOptions
+ * @returns
  */
 export const resolveCurrentYear = (yearOptions = []) => {
   const currentYear = String(new Date().getFullYear());
@@ -265,6 +264,118 @@ export const toDateOnly = (value) => {
   return month < 0
     ? ""
     : `${match[3]}-${String(month + 1).padStart(2, "0")}-${match[1]}`;
+};
+
+/**
+ * This Function Is Used To Format A Date Based On The Specified Date Format.
+ * @param {string | Date} value - Input Date Value.
+ * @param {string} dateFormat - Required Date Format.
+ * @returns {string} Formatted Date Value.
+ */
+export const convertDateToSpecifiedFormat = (
+  value,
+  dateFormat = "dd-MMM-yyyy",
+) => {
+  if (!value) return "";
+
+  const text = String(value).trim();
+
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  let day;
+  let month;
+  let year;
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return "";
+
+    day = value.getDate();
+    month = value.getMonth() + 1;
+    year = value.getFullYear();
+  } else {
+    // Supports yyyy-MM-dd and ISO Date Strings.
+    let match = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|[T\s])/);
+
+    if (match) {
+      year = Number(match[1]);
+      month = Number(match[2]);
+      day = Number(match[3]);
+    } else {
+      // Supports dd-MMM-yyyy and dd-MMMM-yyyy.
+      match = text.match(/^(\d{1,2})-([A-Za-z]+)-(\d{4})$/);
+
+      if (match) {
+        day = Number(match[1]);
+        month =
+          monthNames.findIndex(
+            (item) =>
+              item.toLowerCase() === match[2].toLowerCase() ||
+              item.slice(0, 3).toLowerCase() === match[2].toLowerCase(),
+          ) + 1;
+        year = Number(match[3]);
+      } else {
+        // Supports dd/MM/yyyy and dd-MM-yyyy.
+        match = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+
+        if (!match) return "";
+
+        day = Number(match[1]);
+        month = Number(match[2]);
+        year = Number(match[3]);
+      }
+    }
+  }
+
+  // Validate Date.
+  const date = new Date(year, month - 1, day);
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() + 1 !== month ||
+    date.getDate() !== day
+  ) {
+    return "";
+  }
+
+  const pad = (number) => String(number).padStart(2, "0");
+
+  const hours = value instanceof Date ? value.getHours() : 0;
+  const minutes = value instanceof Date ? value.getMinutes() : 0;
+  const seconds = value instanceof Date ? value.getSeconds() : 0;
+
+  const formatValues = {
+    yyyy: String(year),
+    yy: String(year).slice(-2),
+    MMMM: monthNames[month - 1],
+    MMM: monthNames[month - 1].slice(0, 3),
+    MM: pad(month),
+    M: String(month),
+    dd: pad(day),
+    d: String(day),
+    HH: pad(hours),
+    hh: pad(hours % 12 || 12),
+    mm: pad(minutes),
+    ss: pad(seconds),
+    tt: hours >= 12 ? "PM" : "AM",
+  };
+
+  return dateFormat.replace(
+    /yyyy|MMMM|MMM|yy|MM|dd|HH|hh|mm|ss|tt|M|d/g,
+    (token) => formatValues[token],
+  );
 };
 
 export const calculateLeaveDays = (fromDate, toDate, isHalfDay) => {

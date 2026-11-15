@@ -21,5 +21,11 @@ export const myLeaveRequestValidationRules = {
     },
     customMessage: "To Date Should Be Greater Than From Date.",
   },
+  halfDayType: {
+    label: "Half Day Type",
+    custom: (value, values) =>
+      !values?.isHalfDay || ["First Half", "Second Half"].includes(value),
+    customMessage: "Select Half Day Type.",
+  },
   reason: { label: "Leave Reason", required: true, maxLength: 2000 },
 };

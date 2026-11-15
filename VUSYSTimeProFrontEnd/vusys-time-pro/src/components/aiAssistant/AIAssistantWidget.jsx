@@ -9,18 +9,59 @@ import {
   confirmAILeaveAction,
 } from "../../services/aiLeaveManagementService";
 import "./AIAssistantWidget.css";
+import { convertDateToSpecifiedFormat } from "../../utils/dateUtils";
 
 const initialConversation = () => ({
   messages: [],
   draft: "",
   pending: null,
   busy: false,
+  selection: null,
+  review: null,
+  clarification: null,
+  remarksStep: null,
 });
 const normalizeRole = (user) =>
   String(user?.role ?? user?.UserRole ?? "")
     .trim()
     .toLowerCase();
 const readable = (value) => String(value ?? "").trim();
+const requiresActionRemarks = (intent) =>
+  ["ApproveLeave", "RejectLeave", "CancelLeave"].includes(readable(intent));
+const actionName = (intent) =>
+  ({ ApproveLeave: "Approve", RejectLeave: "Reject", CancelLeave: "Cancel" })[
+    intent
+  ] || "";
+const extractRemarks = (message) => {
+  const match = readable(message).match(/(?:Remarks|Reason)\s*:\s*(.+)$/i);
+  return match ? match[1].trim() : "";
+};
+
+// Format leave details for display only; preserve original values for API calls.
+const formatLeaveField = (field, value) => {
+  if (field === "IsHalfDay") {
+    const normalized = readable(value).toLowerCase();
+    if (normalized === "true" || normalized === "1") return "Yes";
+    if (normalized === "false" || normalized === "0") return "No";
+  }
+
+  if (field === "FromDate" || field === "ToDate") {
+    return convertDateToSpecifiedFormat(value, "dd-MMM-yyyy");
+  }
+
+  if (field === "LeaveStatus") {
+    const leaveStatusMap = {
+      1: "Pending",
+      2: "Approved",
+      3: "Rejected",
+      4: "Cancelled",
+    };
+
+    return leaveStatusMap[Number(value)] ?? String(value ?? "");
+  }
+  return String(value ?? "");
+};
+
 const formatTime = () =>
   new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 const newMessage = (type, text) => ({
@@ -81,6 +122,7 @@ export default function AIAssistantWidget() {
   const [open, setOpen] = useState(false);
   const [panelPosition, setPanelPosition] = useState(null);
   const [inputError, setInputError] = useState("");
+  const [remarksDraft, setRemarksDraft] = useState("");
   const dragRef = useRef(null);
   const [moduleId, setModuleId] = useState(null);
   const [conversations, setConversations] = useState({
@@ -89,6 +131,7 @@ export default function AIAssistantWidget() {
   const current = conversations.leaveManagement;
   const messagesEndRef = useRef(null);
   const requestRef = useRef(false);
+  const selectionRef = useRef(null);
   const sessionRef = useRef(null);
   const epochRef = useRef(0);
   const userKey = eligible ? String(user?.userId ?? user?.id ?? "") : "";
@@ -99,6 +142,7 @@ export default function AIAssistantWidget() {
       sessionRef.current = sessionKey;
       epochRef.current += 1;
       requestRef.current = false;
+      selectionRef.current = null;
       setOpen(false);
       setModuleId(null);
       setConversations({
@@ -180,10 +224,19 @@ export default function AIAssistantWidget() {
       .join(", ") || "with leave-related questions"
   }. How can I help you today?`;
 
-  const send = async () => {
-    const message = readable(current.draft);
-    if (!message || requestRef.current || current.pending) return;
-    if (!isMeaningfulMessage(message)) {
+  const send = async (overrideMessage = null) => {
+    const message = readable(
+      typeof overrideMessage === "string" ? overrideMessage : current.draft,
+    );
+    const clarificationToken = readable(current.clarification?.token);
+    if (
+      !message ||
+      requestRef.current ||
+      current.pending ||
+      current.remarksStep
+    )
+      return;
+    if (!clarificationToken && !isMeaningfulMessage(message)) {
       setInputError(
         "Please enter a meaningful leave-related request (8–2000 characters). For example: Apply leave tomorrow for personal work.",
       );
@@ -191,20 +244,66 @@ export default function AIAssistantWidget() {
     }
     setInputError("");
     requestRef.current = true;
+    selectionRef.current = null;
     const epoch = epochRef.current;
     update((previous) => ({
       ...previous,
+      selection: null,
+      pending: null,
+      review: null,
+      remarksStep: null,
+      clarification: null,
       draft: "",
       busy: true,
       messages: [...previous.messages, newMessage("user", message)],
     }));
     try {
-      const details = await processAILeaveRequest(message);
+      const details = await processAILeaveRequest(message, clarificationToken);
       if (epoch !== epochRef.current) return;
       const token = readable(details.ConfirmationToken);
+      const nextClarificationToken = readable(details.ClarificationToken);
+      const selection = details.requiresSelection
+        ? {
+            originalMessage: message,
+            intent: details.Intent,
+            matches: details.matches,
+            selectedId: null,
+          }
+        : null;
+      selectionRef.current = selection;
+      // The backend can return review details before generating a confirmation
+      // token. Display these details without enabling Approve/Reject.
+      const review =
+        !token &&
+        !selection &&
+        ["ApproveLeave", "RejectLeave"].includes(readable(details.Intent)) &&
+        [
+          "LeaveRequestID",
+          "EmployeeName",
+          "EmployeeCode",
+          "FromDate",
+          "ToDate",
+          "LeaveType",
+          "Reason",
+          "Remarks",
+        ].some((field) => readable(details[field]))
+          ? details
+          : null;
+      const remarksStep =
+        !selection && requiresActionRemarks(details.Intent)
+          ? {
+              intent: details.Intent,
+              requestId: readable(details.LeaveRequestID),
+              originalMessage: message,
+              details,
+            }
+          : null;
+      if (remarksStep)
+        setRemarksDraft(readable(details.Remarks) || extractRemarks(message));
       update((previous) => ({
         ...previous,
         busy: false,
+        remarksStep,
         messages: [
           ...previous.messages,
           newMessage(
@@ -215,17 +314,136 @@ export default function AIAssistantWidget() {
                 : "Request processed."),
           ),
         ],
-        pending: token ? { ...details, token } : null,
+        pending: token && !remarksStep ? { ...details, token } : null,
+        selection,
+        review: remarksStep ? null : review,
+        clarification:
+          !token && !selection && nextClarificationToken
+            ? { token: nextClarificationToken, intent: details.Intent }
+            : null,
       }));
     } catch (error) {
-      if (epoch === epochRef.current)
+      if (epoch === epochRef.current) {
+        if (clarificationToken) {
+          update({ clarification: current.clarification });
+        }
         append("error", error?.message || "Unable to process the request.");
+      }
     } finally {
       if (epoch === epochRef.current) {
         requestRef.current = false;
         update({ busy: false });
       }
     }
+  };
+
+  // Selection is local until the user provides remarks; no action is submitted.
+  const selectLeaveRequest = (leaveRequestId) => {
+    const selection = selectionRef.current;
+    if (!selection || requestRef.current || !readable(leaveRequestId)) return;
+    const item = selection.matches.find(
+      (row) => String(row.LeaveRequestID) === String(leaveRequestId),
+    );
+    if (!item || !requiresActionRemarks(selection.intent)) return;
+    selectionRef.current = null;
+    setRemarksDraft(extractRemarks(selection.originalMessage));
+    setInputError("");
+    update({
+      selection: null,
+      remarksStep: {
+        intent: selection.intent,
+        requestId: String(leaveRequestId),
+        originalMessage: selection.originalMessage,
+        details: item,
+      },
+    });
+  };
+
+  const submitRemarks = async () => {
+    const step = current.remarksStep;
+    const remarks = readable(remarksDraft);
+    if (!step || requestRef.current) return;
+    if (!remarks) {
+      setInputError("Please enter remarks before continuing.");
+      return;
+    }
+    if (remarks.length > 1000) {
+      setInputError("Remarks cannot exceed 1000 characters.");
+      return;
+    }
+    setInputError("");
+    const action = actionName(step.intent);
+    const idPart = step.requestId
+      ? `leave request ID ${step.requestId}`
+      : "the leave request";
+    // The backend owns intent validation and issues a NEW confirmation token.
+    // Never confirm a token issued before these remarks were supplied.
+    const followUp = step.requestId
+      ? `${action} ${idPart}. ${step.intent === "CancelLeave" ? "Reason" : "Remarks"}: ${remarks}`
+      : `${step.originalMessage.replace(/(?:Remarks|Reason)\s*:\s*.+$/i, "").trim()} ${step.intent === "CancelLeave" ? "Reason" : "Remarks"}: ${remarks}`;
+    requestRef.current = true;
+    const epoch = epochRef.current;
+    update({ busy: true });
+    try {
+      const details = await processAILeaveRequest(followUp);
+      if (epoch !== epochRef.current) return;
+      const token = readable(details.ConfirmationToken);
+      if (
+        details.requiresSelection ||
+        !token ||
+        (step.requestId && readable(details.LeaveRequestID) !== step.requestId)
+      ) {
+        throw new Error(
+          details.Message ||
+            "Unable to obtain confirmation for this leave request.",
+        );
+      }
+      update((previous) => ({
+        ...previous,
+        busy: false,
+        remarksStep: null,
+        pending: { ...details, token },
+        review: null,
+        messages: [
+          ...previous.messages,
+          newMessage("user", `Remarks: ${remarks}`),
+          newMessage(
+            "assistant",
+            details.Message || "Review and confirm this action.",
+          ),
+        ],
+      }));
+      setRemarksDraft("");
+    } catch (error) {
+      if (epoch === epochRef.current)
+        append(
+          "error",
+          error?.message || "Unable to continue. Please review your remarks.",
+        );
+    } finally {
+      if (epoch === epochRef.current) {
+        requestRef.current = false;
+        update({ busy: false });
+      }
+    }
+  };
+
+  const cancelRemarks = () => {
+    if (requestRef.current) return;
+    setRemarksDraft("");
+    setInputError("");
+    update({ remarksStep: null, review: null });
+    append("assistant", "Leave action cancelled. No changes were submitted.");
+  };
+
+  const cancelSelection = () => {
+    if (requestRef.current) return;
+    selectionRef.current = null;
+    update({ selection: null });
+    append(
+      "assistant",
+      "Leave request selection cancelled. No action was submitted.",
+    );
   };
 
   const confirm = async () => {
@@ -263,11 +481,15 @@ export default function AIAssistantWidget() {
   const resetConversation = () => {
     if (requestRef.current) return;
     epochRef.current += 1;
+    selectionRef.current = null;
     update(initialConversation());
+    setRemarksDraft("");
     setInputError("");
   };
   const confirmationFields = [
     ["Intent", "Intent"],
+    ["Employee Code", "EmployeeCode"],
+    ["Employee Name", "EmployeeName"],
     ["Leave Type", "LeaveType"],
     ["From Date", "FromDate"],
     ["To Date", "ToDate"],
@@ -424,6 +646,215 @@ export default function AIAssistantWidget() {
                     <small>{message.time}</small>
                   </div>
                 ))}
+                {current.clarification && !current.busy && (
+                  <div
+                    className="tp-ai-clarification-card"
+                    role="group"
+                    aria-label="Select half-day leave type"
+                  >
+                    <button
+                      type="button"
+                      className="btn tp-ai-clarification-option tp-ai-clarification-morning btn-sm"
+                      disabled={current.busy}
+                      onClick={() => void send("First Half")}
+                    >
+                      <SvgIcon name="morningHalf" size={21} />
+                      <span>
+                        First Half <small>(Morning)</small>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn tp-ai-clarification-option tp-ai-clarification-afternoon btn-sm"
+                      disabled={current.busy}
+                      onClick={() => void send("Second Half")}
+                    >
+                      <SvgIcon name="afternoonHalf" size={21} />
+                      <span>
+                        Second Half <small>(Afternoon)</small>
+                      </span>
+                    </button>
+                  </div>
+                )}
+                {current.selection && (
+                  <div className="tp-ai-selection-card">
+                    <div className="tp-ai-selection-heading">
+                      <span
+                        className="tp-ai-selection-heading-icon"
+                        aria-hidden="true"
+                      >
+                        <SvgIcon name="approval" size={18} />
+                      </span>
+                      <div>
+                        <strong>Select a leave request</strong>
+                        <p>
+                          {current.selection.matches.length} matching requests
+                          found. Choose the correct one to continue.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="tp-ai-selection-list">
+                      {current.selection.matches.map((item, index) => (
+                        <article
+                          className="tp-ai-selection-item"
+                          key={`${item.LeaveRequestID}-${index}`}
+                        >
+                          <div className="tp-ai-selection-item-top">
+                            <span className="tp-ai-selection-number">
+                              Request {index + 1}
+                            </span>
+                            <span className="tp-ai-selection-id">
+                              ID: {readable(item.LeaveRequestID) || "—"}
+                            </span>
+                          </div>
+                          <div className="tp-ai-selection-person">
+                            {readable(item.EmployeeName) ||
+                              readable(item.EmployeeCode) ||
+                              "Leave request"}
+                          </div>
+                          <div className="tp-ai-selection-type">
+                            {readable(item.LeaveType) || "Leave"}
+                          </div>
+                          <div className="tp-ai-selection-dates">
+                            <SvgIcon name="calendar" size={15} />
+                            <span>
+                              {formatLeaveField("FromDate", item.FromDate) ||
+                                "—"}
+                              {readable(item.ToDate) &&
+                              readable(item.ToDate) !== readable(item.FromDate)
+                                ? ` – ${formatLeaveField("ToDate", item.ToDate)}`
+                                : ""}
+                            </span>
+                          </div>
+                          <details className="tp-ai-selection-details">
+                            <summary>View request details</summary>
+                            <div className="tp-ai-selection-detail-fields">
+                              {[
+                                ["Employee Code", "EmployeeCode"],
+                                ["Total Leave Days", "TotalLeaveDays"],
+                                ["Half-Day Type", "HalfDayType"],
+                                ["Leave Status", "LeaveStatus"],
+                                ["Reason", "Reason"],
+                              ]
+                                .filter(([, key]) => readable(item[key]))
+                                .map(([label, key]) => (
+                                  <div
+                                    className="tp-ai-confirm-field"
+                                    key={key}
+                                  >
+                                    <span>{label}</span>
+                                    <strong>
+                                      {formatLeaveField(key, item[key])}
+                                    </strong>
+                                  </div>
+                                ))}
+                            </div>
+                          </details>
+                          <button
+                            type="button"
+                            className="btn tp-ai-confirm-accept btn-sm tp-ai-selection-select"
+                            title={`Select leave request ${item.LeaveRequestID}`}
+                            disabled={
+                              current.busy || !readable(item.LeaveRequestID)
+                            }
+                            onClick={() =>
+                              void selectLeaveRequest(item.LeaveRequestID)
+                            }
+                          >
+                            <SvgIcon name="approval" size={16} /> Select Request
+                          </button>
+                        </article>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="btn tp-ai-confirm-cancel btn-sm tp-ai-selection-cancel"
+                      disabled={current.busy}
+                      onClick={cancelSelection}
+                      title="Cancel selection"
+                    >
+                      <SvgIcon name="close" size={16} /> Cancel Selection
+                    </button>
+                  </div>
+                )}
+                {current.remarksStep && (
+                  <div className="tp-ai-confirm-card tp-ai-remarks-card">
+                    <div className="tp-ai-remarks-title">
+                      <SvgIcon name="approval" size={18} />
+                      <strong>Provide Remarks</strong>
+                    </div>
+                    <p>
+                      {actionName(current.remarksStep.intent)} leave request
+                      {current.remarksStep.requestId
+                        ? ` #${current.remarksStep.requestId}`
+                        : ""}
+                      . Enter remarks before reviewing the final confirmation.
+                    </p>
+                    <label
+                      htmlFor="tp-ai-action-remarks"
+                      className="tp-ai-remarks-label"
+                    >
+                      Remarks <span aria-hidden="true">*</span>
+                    </label>
+                    <textarea
+                      id="tp-ai-action-remarks"
+                      className={`form-control tp-ai-remarks-input ${inputError ? "is-invalid" : ""}`}
+                      rows={3}
+                      maxLength={1000}
+                      value={remarksDraft}
+                      disabled={current.busy}
+                      placeholder="Enter your remarks..."
+                      onChange={(event) => {
+                        setRemarksDraft(event.target.value);
+                        if (inputError) setInputError("");
+                      }}
+                    />
+                    <div className="tp-ai-confirm-actions">
+                      <button
+                        type="button"
+                        className="btn tp-ai-confirm-accept btn-sm"
+                        disabled={current.busy || !readable(remarksDraft)}
+                        onClick={() => void submitRemarks()}
+                      >
+                        <SvgIcon name="approval" size={16} /> Continue to
+                        Confirmation
+                      </button>
+                      <button
+                        type="button"
+                        className="btn tp-ai-confirm-cancel btn-sm"
+                        disabled={current.busy}
+                        onClick={cancelRemarks}
+                      >
+                        <SvgIcon name="close" size={16} /> Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {current.review && !current.pending && (
+                  <div className="tp-ai-confirm-card tp-ai-review-card">
+                    <strong>Review Leave Details</strong>
+                    {confirmationFields
+                      .filter(
+                        ([, field]) =>
+                          current.review[field] !== undefined &&
+                          current.review[field] !== null &&
+                          String(current.review[field]).trim() !== "",
+                      )
+                      .map(([label, field]) => (
+                        <div className="tp-ai-confirm-field" key={field}>
+                          <span>{label}</span>
+                          <strong>
+                            {formatLeaveField(field, current.review[field])}
+                          </strong>
+                        </div>
+                      ))}
+                    <p className="tp-ai-review-note">
+                      Review these details and provide any required remarks in
+                      the message box. Approval or rejection will only be
+                      available after the confirmation.
+                    </p>
+                  </div>
+                )}
                 {current.pending && (
                   <div className="tp-ai-confirm-card">
                     <strong>Confirm leave action</strong>
@@ -437,7 +868,9 @@ export default function AIAssistantWidget() {
                       .map(([label, field]) => (
                         <div className="tp-ai-confirm-field" key={field}>
                           <span>{label}</span>
-                          <strong>{String(current.pending[field])}</strong>
+                          <strong>
+                            {formatLeaveField(field, current.pending[field])}
+                          </strong>
                         </div>
                       ))}
                     <div className="tp-ai-confirm-actions">
@@ -488,19 +921,21 @@ export default function AIAssistantWidget() {
                 )}
                 <div ref={messagesEndRef} />
               </div>
-              {!current.messages.length && !current.pending && (
-                <div className="tp-ai-suggestions">
-                  {permittedSuggestions.map((prompt) => (
-                    <button
-                      type="button"
-                      key={prompt}
-                      onClick={() => update({ draft: prompt })}
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {!current.messages.length &&
+                !current.pending &&
+                !current.selection && (
+                  <div className="tp-ai-suggestions">
+                    {permittedSuggestions.map((prompt) => (
+                      <button
+                        type="button"
+                        key={prompt}
+                        onClick={() => update({ draft: prompt })}
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                )}
               {inputError && (
                 <div className="tp-ai-input-error" role="alert">
                   {inputError}
@@ -518,7 +953,12 @@ export default function AIAssistantWidget() {
                       : "Ask me to apply or cancel leave..."
                   }
                   value={current.draft}
-                  disabled={current.busy || !!current.pending}
+                  disabled={
+                    current.busy ||
+                    !!current.pending ||
+                    !!current.selection ||
+                    !!current.remarksStep
+                  }
                   onChange={(event) => {
                     update({ draft: event.target.value });
                     if (inputError) setInputError("");
@@ -542,7 +982,9 @@ export default function AIAssistantWidget() {
                   disabled={
                     !readable(current.draft) ||
                     current.busy ||
-                    !!current.pending
+                    !!current.pending ||
+                    !!current.selection ||
+                    !!current.remarksStep
                   }
                   onClick={() => void send()}
                 >

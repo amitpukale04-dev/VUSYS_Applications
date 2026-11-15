@@ -7,6 +7,7 @@ import {
   TextBox,
 } from "../../components/forms/FormElements";
 import HolidayAndTaskDatePicker from "../../components/forms/HolidayAndTaskDatePicker";
+import RadioGroup from "../../components/forms/RadioGroup";
 import SvgIcon from "../../components/common/SvgIcon";
 import DirtyStateModal from "../../components/common/DirtyStateModal";
 import AccessDenied from "../../components/common/AccessDenied";
@@ -42,6 +43,7 @@ const blankForm = {
   fromDate: "",
   toDate: "",
   isHalfDay: false,
+  halfDayType: "",
   totalLeaveDays: 0,
   reason: "",
 };
@@ -56,6 +58,7 @@ const MY_LEAVE_REQUEST_API_FIELD_MAPPINGS = {
   fromDate: { apiKeys: ["FromDate"] },
   toDate: { apiKeys: ["ToDate"] },
   reason: { apiKeys: ["Reason"] },
+  halfDayType: { apiKeys: ["HalfDayType"] },
 };
 
 // ============================================================
@@ -140,6 +143,9 @@ export default function MyLeaveRequestFormPage() {
               fromDate: toDateOnly(details.fromDate),
               toDate: toDateOnly(details.toDate),
               leaveTypeID: String(details.leaveTypeID),
+              halfDayType: details.isHalfDay
+                ? String(details.halfDayType ?? "")
+                : "",
             }
           : { ...blankForm, employeeCode };
         setForm(nextForm);
@@ -274,8 +280,10 @@ export default function MyLeaveRequestFormPage() {
       ...current,
       [name]: type === "checkbox" ? checked : value,
       ...(name === "leaveTypeID" ? { currentLeaveBalance: "" } : {}),
+      ...(name === "isHalfDay" && !checked ? { halfDayType: "" } : {}),
     }));
     clearError(name);
+    if (name === "isHalfDay" && !checked) clearError("halfDayType");
   };
 
   const runWithDirtyGuard = (action) => {
@@ -460,7 +468,7 @@ export default function MyLeaveRequestFormPage() {
               disabled
             />
           </div>
-          <div className="col-md-4 d-flex align-items-start pt-md-4">
+          <div className="col-md-2 d-flex align-items-start pt-md-4">
             <Checkbox
               name="isHalfDay"
               label="Half Day"
@@ -470,6 +478,24 @@ export default function MyLeaveRequestFormPage() {
               disabled={!isAddMode || saving}
             />
           </div>
+          {form.isHalfDay && (
+            <div className="col-md-4 d-flex align-items-start pt-md-2">
+              <RadioGroup
+                name="halfDayType"
+                label="Half Day Type"
+                required
+                value={form.halfDayType}
+                onChange={update}
+                options={[
+                  { value: "First Half", label: "First Half (Morning)" },
+                  { value: "Second Half", label: "Second Half (Afternoon)" },
+                ]}
+                error={errors.halfDayType}
+                disabled={!isAddMode || saving}
+                inline
+              />
+            </div>
+          )}
           {/* Third Row: Total Leave Days and Leave Reason */}
           <div className="col-md-12">
             <TextArea

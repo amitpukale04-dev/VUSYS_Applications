@@ -62,7 +62,7 @@ namespace VUSYSTimeProWebAPI.Api.Controllers
                 Helper.LogMessage(CommonHelper.KeyOption.APIErrorLog, ControllerLogNamespace, $"{ControllerLogName}.ProcessAILeaveManagementRequest()", ex.Message, false);
                 throw;
             }
-            return Content(Util.JSONOK(ReturnResult), ContentTypeConstants.JSON_CONTENTTYPE);
+            return Content(Util.JSONListOK(ReturnResult), ContentTypeConstants.JSON_CONTENTTYPE);
         }
 
         /// <summary>

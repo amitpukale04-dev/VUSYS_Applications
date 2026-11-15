@@ -141,6 +141,10 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
                 }
 
                 action.Intent = normalizedIntent;
+                if (action.DateSearchMode is not ("Exact" or "Overlap"))
+                    throw new InvalidOperationException("Gemini returned an unsupported date search mode.");
+                if (action.Intent == "ApplyLeave" || action.LeaveRequestID is > 0)
+                    action.DateSearchMode = "Exact";
 
                 // Normalize Invalid Leave Request ID
                 if (action.LeaveRequestID <= 0)
@@ -517,7 +521,25 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
         - Do not invent a leave-management operation.
         - LeaveType must be null.
 
-        DATE EXTRACTION RULES:
+        DATE SEARCH MODE RULES (ApproveLeave, RejectLeave, CancelLeave only):
+
+         - Return DateSearchMode = "Exact" when the message identifies one leave request
+           by its precise from/to dates, one specific leave date, or LeaveRequestID.
+         - Return DateSearchMode = "Overlap" for a broader search period such as
+           "in December 2026", "next month", "this week", or "during 2026".
+         - For Overlap, FromDate and ToDate represent the inclusive boundaries of
+           the SEARCH PERIOD, not the original leave application's dates.
+         - For a calendar month, use its first and last calendar days.
+         - For a calendar year, use January 1 and December 31.
+         - For a calendar week, use Monday through Sunday.
+         - For an explicit date interval describing a single leave request, use Exact.
+         - Never invent a search period when the message does not specify one.
+         - When LeaveRequestID is given, use Exact; the ID takes precedence.
+         - For ApplyLeave, always return DateSearchMode = "Exact".
+         - A broader search must never be interpreted as permission to perform
+           bulk approval, rejection, or cancellation. The user must select one request.
+
+         DATE EXTRACTION RULES:
 
         1. All dates must use yyyy-MM-dd format.
 
@@ -607,12 +629,13 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
             Reason = new { type = new[] { "string", "null" } },
             LeaveRequestID = new { type = new[] { "integer", "null" } },
             EmployeeName = new { type = new[] { "string", "null" } },
-            Remarks = new { type = new[] { "string", "null" } }
+            Remarks = new { type = new[] { "string", "null" } },
+            DateSearchMode = new { type = "string", @enum = new[] { "Exact", "Overlap" } }
         },
         required = new[]
         {
             "Intent", "LeaveType", "FromDate", "ToDate", "IsHalfDay", "HalfDayType",
-            "Reason", "LeaveRequestID", "EmployeeName", "Remarks"
+            "Reason", "LeaveRequestID", "EmployeeName", "Remarks", "DateSearchMode"
         },
         additionalProperties = false
     };

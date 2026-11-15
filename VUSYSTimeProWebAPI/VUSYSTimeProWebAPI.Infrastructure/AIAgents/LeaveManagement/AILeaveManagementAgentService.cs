@@ -101,7 +101,8 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
                 (string.IsNullOrWhiteSpace(action.FromDate) || string.IsNullOrWhiteSpace(action.ToDate)))
                 return Result(ErrorStatus, "Provide a leave request ID or the leave from and to dates.", action: action);
 
-            if (!string.IsNullOrWhiteSpace(action.FromDate) || !string.IsNullOrWhiteSpace(action.ToDate))
+            if (action.LeaveRequestID is not > 0 ||
+                !string.IsNullOrWhiteSpace(action.FromDate) && !string.IsNullOrWhiteSpace(action.ToDate))
             {
                 if (!ValidDates(action.FromDate, action.ToDate))
                     return Result(ErrorStatus, "Provide a valid from and to date (yyyy-MM-dd).", action: action);
@@ -109,13 +110,20 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
             if (!cancel && action.LeaveRequestID is not > 0 && string.IsNullOrWhiteSpace(action.EmployeeName))
                 return Result(ErrorStatus, "Provide the employee name or leave request ID.", action: action);
 
+            string dateSearchMode = action.DateSearchMode?.Trim() ?? "Exact";
+            if (dateSearchMode is not ("Exact" or "Overlap"))
+                return Result(ErrorStatus, "Invalid leave date search mode.", action: action);
+
+            // Explicit request IDs always identify a single request; the period is not a filter.
+            bool searchByID = action.LeaveRequestID is > 0;
             var criteria = new AILeaveRequestSearchCriteriaM
             {
                 LeaveRequestID = action.LeaveRequestID,
                 EmployeeCode = cancel ? actor.EmployeeCode : null,
                 EmployeeName = cancel ? null : action.EmployeeName,
-                FromDate = action.FromDate,
-                ToDate = action.ToDate,
+                FromDate = searchByID ? null : action.FromDate,
+                ToDate = searchByID ? null : action.ToDate,
+                ExactDateRange = searchByID || dateSearchMode == "Exact",
                 Intent = intent
             };
             IReadOnlyList<AILeaveRequestDetailsM> matches = await security.SearchLeaveRequestsAsync(criteria, ct);
@@ -172,7 +180,7 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
                     "Review the leave details and provide remarks before confirming this action.",
                     new[] { target }, action: action);
 
-            
+
             string token = store.Add(new AILeavePendingAction(actor.UserId, actor.EmployeeCode, action, null,
                 target.EmployeeCode, DateTimeOffset.UtcNow.AddMinutes(5)));
             return ResultWithDetails(SuccessStatus,

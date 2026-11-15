@@ -3,10 +3,13 @@ import { aiLeaveManagement } from "../utils/url";
 import { API_RESPONSE_TABLE, COMMON_CONSTANTS } from "../constants/constants";
 import {
   getApiResponseFirstRow,
+  getApiResponseRows,
   getApiResponseStatus,
 } from "../utils/apiResponseUtils";
 
 const AI_RESPONSE = API_RESPONSE_TABLE.AI_LEAVE_MANAGEMENT_RESPONSE;
+const AI_REQUEST_DETAILS_RESPONSE =
+  API_RESPONSE_TABLE.AI_LEAVE_REQUEST_DETAILS_RESPONSE;
 const LEAVE_RESPONSE = API_RESPONSE_TABLE.LEAVE_REQUEST_RESPONSE;
 const LEAVE_ACTION_RESPONSE =
   API_RESPONSE_TABLE.LEAVE_REQUEST_APPROVE_REJECT_CANCEL_RESPONSE;
@@ -25,14 +28,37 @@ const readResult = (payload, table, fallback) => {
   return details;
 };
 
-export async function processAILeaveRequest(message) {
+export async function processAILeaveRequest(message, clarificationToken = "") {
   const response = await apiClient.post(
     aiLeaveManagement.process,
-    { message },
+    { message, ...(clarificationToken ? { clarificationToken } : {}) },
     { timeout: 300_000 },
   );
+  const payload = response?.data || {};
+  const details = getApiResponseFirstRow(payload, AI_RESPONSE);
+  const matches = getApiResponseRows(payload, AI_REQUEST_DETAILS_RESPONSE);
+  // A multiple-match result can have Status=Error, but is a selection step,
+  // not a terminal API failure. Never choose a matching request automatically.
+  if (matches.length > 1 && !details?.ConfirmationToken) {
+    return { ...details, requiresSelection: true, matches };
+  }
+  // Clarification is a continuation step, even if the backend reports Status=Error.
+  // The next message must include the token supplied by this response.
+  if (details?.ClarificationToken && !details?.ConfirmationToken) {
+    return details;
+  }
+  // An approval/rejection review response may have Status=Error because
+  // required remarks are not yet supplied. Show the returned details without
+  // treating it as a confirmation or a terminal API error.
+  if (
+    !details?.ConfirmationToken &&
+    ["ApproveLeave", "RejectLeave", "CancelLeave"].includes(details?.Intent) &&
+    /review the leave details/i.test(details?.Message || "")
+  ) {
+    return details;
+  }
   return readResult(
-    response?.data || {},
+    payload,
     AI_RESPONSE,
     "Unable to process the leave request.",
   );

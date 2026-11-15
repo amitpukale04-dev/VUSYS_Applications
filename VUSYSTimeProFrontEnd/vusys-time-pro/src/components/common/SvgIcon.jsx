@@ -5,6 +5,20 @@ const paths = {
       <path d="m19 17 .8 2.2L22 20l-2.2.8L19 23l-.8-2.2L16 20l2.2-.8L19 17Z" />
     </>
   ),
+  morningHalf: (
+    <>
+      <path d="M12 2v2M4.93 4.93l1.42 1.42M2 12h2M20 12h2M19.07 4.93l-1.42 1.42" />
+      <path d="M4 17a8 8 0 0 1 16 0" />
+      <path d="M2 21h20M12 9v4l2 2" />
+    </>
+  ),
+  afternoonHalf: (
+    <>
+      <path d="M12 2v2M4.93 4.93l1.42 1.42M2 12h2M20 12h2M19.07 4.93l-1.42 1.42" />
+      <circle cx="12" cy="12" r="5" />
+      <path d="M12 9v3l2 2M4 20h16" />
+    </>
+  ),
   arrowLeft: <path d="m15 18-6-6 6-6M9 12h12" />,
   minus: <path d="M5 12h14" />,
   send: (

@@ -2,7 +2,6 @@
 using System.Data;
 using System.Globalization;
 using CommonLibCore10;
-using CommonLibCore10.Constants;
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using VUSYSTimeProWebAPI.Application.Abstractions.AIAgents.LeaveManagement;
@@ -10,6 +9,7 @@ using VUSYSTimeProWebAPI.Application.Abstractions.Common;
 using VUSYSTimeProWebAPI.Application.Abstractions.Users;
 using VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
 using VUSYSTimeProWebAPI.Infrastructure.Persistence.EntityFramework;
+using VUSYSTimeProWebAPI.Infrastructure.Persistence.Constants;
 
 namespace VUSYSTimeProWebAPI.Infrastructure.AIAgents.LeaveManagement;
 
@@ -31,8 +31,6 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
             throw new UnauthorizedAccessException("Employee identity cannot be verified.");
         return new AILeaveActor(user.Id, user.EmployeeCode, user.IsApprover == true);
     }
-
-    private const string AILeaveStoredProcedure = "usp_VUSYS_AILeaveManagement_GetLeaveRequestDetails";
     private const string AILeaveResponseTable = "AI_LEAVE_REQUEST_DETAILS_RESPONSE";
 
     /// <summary>
@@ -53,8 +51,7 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
         ArgumentNullException.ThrowIfNull(criteria);
         ct.ThrowIfCancellationRequested();
 
-        if (!criteria.ExactDateRange)
-            throw new NotSupportedException("The AI leave stored procedure currently supports exact date-range matching only.");
+        // Exact and overlap searches are supported by the stored procedure.
 
         if (criteria.LeaveRequestID is not > 0 &&
             (string.IsNullOrWhiteSpace(criteria.FromDate) || string.IsNullOrWhiteSpace(criteria.ToDate)))
@@ -101,10 +98,11 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
             { "@LeaveStatus", DBNull.Value },
             { "@ParamType", paramType },
             { "@Intent", criteria.Intent?.Trim() ?? string.Empty },
+            { "@DateSearchMode", criteria.ExactDateRange ? "Exact" : "Overlap" },
         };
 
         DataSet? finalDataSet = await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync(
-            AILeaveStoredProcedure, parameters, CONST.DBRetType.DATASET, ct) as DataSet;
+            StoredProcedure.AI_LEAVE_MANAGEMENT_GET_LEAVE_DETAILS, parameters, CONST.DBRetType.DATASET, ct) as DataSet;
         ct.ThrowIfCancellationRequested();
 
         // Preserve the existing DataSet validation convention.

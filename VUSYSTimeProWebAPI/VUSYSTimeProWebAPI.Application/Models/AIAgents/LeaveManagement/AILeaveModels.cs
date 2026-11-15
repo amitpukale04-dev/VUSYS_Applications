@@ -96,6 +96,9 @@ public sealed class AILeaveManagementActionM
     /// Remarks
     /// </summary>
     public string? Remarks { get; set; }
+
+    /// <summary>Exact: match leave dates exactly. Overlap: search requests overlapping the specified period.</summary>
+    public string DateSearchMode { get; set; } = "Exact";
 }
 
 /// <summary>

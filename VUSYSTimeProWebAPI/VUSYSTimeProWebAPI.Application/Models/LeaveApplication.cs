@@ -21,12 +21,6 @@ namespace VUSYSTimeProWebAPI.Application.Models
 
     public class LeaveApplicationSharedCommon : LeaveApplicationCommon, ICommonModel
     {
-        /// <summary>
-        /// Half Day Type
-        /// </summary>
-        [DefaultValue("")]
-        [Display(Name = "Half Day Type")]
-        public string HalfDayType { get; set; }
 
         /// <summary>
         /// Total Leave Days
@@ -155,6 +149,13 @@ namespace VUSYSTimeProWebAPI.Application.Models
         /// </summary>
         [Display(Name = "Is Half Day")]
         public bool IsHalfDay { get; set; } = false;
+
+        /// <summary>
+        /// Half Day Type
+        /// </summary>
+        [DefaultValue("")]
+        [Display(Name = "Half Day Type")]
+        public string HalfDayType { get; set; }
 
         /// <summary>
         /// Reason

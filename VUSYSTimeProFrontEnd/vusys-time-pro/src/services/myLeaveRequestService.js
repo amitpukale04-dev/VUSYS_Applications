@@ -28,6 +28,7 @@ const normalizeLeaveRequest = (row = {}) => ({
   toDate: normalizeString(row.ToDate ?? row.toDate),
   totalLeaveDays: normalizeNumber(row.TotalLeaveDays ?? row.totalLeaveDays),
   isHalfDay: normalizeBoolean(row.IsHalfDay ?? row.isHalfDay),
+  halfDayType: normalizeString(row.HalfDayType ?? row.halfDayType),
   reason: normalizeString(row.Reason ?? row.reason),
   leaveStatusText: normalizeString(row.LeaveStatusText ?? row.leaveStatusText),
   isShowCancelLeaveRequest: normalizeBoolean(
@@ -167,6 +168,9 @@ export async function applyLeaveRequest(values) {
       fromDate: values.fromDate,
       toDate: values.toDate,
       isHalfDay: normalizeBoolean(values.isHalfDay),
+      halfDayType: normalizeBoolean(values.isHalfDay)
+        ? normalizeString(values.halfDayType)
+        : "",
       reason: normalizeString(values.reason),
       isDeleted: false,
       createdBy: normalizeNumber(values.createdBy),
