@@ -176,16 +176,11 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
             // The existing leave-action DTO requires Remarks for all three operations.
             // Never invent remarks on the employee's behalf.
             if (string.IsNullOrWhiteSpace(action.Remarks))
-                return ResultWithDetails(ErrorStatus,
-                    "Review the leave details and provide remarks before confirming this action.",
-                    new[] { target }, action: action);
-
+                return ResultWithDetails(ErrorStatus, "Review the leave details and provide remarks before confirming this action.", new[] { target }, action: action);
 
             string token = store.Add(new AILeavePendingAction(actor.UserId, actor.EmployeeCode, action, null,
                 target.EmployeeCode, DateTimeOffset.UtcNow.AddMinutes(5)));
-            return ResultWithDetails(SuccessStatus,
-                $"Review the leave details before confirming {intent} for request {target.LeaveRequestID}.",
-                new[] { target }, token, action);
+            return ResultWithDetails(SuccessStatus, $"Review the leave details before confirming {intent} for request {target.LeaveRequestID}.", new[] { target }, token, action);
         }
         return Result(ErrorStatus, "Supported actions: apply, approve, reject and cancel leave.", action: action);
     }
@@ -299,8 +294,13 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
     /// <summary>
     /// This Method Is Used To Return Leave Details For Review Or Disambiguation.
     /// </summary>
-    private static DataSet ResultWithDetails(string status, string message,
-        IEnumerable<AILeaveRequestDetailsM> details, string token = "", AILeaveManagementActionM? action = null)
+    /// <param name="status"></param>
+    /// <param name="message"></param>
+    /// <param name="details"></param>
+    /// <param name="token"></param>
+    /// <param name="action"></param>
+    /// <returns></returns>
+    private static DataSet ResultWithDetails(string status, string message, IEnumerable<AILeaveRequestDetailsM> details, string token = "", AILeaveManagementActionM? action = null)
     {
         DataSet ds = Result(status, message, token, action);
         DataTable table = new DataTable("AI_LEAVE_REQUEST_DETAILS_RESPONSE");

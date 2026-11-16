@@ -67,67 +67,67 @@
 
 --Approve
 
-1. Approve Rahul Sharma's leave for 20 November 2026.
-2. Please approve the leave request of Rahul Sharma for 20 November 2026.
-3. Approve the pending leave application submitted by Rahul Sharma for 20 November 2026.
-4. I want to approve Rahul Sharma's leave on 20 November 2026.
-5. Kindly approve Rahul Sharma's leave dated 20 November 2026.
-6. Approve Rahul Sharma's leave for 20 November 2026. Remarks: Approved.
-7. Please approve Rahul Sharma's leave on 20 November 2026. Remarks: Leave approved as requested.
-8. Approve the pending leave request of Rahul Sharma for 20 November 2026 with remarks: Approved by manager.
-9. Kindly approve Rahul Sharma's leave for 20 November 2026. My remarks are: Approved based on the leave request.
-10. Approve Rahul Sharma's leave on 20 November 2026 and add remarks: Approved after reviewing the request.
-11. Approve Rahul Sharma's leave from 20 November 2026 to 22 November 2026. Remarks: Approved.
-12. Please approve the leave application of Rahul Sharma from 1 December to 3 December 2026. Remarks: Leave approved.
-13. Approve Rahul Sharma's pending leave for 24 November 2026 through 26 November 2026. Remarks: Approved by manager.
-14. Kindly approve Rahul Sharma's leave between 10 December and 12 December 2026. Remarks: Approved.
-15. I want to approve Rahul Sharma's leave from 15 December 2026 to 17 December 2026. Remarks: Leave approved.
+1. Approve Amit's leave for 20 November 2026.
+2. Please approve the leave request of Amit for 20 November 2026.
+3. Approve the pending leave application submitted by Amit for 20 November 2026.
+4. I want to approve Amit's leave on 20 November 2026.
+5. Kindly approve Amit's leave dated 20 November 2026.
+6. Approve Amit's leave for 20 November 2026. Remarks: Approved.
+7. Please approve Amit's leave on 20 November 2026. Remarks: Leave approved as requested.
+8. Approve the pending leave request of Amit for 20 November 2026 with remarks: Approved by manager.
+9. Kindly approve Amit's leave for 20 November 2026. My remarks are: Approved based on the leave request.
+10. Approve Amit's leave on 20 November 2026 and add remarks: Approved after reviewing the request.
+11. Approve Amit's leave from 20 November 2026 to 22 November 2026. Remarks: Approved.
+12. Please approve the leave application of Amit from 1 December to 3 December 2026. Remarks: Leave approved.
+13. Approve Amit's pending leave for 24 November 2026 through 26 November 2026. Remarks: Approved by manager.
+14. Kindly approve Amit's leave between 10 December and 12 December 2026. Remarks: Approved.
+15. I want to approve Amit's leave from 15 December 2026 to 17 December 2026. Remarks: Leave approved.
 16. Approve leave request ID 2011. Remarks: Approved.
 17. Please approve leave application number 2011. Remarks: Leave approved.
 18. Approve the pending leave request with ID 2011. Remarks: Approved by manager.
 19. Kindly approve leave request 2011 after reviewing its details. Remarks: Approved.
 20. I want to approve leave application 2011. Remarks: Approved as requested.
-21. Can you approve Rahul Sharma's leave for 20 November 2026? Remarks: Approved.
-22. Rahul Sharma has applied for leave on 20 November 2026. Please approve it. Remarks: Approved.
-23. Go ahead and approve Rahul Sharma's leave on 20 November 2026. Remarks: Approved.
-24. Please process the approval for Rahul Sharma's leave dated 20 November 2026. Remarks: Approved.
-25. Rahul Sharma's leave for 20 November 2026 looks fine. Approve it with remarks: Approved.
-26. Approve Rahul Sharma's first-half leave on 20 November 2026. Remarks: Approved.
-27. Please approve Rahul Sharma's morning half-day leave for 20 November 2026. Remarks: Approved.
-28. Approve Rahul Sharma's second-half leave on 20 November 2026. Remarks: Leave approved.
-29. Kindly approve Rahul Sharma's afternoon half-day leave dated 20 November 2026. Remarks: Approved.
-30. Approve Rahul Sharma's half-day leave for 20 November 2026. Remarks: Approved by manager.
+21. Can you approve Amit's leave for 20 November 2026? Remarks: Approved.
+22. Amit has applied for leave on 20 November 2026. Please approve it. Remarks: Approved.
+23. Go ahead and approve Amit's leave on 20 November 2026. Remarks: Approved.
+24. Please process the approval for Amit's leave dated 20 November 2026. Remarks: Approved.
+25. Amit's leave for 20 November 2026 looks fine. Approve it with remarks: Approved.
+26. Approve Amit's first-half leave on 20 November 2026. Remarks: Approved.
+27. Please approve Amit's morning half-day leave for 20 November 2026. Remarks: Approved.
+28. Approve Amit's second-half leave on 20 November 2026. Remarks: Leave approved.
+29. Kindly approve Amit's afternoon half-day leave dated 20 November 2026. Remarks: Approved.
+30. Approve Amit's half-day leave for 20 November 2026. Remarks: Approved by manager.
 
 
 --Reject
 
-1. Reject Rahul Sharma's leave request for 20 November 2026. Remarks: Leave cannot be approved.
-2. Please reject Rahul Sharma's pending leave application for 20 November 2026. Remarks: Insufficient staffing.
-3. Reject the leave request submitted by Rahul Sharma for 20 November 2026. Remarks: Project deadline.
-4. I want to reject Rahul Sharma's leave on 20 November 2026. Remarks: Work commitments.
-5. Kindly reject Rahul Sharma's leave dated 20 November 2026. Remarks: Leave not approved.
-6. Reject Rahul Sharma's leave for 20 November 2026. Remarks: Critical project delivery is scheduled.
-7. Please reject Rahul Sharma's leave on 20 November 2026 because his presence is required for production deployment.
-8. Reject Rahul Sharma's pending leave for 20 November 2026. Reason: Insufficient team availability.
-9. Kindly reject Rahul Sharma's leave application for 20 November 2026. Remarks: The team is already short-staffed.
-10. Reject Rahul Sharma's leave on 20 November 2026 with remarks: Leave cannot be accommodated due to operational requirements.
-11. Reject Rahul Sharma's leave from 20 November 2026 to 22 November 2026. Remarks: Project deadline.
-12. Please reject Rahul Sharma's leave application from 1 December to 3 December 2026. Remarks: Insufficient staffing.
-13. Reject Rahul Sharma's pending leave from 24 November 2026 through 26 November 2026. Remarks: Critical client meeting.
-14. Kindly reject Rahul Sharma's leave between 10 December and 12 December 2026. Remarks: Team availability constraints.
-15. I want to reject Rahul Sharma's leave from 15 December 2026 to 17 December 2026. Remarks: Production support required.
+1. Reject Amit's leave request for 20 November 2026. Remarks: Leave cannot be approved.
+2. Please reject Amit's pending leave application for 20 November 2026. Remarks: Insufficient staffing.
+3. Reject the leave request submitted by Amit for 20 November 2026. Remarks: Project deadline.
+4. I want to reject Amit's leave on 20 November 2026. Remarks: Work commitments.
+5. Kindly reject Amit's leave dated 20 November 2026. Remarks: Leave not approved.
+6. Reject Amit's leave for 20 November 2026. Remarks: Critical project delivery is scheduled.
+7. Please reject Amit's leave on 20 November 2026 because his presence is required for production deployment.
+8. Reject Amit's pending leave for 20 November 2026. Reason: Insufficient team availability.
+9. Kindly reject Amit's leave application for 20 November 2026. Remarks: The team is already short-staffed.
+10. Reject Amit's leave on 20 November 2026 with remarks: Leave cannot be accommodated due to operational requirements.
+11. Reject Amit's leave from 20 November 2026 to 22 November 2026. Remarks: Project deadline.
+12. Please reject Amit's leave application from 1 December to 3 December 2026. Remarks: Insufficient staffing.
+13. Reject Amit's pending leave from 24 November 2026 through 26 November 2026. Remarks: Critical client meeting.
+14. Kindly reject Amit's leave between 10 December and 12 December 2026. Remarks: Team availability constraints.
+15. I want to reject Amit's leave from 15 December 2026 to 17 December 2026. Remarks: Production support required.
 16. Reject leave request ID 2011. Remarks: Project deadline.
 17. Please reject leave application number 2011. Remarks: Insufficient staffing.
 18. Reject the pending leave request with ID 2011. Remarks: Critical work scheduled.
 19. Kindly reject leave request 2011 after reviewing its details. Remarks: Leave cannot be accommodated.
 20. I want to reject leave application 2011. Remarks: Business requirements.
-21. Can you reject Rahul Sharma's leave for 20 November 2026? Remarks: Team shortage.
-22. Rahul Sharma has applied for leave on 20 November 2026. Please decline it because of an urgent release.
-23. Go ahead and reject Rahul Sharma's leave on 20 November 2026. Remarks: Production deployment.
-24. Please process the rejection of Rahul Sharma's leave dated 20 November 2026. Remarks: Client commitments.
-25. Rahul Sharma's leave for 20 November 2026 cannot be approved. Reject it with remarks: Resource constraints.
-26. Reject Rahul Sharma's first-half leave on 20 November 2026. Remarks: Morning client meeting.
-27. Please reject Rahul Sharma's morning half-day leave for 20 November 2026. Remarks: Team meeting scheduled.
-28. Reject Rahul Sharma's second-half leave on 20 November 2026. Remarks: Production deployment.
-29. Kindly reject Rahul Sharma's afternoon half-day leave dated 20 November 2026. Remarks: Critical work pending.
-30. Reject Rahul Sharma's half-day leave for 20 November 2026. Remarks: Insufficient staffing.
+21. Can you reject Amit's leave for 20 November 2026? Remarks: Team shortage.
+22. Amit has applied for leave on 20 November 2026. Please decline it because of an urgent release.
+23. Go ahead and reject Amit's leave on 20 November 2026. Remarks: Production deployment.
+24. Please process the rejection of Amit's leave dated 20 November 2026. Remarks: Client commitments.
+25. Amit's leave for 20 November 2026 cannot be approved. Reject it with remarks: Resource constraints.
+26. Reject Amit's first-half leave on 20 November 2026. Remarks: Morning client meeting.
+27. Please reject Amit's morning half-day leave for 20 November 2026. Remarks: Team meeting scheduled.
+28. Reject Amit's second-half leave on 20 November 2026. Remarks: Production deployment.
+29. Kindly reject Amit's afternoon half-day leave dated 20 November 2026. Remarks: Critical work pending.
+30. Reject Amit's half-day leave for 20 November 2026. Remarks: Insufficient staffing.
