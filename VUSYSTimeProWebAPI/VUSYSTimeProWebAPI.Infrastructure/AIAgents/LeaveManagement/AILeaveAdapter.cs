@@ -43,6 +43,60 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
     }
 
     /// <summary>
+    /// This Method Is Used To Retrieve The Authenticated Employee Leave Balance Using The Existing Stored Procedure.
+    /// </summary>
+    public async Task<DataSet> GetMyLeaveBalancesAsync(string employeeCode, int leaveYear, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(employeeCode) || leaveYear < 2000 || leaveYear > 9999)
+            throw new ArgumentException("Valid employee code and leave year are required.");
+        ct.ThrowIfCancellationRequested();
+        var parameters = new Dictionary<string, object>
+        {
+            { "@Id", 0 },
+            { "@EmployeeCode", employeeCode.Trim() },
+            { "@LeaveYear", leaveYear },
+            { "@Type", "GetEmployeeLeaveBalance" }
+        };
+        DataSet? ds = await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync("usp_VUSYS_GetEmployeeLeaveBalanceList", parameters, CONST.DBRetType.DATASET, ct) as DataSet;
+        ct.ThrowIfCancellationRequested();
+        return ds ?? new DataSet();
+    }
+
+    /// <summary>Admin-only use: retrieve all employees' balances for a year.</summary>
+    public async Task<DataSet> GetAllEmployeeLeaveBalancesAsync(int leaveYear, CancellationToken ct = default)
+    {
+        if (leaveYear < 2000 || leaveYear > 9999) throw new ArgumentException("Invalid leave year.");
+        var parameters = new Dictionary<string, object>
+        {
+            { "@Id", 0 }, { "@EmployeeCode", string.Empty }, { "@LeaveYear", leaveYear },
+            { "@Type", "GetAllEmployeeLeaveBalanceList" }
+        };
+        return await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync(StoredProcedure.EMPLOYEE_LEAVE_BALANCE_DETAIL_LIST, parameters, CONST.DBRetType.DATASET, ct) as DataSet ?? new DataSet();
+    }
+
+    /// <summary>Resolve employee identity from authoritative employee master.</summary>
+    public async Task<IReadOnlyList<(string EmployeeCode, string EmployeeName)>> FindEmployeesForAIAsync(
+        string? employeeCode, string? employeeName, CancellationToken ct = default)
+    {
+        string code = employeeCode?.Trim() ?? string.Empty;
+        string name = employeeName?.Trim() ?? string.Empty;
+        if (code.Length == 0 && name.Length == 0) return Array.Empty<(string, string)>();
+        var parameters = new Dictionary<string, object>
+        {
+            { "@Id", 0 }, { "@EmployeeCode", code }, { "@EmployeeName", name },
+            { "@FromDate", DBNull.Value }, { "@ToDate", DBNull.Value },
+            { "@LeaveStatus", DBNull.Value }, { "@ParamType", "GetEmployeeLookupForAI" },
+            { "@Intent", string.Empty }, { "@DateSearchMode", "Exact" }, { "@AllowAllEmployees", 0 }
+        };
+        DataSet? ds = await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync(
+            StoredProcedure.AI_LEAVE_MANAGEMENT_GET_LEAVE_DETAILS, parameters, CONST.DBRetType.DATASET, ct) as DataSet;
+        DataTable? table = ds?.Tables.Cast<DataTable>().FirstOrDefault(t => t.Columns.Contains("EmployeeCode") && t.Columns.Contains("EmployeeName"));
+        if (table is null) return Array.Empty<(string, string)>();
+        return table.Rows.Cast<DataRow>().Select(r =>
+            (Convert.ToString(r["EmployeeCode"]) ?? string.Empty, Convert.ToString(r["EmployeeName"]) ?? string.Empty)).ToList();
+    }
+
+    /// <summary>
     /// This Method Is Used To Search Leave Requests Using Stored Procedure.
     /// </summary>
     public async Task<IReadOnlyList<AILeaveRequestDetailsM>> SearchLeaveRequestsAsync(
@@ -53,13 +107,14 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
 
         // Exact and overlap searches are supported by the stored procedure.
 
-        if (criteria.LeaveRequestID is not > 0 &&
+        bool readOnly = criteria.Intent is "GetLeaveStatus" or "GetLeaveHistory" or "GetPendingLeaves" or "GetLeaveDetails";
+        if (!readOnly && criteria.LeaveRequestID is not > 0 &&
             (string.IsNullOrWhiteSpace(criteria.FromDate) || string.IsNullOrWhiteSpace(criteria.ToDate)))
             return Array.Empty<AILeaveRequestDetailsM>();
 
         // Do not allow an unrestricted search.
         if (criteria.LeaveRequestID is not > 0 &&
-            string.IsNullOrWhiteSpace(criteria.EmployeeCode) && string.IsNullOrWhiteSpace(criteria.EmployeeName))
+            string.IsNullOrWhiteSpace(criteria.EmployeeCode) && string.IsNullOrWhiteSpace(criteria.EmployeeName) && !criteria.AllowAllEmployees)
             return Array.Empty<AILeaveRequestDetailsM>();
 
         return await ExecuteLeaveRequestLookupAsync("SearchLeaveRequestsForAI", criteria, ct);
@@ -71,8 +126,7 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
     public async Task<AILeaveRequestDetailsM?> GetLeaveRequestDetailsAsync(int leaveRequestID, CancellationToken ct = default)
     {
         if (leaveRequestID <= 0) return null;
-        IReadOnlyList<AILeaveRequestDetailsM> records = await ExecuteLeaveRequestLookupAsync(
-            "GetLeaveRequestDetailsForAI", new AILeaveRequestSearchCriteriaM { LeaveRequestID = leaveRequestID }, ct);
+        IReadOnlyList<AILeaveRequestDetailsM> records = await ExecuteLeaveRequestLookupAsync("GetLeaveRequestDetailsForAI", new AILeaveRequestSearchCriteriaM { LeaveRequestID = leaveRequestID }, ct);
         return records.FirstOrDefault();
     }
 
@@ -99,6 +153,7 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
             { "@ParamType", paramType },
             { "@Intent", criteria.Intent?.Trim() ?? string.Empty },
             { "@DateSearchMode", criteria.ExactDateRange ? "Exact" : "Overlap" },
+            { "@AllowAllEmployees", criteria.AllowAllEmployees ? 1 : 0 },
         };
 
         DataSet? finalDataSet = await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync(

@@ -15,7 +15,7 @@ public sealed class AILeaveManagementRequestParam
 
     /// <summary>Token returned when the AI needs a half-day clarification.</summary>
     [DefaultValue("")]
-    [Display(Name = "Confirmation Token")]
+    [Display(Name = "Clarification Token")]
     public string? ClarificationToken { get; set; }
 }
 
@@ -99,6 +99,15 @@ public sealed class AILeaveManagementActionM
 
     /// <summary>Exact: match leave dates exactly. Overlap: search requests overlapping the specified period.</summary>
     public string DateSearchMode { get; set; } = "Exact";
+
+    /// <summary>Year for read-only balance and leave queries.</summary>
+    public int? LeaveYear { get; set; }
+
+    /// <summary>LeaveRequestID, LeaveYear, Ambiguous, or None for read-only numeric references.</summary>
+    public string NumericReferenceType { get; set; } = "None";
+
+    /// <summary>Self, SpecificEmployee or AllEmployees. Only for read-only queries.</summary>
+    public string EmployeeScope { get; set; } = "Self";
 }
 
 /// <summary>
@@ -142,6 +151,8 @@ public sealed record AILeavePendingClarification(int UserId, string EmployeeCode
 /// </summary>
 public sealed class AILeaveRequestSearchCriteriaM
 {
+    /// <summary>True only after authorized Admin all-employee scope.</summary>
+    public bool AllowAllEmployees { get; set; }
     /// <summary>
     /// Leave Request ID
     /// </summary>

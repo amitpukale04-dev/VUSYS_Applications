@@ -30,6 +30,12 @@ public interface IGeminiAIService
 
 public interface IAILeaveSecurityContext
 {
+    /// <summary>Resolves employees by code or name without exposing other employee data.</summary>
+    Task<IReadOnlyList<(string EmployeeCode, string EmployeeName)>> FindEmployeesForAIAsync(string? employeeCode, string? employeeName, CancellationToken cancellationToken = default);
+    /// <summary>Retrieves leave balances for all employees; caller must authorize first.</summary>
+    Task<DataSet> GetAllEmployeeLeaveBalancesAsync(int leaveYear, CancellationToken cancellationToken = default);
+    /// <summary>Returns the authenticated employee's authoritative leave balances.</summary>
+    Task<DataSet> GetMyLeaveBalancesAsync(string employeeCode, int leaveYear, CancellationToken cancellationToken = default);
     /// <summary>
     /// This Method Is Used To Get Actor.
     /// </summary>

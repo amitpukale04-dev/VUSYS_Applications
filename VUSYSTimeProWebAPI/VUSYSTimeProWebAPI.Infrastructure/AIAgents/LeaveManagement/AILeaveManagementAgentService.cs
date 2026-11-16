@@ -34,6 +34,33 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
                 !string.Equals(pendingClarification.EmployeeCode, actor.EmployeeCode, StringComparison.OrdinalIgnoreCase))
                 return Result(ErrorStatus, "Clarification belongs to a different user.");
 
+            if (pendingClarification.Action.NumericReferenceType == "Ambiguous")
+            {
+                string? referenceType = ParseNumericReferenceChoice(request.Message);
+                if (referenceType is null)
+                {
+                    string retryToken = clarificationStore.Add(pendingClarification with { ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5) });
+                    return Result(SuccessStatus, "Does the number refer to a Leave Request ID or a Leave Year? Reply 'Request ID' or 'Leave Year'.",
+                        action: pendingClarification.Action, clarificationToken: retryToken);
+                }
+                action = pendingClarification.Action;
+                int number = action.LeaveRequestID ?? action.LeaveYear ?? 0;
+                if (number <= 0) return Result(ErrorStatus, "The numeric reference could not be resolved.", action: action);
+                if (referenceType == "LeaveYear")
+                {
+                    action.LeaveYear = number;
+                    action.LeaveRequestID = null;
+                    action.DateSearchMode = "Overlap";
+                }
+                else
+                {
+                    action.LeaveRequestID = number;
+                    action.LeaveYear = null;
+                }
+                action.NumericReferenceType = referenceType;
+            }
+            else
+            {
             string? halfDayType = ParseHalfDayType(request.Message);
             if (halfDayType is null)
             {
@@ -47,6 +74,7 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
             }
             action = pendingClarification.Action;
             action.HalfDayType = halfDayType;
+            }
         }
         else
         {
@@ -55,6 +83,139 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
         }
         IReadOnlyCollection<AILeaveTypeOptionM> availableLeaveTypes = await types.GetAvailableLeaveTypesAsync(ct);
         string intent = action.Intent?.Trim() ?? "Unknown";
+        // Resolve and authorize employee scope BEFORE any read-only data access.
+        string? targetCode = null;
+        string? targetName = null;
+        bool allEmployees = false;
+        bool readOnlyIntent = intent is "GetLeaveBalance" or "GetLeaveStatus" or "GetLeaveHistory" or "GetPendingLeaves" or "GetLeaveDetails";
+        if (readOnlyIntent)
+        {
+            string scope = action.EmployeeScope?.Trim() ?? "Self";
+            string suppliedCode = action.EmployeeCode?.Trim() ?? string.Empty;
+            string suppliedName = action.EmployeeName?.Trim() ?? string.Empty;
+            if (scope is not ("Self" or "SpecificEmployee" or "AllEmployees"))
+                return Result(ErrorStatus, "Invalid employee scope.", action: action);
+            // Never allow an explicit target to be silently downgraded to Self.
+            if (scope == "Self" && (suppliedCode.Length > 0 || suppliedName.Length > 0))
+                scope = "SpecificEmployee";
+            bool isAdmin = await security.CanApproveAsync(actor, ct);
+            if (scope == "AllEmployees")
+            {
+                if (!isAdmin) return Result(ErrorStatus, "Access denied. You are not authorized to view all employees' leave information.", action: action);
+                allEmployees = true;
+            }
+            else if (scope == "SpecificEmployee")
+            {
+                if (suppliedCode.Length == 0 && suppliedName.Length == 0)
+                    return Result(ErrorStatus, "Please specify an employee name or code.", action: action);
+                // Employee-code comparisons are performed before looking up another user's identity.
+                if (!isAdmin && suppliedCode.Length > 0 && !string.Equals(suppliedCode, actor.EmployeeCode, StringComparison.OrdinalIgnoreCase))
+                    return Result(ErrorStatus, "Access denied. You are not authorized to view another employee's leave information.", action: action);
+                var matches = await security.FindEmployeesForAIAsync(suppliedCode, suppliedName, ct);
+                if (!isAdmin) matches = matches.Where(x => string.Equals(x.EmployeeCode, actor.EmployeeCode, StringComparison.OrdinalIgnoreCase)).ToList();
+                if (matches.Count == 0) return Result(ErrorStatus, isAdmin ? "Employee not found." : "Access denied or employee not found.", action: action);
+                if (matches.Count > 1) return Result(ErrorStatus, "Multiple employees match that name. Please provide the exact employee code.", action: action);
+                targetCode = matches[0].EmployeeCode;
+                targetName = matches[0].EmployeeName;
+            }
+            else targetCode = actor.EmployeeCode;
+        }
+        // A bare four-digit number after "leave request" can be either an ID or a year.
+        // Preserve authenticated employee scope and all original filters through a one-time clarification token.
+        // Explicit "ID", "number", "year", or "in 2026" phrasing must not be treated as ambiguous.
+        if (readOnlyIntent && intent != "GetLeaveBalance" &&
+            string.IsNullOrWhiteSpace(request.ClarificationToken) &&
+            (action.NumericReferenceType == "Ambiguous" || IsAmbiguousLeaveReference(request.Message)))
+        {
+            int? number = ExtractAmbiguousLeaveReference(request.Message) ?? action.LeaveRequestID;
+            if (number is > 0)
+            {
+                action.LeaveRequestID = number;
+                action.LeaveYear = null;
+                action.NumericReferenceType = "Ambiguous";
+                string clarificationToken = clarificationStore.Add(new AILeavePendingClarification(
+                    actor.UserId, actor.EmployeeCode, action, DateTimeOffset.UtcNow.AddMinutes(5)));
+                return Result(SuccessStatus,
+                    $"Does {number} refer to a Leave Request ID or a Leave Year? Reply 'Request ID' or 'Leave Year'.",
+                    action: action, clarificationToken: clarificationToken);
+            }
+        }
+        // Read-only operations never issue confirmation tokens or execute leave actions.
+        if (intent == "GetLeaveBalance")
+        {
+            int year = action.LeaveYear ?? DateTime.Now.Year;
+            if (year < 2000 || year > 9999)
+                return Result(ErrorStatus, "Provide a valid leave year.", action: action);
+            DataSet balances = allEmployees
+                ? await security.GetAllEmployeeLeaveBalancesAsync(year, ct)
+                : await security.GetMyLeaveBalancesAsync(targetCode!, year, ct);
+            DataTable? source = balances.Tables.Cast<DataTable>().FirstOrDefault(t => t.Columns.Contains("AvailableBalance") && t.Columns.Contains("LeaveType"));
+            if (source is null || source.Rows.Count == 0)
+                return Result(ErrorStatus, $"No leave balance found for {year}.", action: action);
+            DataSet result = Result(SuccessStatus, $"Leave balance for {year}.", action: action);
+            DataTable balanceTable = source.Clone();
+            balanceTable.TableName = "AI_LEAVE_BALANCE_RESPONSE";
+            static string NormalizeLeaveName(string? name)
+            {
+                string normalized = new string((name ?? string.Empty).Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+                return normalized.Replace("privileage", "privilege").Replace("priviledge", "privilege");
+            }
+            string requestedLeaveType = NormalizeLeaveName(action.LeaveType);
+            foreach (DataRow row in source.Rows)
+            {
+                string actualLeaveType = NormalizeLeaveName(Convert.ToString(row["LeaveType"], CultureInfo.InvariantCulture));
+                if (requestedLeaveType.Length == 0 || actualLeaveType == requestedLeaveType ||
+                    actualLeaveType.Contains(requestedLeaveType, StringComparison.Ordinal) ||
+                    requestedLeaveType.Contains(actualLeaveType, StringComparison.Ordinal))
+                    balanceTable.ImportRow(row);
+            }
+            if (balanceTable.Rows.Count == 0)
+                return Result(ErrorStatus, $"No balance found for leave type '{action.LeaveType}' in {year}.", action: action);
+            result.Tables.Add(balanceTable);
+            return result;
+        }
+        if (intent is "GetLeaveStatus" or "GetLeaveHistory" or "GetPendingLeaves" or "GetLeaveDetails")
+        {
+            // Restrict these new queries to the authenticated employee, even when an ID is supplied.
+            // Do not trust an employee name or code returned by Gemini.
+            bool byId = action.LeaveRequestID is > 0;
+            string? fromDate = action.FromDate;
+            string? toDate = action.ToDate;
+            // No date means search the employee's recent applications across years.
+            // When only a year is provided, search that entire year.
+            if (!byId && string.IsNullOrWhiteSpace(fromDate) && string.IsNullOrWhiteSpace(toDate) && action.LeaveYear.HasValue)
+            {
+                int year = action.LeaveYear.Value;
+                if (year < 2000 || year > 9999)
+                    return Result(ErrorStatus, "Provide a valid leave year.", action: action);
+                fromDate = new DateOnly(year, 1, 1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                toDate = new DateOnly(year, 12, 31).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            }
+            if (!byId && (string.IsNullOrWhiteSpace(fromDate) != string.IsNullOrWhiteSpace(toDate)))
+                return Result(ErrorStatus, "Please provide both start and end dates.", action: action);
+            if (!byId && !string.IsNullOrWhiteSpace(fromDate) && !ValidDates(fromDate, toDate))
+                return Result(ErrorStatus, "Provide valid leave dates.", action: action);
+            var criteria = new AILeaveRequestSearchCriteriaM
+            {
+                LeaveRequestID = action.LeaveRequestID,
+                EmployeeCode = allEmployees ? null : targetCode,
+                AllowAllEmployees = allEmployees,
+                FromDate = byId ? null : fromDate,
+                ToDate = byId ? null : toDate,
+                ExactDateRange = byId || (action.DateSearchMode == "Exact" && (intent is "GetLeaveStatus" or "GetLeaveDetails") && !action.LeaveYear.HasValue),
+                Intent = intent
+            };
+            IReadOnlyList<AILeaveRequestDetailsM> records = await security.SearchLeaveRequestsAsync(criteria, ct);
+            var ownRecords = records.Where(x => allEmployees || string.Equals(x.EmployeeCode, targetCode, StringComparison.OrdinalIgnoreCase));
+            if (intent == "GetPendingLeaves") ownRecords = ownRecords.Where(x => x.LeaveStatus == (int)LeaveStatusEnum.Pending);
+            var details = ownRecords.ToList();
+            if (details.Count == 0)
+                return Result(ErrorStatus, "No matching leave requests found.", action: action);
+            string message = intent == "GetLeaveStatus" && details.Count > 1
+                ? $"Found {details.Count} leave applications. Select the request whose status you want to check."
+                : $"Found {details.Count} leave request(s).";
+            return ResultWithDetails(SuccessStatus, message, details, action: action);
+        }
         if (intent == "ApplyLeave")
         {
             if (string.IsNullOrWhiteSpace(action.LeaveType) || string.IsNullOrWhiteSpace(action.FromDate) ||
@@ -182,7 +343,7 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
                 target.EmployeeCode, DateTimeOffset.UtcNow.AddMinutes(5)));
             return ResultWithDetails(SuccessStatus, $"Review the leave details before confirming {intent} for request {target.LeaveRequestID}.", new[] { target }, token, action);
         }
-        return Result(ErrorStatus, "Supported actions: apply, approve, reject and cancel leave.", action: action);
+        return Result(ErrorStatus, "Supported actions: apply, approve, reject, cancel, leave status, leave balance, leave history and pending leaves.", action: action);
     }
 
     /// <summary>
@@ -322,6 +483,31 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
     /// </summary>
     /// <param name="message"></param>
     /// <returns></returns>
+    private static string? ParseNumericReferenceChoice(string message)
+    {
+        string value = message.Trim().ToLowerInvariant();
+        bool isId = value is "id" or "request id" or "leave request id" or "request number" or "leave request number" or "1";
+        bool isYear = value is "year" or "leave year" or "calendar year" or "2";
+        if (isId == isYear) return null;
+        return isId ? "LeaveRequestID" : "LeaveYear";
+    }
+
+    private static int? ExtractAmbiguousLeaveReference(string message)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(message,
+            @"\bleave\s+requests?\s+(20\d{2})\b",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        return match.Success && int.TryParse(match.Groups[1].Value, out int value) ? value : null;
+    }
+
+    private static bool IsAmbiguousLeaveReference(string message)
+    {
+        if (ExtractAmbiguousLeaveReference(message) is null) return false;
+        return !System.Text.RegularExpressions.Regex.IsMatch(message,
+            @"\b(request\s*(?:id|number|no\.?|#)|id\s*[:#]|(?:in|during|year|for\s+the\s+year)\s+20\d{2})\b",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+    }
+
     private static string? ParseHalfDayType(string message)
     {
         string value = message.Trim().ToLowerInvariant();

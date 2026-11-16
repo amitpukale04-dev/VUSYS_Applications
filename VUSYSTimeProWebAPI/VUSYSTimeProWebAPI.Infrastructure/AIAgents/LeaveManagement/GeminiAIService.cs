@@ -33,7 +33,8 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
 
     private static readonly string[] SupportedIntents =
     [
-        "ApplyLeave", "ApproveLeave", "RejectLeave", "CancelLeave", "Unknown"
+        "ApplyLeave", "ApproveLeave", "RejectLeave", "CancelLeave",
+        "GetLeaveBalance", "GetLeaveStatus", "GetLeaveHistory", "GetPendingLeaves", "GetLeaveDetails", "Unknown"
     ];
 
     /// <summary>
@@ -237,7 +238,43 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
         2. ApproveLeave
         3. RejectLeave
         4. CancelLeave
-        5. Unknown
+        5. GetLeaveBalance
+        6. GetLeaveStatus
+        7. GetLeaveHistory
+        8. GetPendingLeaves
+        9. GetLeaveDetails
+        10. Unknown
+
+        READ-ONLY INTENT RULES (these are supported actions, not Unknown):
+        - GetLeaveBalance: balance, remaining leaves, available leaves, allocated, used, pending balance.
+          Extract a mentioned LeaveType using the database list, including spelling variants
+          (Privilege Leave means the configured Privileage Leave). LeaveYear is the requested year or null.
+          Do not require dates or a LeaveRequestID.
+        - GetLeaveStatus: status, approval state, what happened to my leave application.
+          Extract an explicitly stated ID or date range; if omitted, leave them null.
+        - GetLeaveHistory: history, previous leave applications, past requests, all leaves.
+        - GetPendingLeaves: show/list/count my pending or awaiting-approval leave applications.
+        - GetLeaveDetails: show full details, reason, remarks, or duration of a leave request.
+        - For read-only intents, do not invent an ID, date, employee name or leave type.
+          When a year or period is explicitly given, extract it. Otherwise leave dates and year null.
+          Use DateSearchMode Overlap for broad periods and Exact for an explicitly exact date.
+        - Never classify a read-only question as ApplyLeave/ApproveLeave/RejectLeave/CancelLeave.
+
+        NUMERIC REFERENCE DISAMBIGUATION FOR READ-ONLY INTENTS:
+        - An explicitly labeled "leave request ID 2026", "request number 2026", or "request #2026" means LeaveRequestID=2026, NumericReferenceType=LeaveRequestID.
+        - "in 2026", "during 2026", "for the year 2026", "leave year 2026" means LeaveYear=2026, NumericReferenceType=LeaveYear; LeaveRequestID=null.
+        - "Show details of my leave request 2026" is ambiguous: NumericReferenceType=Ambiguous, LeaveRequestID=2026, LeaveYear=null. Do not guess.
+        - Never treat a numeric request ID as a calendar year just because its value is between 2000 and 2099.
+        - When no ambiguous numeric reference exists, NumericReferenceType=None.
+        - These rules apply to GetLeaveStatus, GetLeaveHistory, GetPendingLeaves and GetLeaveDetails. GetLeaveBalance uses LeaveYear for years.
+
+        READ-ONLY EMPLOYEE SCOPE RULES:
+        - Extract EmployeeScope = Self for "my", "mine", "me", or when no target employee is specified.
+        - Extract EmployeeScope = SpecificEmployee for a named employee or an explicit employee code (e.g. VUT003).
+        - Extract EmployeeScope = AllEmployees ONLY for explicit requests such as "all employees", "everyone", "entire staff", or "who has pending leaves".
+        - Extract EmployeeCode only if the user explicitly mentions an employee code. Extract EmployeeName only if explicitly mentioned.
+        - Do not infer that a user is an Admin. Backend validates permissions.
+        - These scope fields apply ONLY to the five read-only intents; preserve original write-intent behavior.
 
         AVAILABLE LEAVE TYPES FROM DATABASE:
 
@@ -515,6 +552,12 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
         - LeaveType must be null.
         - Do not classify any leave type.
 
+        READ-ONLY OPERATIONS:
+        - The five GetLeave* intents are valid even when no dates or request ID are given.
+        - GetPendingLeaves is also a supported read-only intent.
+        - If a leave type is mentioned in a balance question, populate LeaveType.
+        - Preserve the user's exact dates/year when specified; never invent missing dates.
+
         UNKNOWN INTENT:
 
         - Intent must be "Unknown".
@@ -630,12 +673,16 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
             LeaveRequestID = new { type = new[] { "integer", "null" } },
             EmployeeName = new { type = new[] { "string", "null" } },
             Remarks = new { type = new[] { "string", "null" } },
-            DateSearchMode = new { type = "string", @enum = new[] { "Exact", "Overlap" } }
+            DateSearchMode = new { type = "string", @enum = new[] { "Exact", "Overlap" } },
+            LeaveYear = new { type = new[] { "integer", "null" } },
+            NumericReferenceType = new { type = "string", @enum = new[] { "None", "LeaveRequestID", "LeaveYear", "Ambiguous" } },
+            EmployeeScope = new { type = "string", @enum = new[] { "Self", "SpecificEmployee", "AllEmployees" } },
+            EmployeeCode = new { type = new[] { "string", "null" } }
         },
         required = new[]
         {
             "Intent", "LeaveType", "FromDate", "ToDate", "IsHalfDay", "HalfDayType",
-            "Reason", "LeaveRequestID", "EmployeeName", "Remarks", "DateSearchMode"
+            "Reason", "LeaveRequestID", "EmployeeName", "Remarks", "DateSearchMode", "LeaveYear", "NumericReferenceType", "EmployeeScope", "EmployeeCode"
         },
         additionalProperties = false
     };

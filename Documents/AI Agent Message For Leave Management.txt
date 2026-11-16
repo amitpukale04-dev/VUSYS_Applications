@@ -131,3 +131,169 @@
 28. Reject Amit's second-half leave on 20 November 2026. Remarks: Production deployment.
 29. Kindly reject Amit's afternoon half-day leave dated 20 November 2026. Remarks: Critical work pending.
 30. Reject Amit's half-day leave for 20 November 2026. Remarks: Insufficient staffing.
+
+
+--GetLeaveBalance
+
+1. Show my leave balance.
+2. What is my current leave balance?
+3. How many leaves do I have remaining?
+4. Show my available leave balance for 2026.
+5. How many privilege leaves do I have left?
+6. What is my sick leave balance?
+7. Show my casual leave balance.
+8. How many comp-off leaves are available?
+9. Give me a breakdown of my leave balances.
+10. Show my opening and closing leave balances.
+11. How many leaves have I used this year?
+12. How many leaves are pending approval?
+13. Show my allocated leave for 2026.
+14. What is my remaining privilege leave balance for this year?
+15. Can you check my leave balance?
+16. I want to know how many leave days I can still take.
+17. Display all my leave balances for 2026.
+18. Show my leave balance for 2025.
+19. What is my leave balance for next year?
+20. Do I have any privilege leaves remaining?
+21. How much sick leave is available to me?
+22. Tell me my available leave days.
+23. Can you provide my leave balance details?
+24. Show leave balances by leave type.
+25. How many leave days have been allocated to me?
+26. What is my balance after deducting used leaves?
+27. Show my leave balance for December 2026.
+28. I need my leave balance statement.
+29. Show the leave balance of employee VUT003.
+30. How many privilege leaves does Demo have available?
+
+--GetLeaveStatus
+
+1. What is the status of my leave request?
+2. Check the status of my leave request 2019.
+3. Is my leave request approved?
+4. Has my leave request been rejected?
+5. What happened to my leave application?
+6. Show the status of my leave on 11 December 2026.
+7. Is my leave for 8 December 2026 still pending?
+8. Check whether my privilege leave was approved.
+9. Has my manager approved my leave?
+10. What is the current status of leave request ID 2018?
+11. Tell me if my leave application is pending.
+12. Check my leave status for December 2026.
+13. Was my leave request cancelled?
+14. Is my sick leave request approved?
+15. I want to track my leave application.
+16. Can you check the approval status of my leave?
+17. What is the latest status of my leave request?
+18. Show my leave approval status for this month.
+19. Did my leave application get approved or rejected?
+20. Check the status of my leave from 10 December to 11 December 2026.
+21. Is leave request 2019 pending approval?
+22. Show the current status of my last leave request.
+23. Tell me whether my December leave is approved.
+24. What is the status of my half-day leave request?
+25. Has my leave application for tomorrow been approved?
+26. Check the status of my leave for next Monday.
+27. Show the status of all my leave requests this month.
+28. What is the status of Demo's leave request 2019?
+29. Check the status of employee VUT003's leave.
+30. Why was my leave request rejected?
+
+--GetLeaveHistory
+
+1. Show my leave history.
+2. Display my leave history for 2026.
+3. Show all my leave requests.
+4. Give me my leave history for December 2026.
+5. Show the leaves I applied for this year.
+6. List my previous leave applications.
+7. Show my leave history for November 2026.
+8. Can you show my past leave records?
+9. Display all my approved and rejected leaves.
+10. Show my leave applications from January to June 2026.
+11. I want to see my leave history for last year.
+12. Show my leave history for the last three months.
+13. List all my leave requests between 1 October and 31 December 2026.
+14. Show all leave requests I submitted this month.
+15. Display my privilege leave history.
+16. Show my sick leave history for 2026.
+17. List all my cancelled leave requests.
+18. Show all my approved leave applications.
+19. Show all my rejected leave requests.
+20. Give me my complete leave history.
+21. What leaves have I taken this year?
+22. Show leave applications from 01/12/2026 to 31/12/2026.
+23. Display my leave records for the current month.
+24. Show my half-day leave history.
+25. List my leave requests for the previous month.
+26. Show all leave requests submitted by me in 2025.
+27. Show the leave history of Demo for December 2026.
+28. Display leave records for employee VUT003.
+29. Show my leave history from 2024 to 2026.
+30. Give me the details of all leaves I applied for during 2026.
+
+--GetPendingLeaves
+
+1. Show my pending leave requests.
+2. Do I have any pending leaves?
+3. List all my pending leave applications.
+4. Show my leaves awaiting approval.
+5. How many leave requests are pending?
+6. Display my pending leaves for December 2026.
+7. Show my pending leave applications for this month.
+8. Which of my leave requests are not yet approved?
+9. List my pending privilege leave requests.
+10. Show my pending sick leave applications.
+11. Are any of my leave requests waiting for manager approval?
+12. Display all pending leave requests for 2026.
+13. Show pending leaves from 1 December to 31 December 2026.
+14. What leaves are still under review?
+15. Show my pending leave requests for next month.
+16. List all my unapproved leave applications.
+17. Are there any pending leave requests for next week?
+18. Show pending leave applications from the last 30 days.
+19. Display my pending half-day leave requests.
+20. Give me details of my pending leaves.
+21. Show pending leave request 2019.
+22. Check whether I have any pending leave requests.
+23. Show all pending leave applications for November 2026.
+24. List pending leaves between 10 December and 20 December 2026.
+25. Show the pending leave requests of Demo.
+26. Display pending leaves for employee VUT003.
+27. How many pending privilege leaves do I have?
+28. Show my oldest pending leave request.
+29. Show pending leave requests for this year.
+30. Are any of my December leave applications still awaiting approval?
+
+--GetLeaveDetails
+
+1. Show details of my leave request 2019.
+2. Get complete information about leave request 2018.
+3. Display my leave application details.
+4. Show the details of my leave on 11 December 2026.
+5. I want to view my privilege leave request.
+6. Give me full details of leave request ID 2019.
+7. Show the reason for my leave application.
+8. What dates did I apply for leave?
+9. How many days did I request in leave application 2019?
+10. Display the leave type and reason for request 2018.
+11. Show my leave details for December 2026.
+12. Can you retrieve my leave request information?
+13. Show all information about my last leave application.
+14. Display details of my approved leave request.
+15. Show details of my rejected leave application.
+16. What remarks were entered for my leave request?
+17. Show my leave application from 10 December to 11 December 2026.
+18. Get details of my pending leave request.
+19. Display the employee and leave type for request 2019.
+20. Show the start date and end date of my leave request.
+21. Was my leave request for a full day or half day?
+22. Show the number of leave days requested.
+23. Give me details of my cancelled leave request.
+24. Show the complete leave record for 8 December 2026.
+25. Display the details of leave request number 2018.
+26. Show my leave request details for next week.
+27. Get leave application details for employee VUT003.
+28. Show the leave request details of Demo.
+29. Show details for leave request 999999.
+30. Show all details of my leave application submitted this month.
