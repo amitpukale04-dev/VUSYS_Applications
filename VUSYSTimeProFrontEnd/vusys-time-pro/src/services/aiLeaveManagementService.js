@@ -10,6 +10,14 @@ import {
 const AI_RESPONSE = API_RESPONSE_TABLE.AI_LEAVE_MANAGEMENT_RESPONSE;
 const AI_REQUEST_DETAILS_RESPONSE =
   API_RESPONSE_TABLE.AI_LEAVE_REQUEST_DETAILS_RESPONSE;
+const AI_BALANCE_RESPONSE = API_RESPONSE_TABLE.AI_LEAVE_BALANCE_RESPONSE;
+const READ_ONLY_INTENTS = new Set([
+  "GetLeaveBalance",
+  "GetLeaveStatus",
+  "GetLeaveHistory",
+  "GetPendingLeaves",
+  "GetLeaveDetails",
+]);
 const LEAVE_RESPONSE = API_RESPONSE_TABLE.LEAVE_REQUEST_RESPONSE;
 const LEAVE_ACTION_RESPONSE =
   API_RESPONSE_TABLE.LEAVE_REQUEST_APPROVE_REJECT_CANCEL_RESPONSE;
@@ -37,6 +45,24 @@ export async function processAILeaveRequest(message, clarificationToken = "") {
   const payload = response?.data || {};
   const details = getApiResponseFirstRow(payload, AI_RESPONSE);
   const matches = getApiResponseRows(payload, AI_REQUEST_DETAILS_RESPONSE);
+  const balances = getApiResponseRows(payload, AI_BALANCE_RESPONSE);
+  // Read-only results are never treated as action-selection or confirmation steps.
+  if (details && READ_ONLY_INTENTS.has(details.Intent)) {
+    const status = getApiResponseStatus(payload);
+    if (details.ClarificationToken && !details.ConfirmationToken) {
+      return { ...details, readOnly: true, records: [], balances: [] };
+    }
+    if (status !== COMMON_CONSTANTS.SUCCESS) {
+      const error = new Error(
+        details.Message ||
+          payload?.message ||
+          "Unable to retrieve leave information.",
+      );
+      error.payload = payload;
+      throw error;
+    }
+    return { ...details, readOnly: true, records: matches, balances };
+  }
   // A multiple-match result can have Status=Error, but is a selection step,
   // not a terminal API failure. Never choose a matching request automatically.
   if (matches.length > 1 && !details?.ConfirmationToken) {

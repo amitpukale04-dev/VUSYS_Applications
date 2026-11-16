@@ -21,6 +21,37 @@ const initialConversation = () => ({
   clarification: null,
   remarksStep: null,
 });
+const READ_ONLY_INTENTS = new Set([
+  "GetLeaveBalance",
+  "GetLeaveStatus",
+  "GetLeaveHistory",
+  "GetPendingLeaves",
+  "GetLeaveDetails",
+]);
+const leaveStatusStyle = (status) =>
+  ({
+    1: "warning",
+    2: "success",
+    3: "danger",
+    4: "secondary",
+  })[Number(status)] || "secondary";
+const displayNumber = (value) => {
+  if (value === null || value === undefined || value === "") return "—";
+  const numeric = Number(value);
+  return Number.isFinite(numeric)
+    ? numeric.toLocaleString(undefined, { maximumFractionDigits: 2 })
+    : String(value);
+};
+const groupByEmployee = (rows) =>
+  rows.reduce((groups, row) => {
+    const key =
+      readable(row.EmployeeCode) ||
+      readable(row.EmployeeName) ||
+      "Unknown employee";
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(row);
+    return groups;
+  }, {});
 const normalizeRole = (user) =>
   String(user?.role ?? user?.UserRole ?? "")
     .trim()
@@ -57,7 +88,10 @@ const formatLeaveField = (field, value) => {
       4: "Cancelled",
     };
 
-    return leaveStatusMap[Number(value)] ?? String(value ?? "");
+    return (
+      leaveStatusMap[Number(value)] ??
+      (readable(value) === "0" ? "—" : String(value ?? ""))
+    );
   }
   return String(value ?? "");
 };
@@ -105,6 +139,136 @@ const isMeaningfulMessage = (message) => {
     !/^(.)\1{5,}$/u.test(text.replace(/\s/g, ""))
   );
 };
+
+// Read-only cards never invoke the write-action selection or confirmation workflow.
+function ReadOnlyLeaveResults({ result }) {
+  const isBalance = result.intent === "GetLeaveBalance";
+  const rows = isBalance ? result.balances : result.records;
+  const groups = Object.entries(groupByEmployee(rows));
+  if (!rows.length) {
+    return (
+      <div className="tp-ai-readonly-empty" role="status">
+        No matching leave information was found.
+      </div>
+    );
+  }
+  return (
+    <section className="tp-ai-readonly-results" aria-label="Leave information">
+      <div className="tp-ai-readonly-heading">
+        <SvgIcon name="calendar" size={17} />
+        <strong>
+          {
+            {
+              GetLeaveBalance: "Leave Balance",
+              GetLeaveStatus: "Leave Status",
+              GetLeaveHistory: "Leave History",
+              GetPendingLeaves: "Pending Leaves",
+              GetLeaveDetails: "Leave Request Details",
+            }[result.intent]
+          }
+        </strong>
+        <span>
+          {rows.length} {rows.length === 1 ? "record" : "records"}
+        </span>
+      </div>
+      {groups.map(([employee, items]) => (
+        <div className="tp-ai-readonly-group" key={employee}>
+          <div className="tp-ai-readonly-employee">
+            <SvgIcon name="employees" size={15} />
+            <span>{readable(items[0].EmployeeName) || "Employee"}</span>
+            <small>{readable(items[0].EmployeeCode) || employee}</small>
+          </div>
+          {items.map((item, index) =>
+            isBalance ? (
+              <article
+                className="tp-ai-readonly-card"
+                key={`${item.Id ?? index}-${item.LeaveYear ?? ""}`}
+              >
+                <div className="tp-ai-readonly-card-head">
+                  <strong>{readable(item.LeaveType) || "Leave"}</strong>
+                  <span className="tp-ai-readonly-year">
+                    {item.LeaveYear || "—"}
+                  </span>
+                </div>
+                <div className="tp-ai-readonly-available">
+                  <span>Available Balance</span>
+                  <strong>{displayNumber(item.AvailableBalance)}</strong>
+                </div>
+                <div className="tp-ai-readonly-stats">
+                  {[
+                    ["Opening", "OpeningBalance"],
+                    ["Allocated", "AllocatedLeave"],
+                    ["Used", "UsedLeave"],
+                    ["Pending", "PendingLeave"],
+                  ].map(([label, field]) => (
+                    <div key={field}>
+                      <small>{label}</small>
+                      <strong>{displayNumber(item[field])}</strong>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ) : (
+              <details
+                className="tp-ai-readonly-card tp-ai-readonly-request"
+                key={`${item.LeaveRequestID ?? index}-${index}`}
+                open={items.length === 1}
+              >
+                <summary>
+                  <span className="tp-ai-readonly-summary-text">
+                    <strong>
+                      {readable(item.LeaveType) || "Leave request"}
+                    </strong>
+                    <small>
+                      #{readable(item.LeaveRequestID) || "—"} ·{" "}
+                      {formatLeaveField("FromDate", item.FromDate) || "—"}
+                      {readable(item.ToDate) && item.ToDate !== item.FromDate
+                        ? ` – ${formatLeaveField("ToDate", item.ToDate)}`
+                        : ""}
+                    </small>
+                  </span>
+                  <span
+                    className={`tp-ai-readonly-status tp-ai-readonly-status-${leaveStatusStyle(item.LeaveStatus)}`}
+                  >
+                    {formatLeaveField("LeaveStatus", item.LeaveStatus) ||
+                      "Unknown"}
+                  </span>
+                </summary>
+                <div className="tp-ai-readonly-detail-grid">
+                  {[
+                    ["Request ID", "LeaveRequestID"],
+                    ["Employee Code", "EmployeeCode"],
+                    ["From Date", "FromDate"],
+                    ["To Date", "ToDate"],
+                    ["Leave Days", "TotalLeaveDays"],
+                    ["Half Day", "IsHalfDay"],
+                    ["Half-Day Type", "HalfDayType"],
+                    ["Reason", "Reason"],
+                    ["Remarks", "Remarks"],
+                  ]
+                    .filter(
+                      ([, key]) =>
+                        item[key] !== null &&
+                        item[key] !== undefined &&
+                        String(item[key]).trim() !== "",
+                    )
+                    .map(([label, key]) => (
+                      <div key={key}>
+                        <span>{label}</span>
+                        <strong>
+                          {formatLeaveField(key, item[key]) || "—"}
+                        </strong>
+                      </div>
+                    ))}
+                </div>
+              </details>
+            ),
+          )}
+        </div>
+      ))}
+    </section>
+  );
+}
 
 export default function AIAssistantWidget() {
   const { user, isAuthenticated, authStage } = useAuth();
@@ -202,6 +366,12 @@ export default function AIAssistantWidget() {
         ]
       : []),
 
+    "Show my leave balance.",
+    "Show my leave history for 2026.",
+    "What is the status of my leave request?",
+    "Show my pending leaves.",
+    "Show my leave request details.",
+
     // Cancel Leave - No separate permission required
     "Cancel my leave request (enter request ID) because my plans changed.",
 
@@ -219,6 +389,7 @@ export default function AIAssistantWidget() {
       "cancel your leave requests",
       role === "admin" && canApprove && "approve employee leave requests",
       role === "admin" && canApprove && "reject employee leave requests",
+      "check leave balances, status, history, pending requests, and details",
     ]
       .filter(Boolean)
       .join(", ") || "with leave-related questions"
@@ -262,15 +433,28 @@ export default function AIAssistantWidget() {
       if (epoch !== epochRef.current) return;
       const token = readable(details.ConfirmationToken);
       const nextClarificationToken = readable(details.ClarificationToken);
-      const selection = details.requiresSelection
-        ? {
-            originalMessage: message,
-            intent: details.Intent,
-            matches: details.matches,
-            selectedId: null,
-          }
-        : null;
+      const isReadOnly =
+        details.readOnly === true ||
+        READ_ONLY_INTENTS.has(readable(details.Intent));
+      const selection =
+        !isReadOnly && details.requiresSelection
+          ? {
+              originalMessage: message,
+              intent: details.Intent,
+              matches: details.matches,
+              selectedId: null,
+            }
+          : null;
       selectionRef.current = selection;
+      const readOnlyResult =
+        isReadOnly && !nextClarificationToken
+          ? {
+              id: `${Date.now()}-${Math.random()}`,
+              intent: details.Intent,
+              records: details.records || [],
+              balances: details.balances || [],
+            }
+          : null;
       // The backend can return review details before generating a confirmation
       // token. Display these details without enabling Approve/Reject.
       const review =
@@ -306,20 +490,31 @@ export default function AIAssistantWidget() {
         remarksStep,
         messages: [
           ...previous.messages,
-          newMessage(
-            "assistant",
-            details.Message ||
-              (token
-                ? "Review and confirm this action."
-                : "Request processed."),
-          ),
+          {
+            ...newMessage(
+              "assistant",
+              details.Message ||
+                (token
+                  ? "Review and confirm this action."
+                  : "Request processed."),
+            ),
+            ...(readOnlyResult ? { readOnlyResult } : {}),
+          },
         ],
         pending: token && !remarksStep ? { ...details, token } : null,
         selection,
         review: remarksStep ? null : review,
         clarification:
           !token && !selection && nextClarificationToken
-            ? { token: nextClarificationToken, intent: details.Intent }
+            ? {
+                token: nextClarificationToken,
+                intent: details.Intent,
+                kind: /leave request id or a leave year|request id.*leave year/i.test(
+                  readable(details.Message),
+                )
+                  ? "requestOrYear"
+                  : "halfDay",
+              }
             : null,
       }));
     } catch (error) {
@@ -638,41 +833,75 @@ export default function AIAssistantWidget() {
               >
                 <div className="tp-ai-bubble assistant">{welcome}</div>
                 {current.messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`tp-ai-bubble ${message.type}`}
-                  >
-                    <span>{message.text}</span>
-                    <small>{message.time}</small>
+                  <div key={message.id} className="tp-ai-message-entry">
+                    <div className={`tp-ai-bubble ${message.type}`}>
+                      <span>{message.text}</span>
+                      <small>{message.time}</small>
+                    </div>
+                    {message.readOnlyResult && (
+                      <ReadOnlyLeaveResults result={message.readOnlyResult} />
+                    )}
                   </div>
                 ))}
                 {current.clarification && !current.busy && (
                   <div
                     className="tp-ai-clarification-card"
                     role="group"
-                    aria-label="Select half-day leave type"
+                    aria-label={
+                      current.clarification.kind === "requestOrYear"
+                        ? "Clarify leave request ID or year"
+                        : "Select half-day leave type"
+                    }
                   >
+                    {current.clarification.kind === "requestOrYear" ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn tp-ai-clarification-option tp-ai-clarification-morning btn-sm"
+                          onClick={() => void send("Request ID")}
+                        >
+                          <SvgIcon name="calendar" size={19} /> Leave Request ID
+                        </button>
+                        <button
+                          type="button"
+                          className="btn tp-ai-clarification-option tp-ai-clarification-afternoon btn-sm"
+                          onClick={() => void send("Leave Year")}
+                        >
+                          <SvgIcon name="calendar" size={19} /> Leave Year
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="btn tp-ai-clarification-option tp-ai-clarification-morning btn-sm"
+                          disabled={current.busy}
+                          onClick={() => void send("First Half")}
+                        >
+                          <SvgIcon name="morningHalf" size={21} />
+                          <span>
+                            First Half <small>(Morning)</small>
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="btn tp-ai-clarification-option tp-ai-clarification-afternoon btn-sm"
+                          disabled={current.busy}
+                          onClick={() => void send("Second Half")}
+                        >
+                          <SvgIcon name="afternoonHalf" size={21} />
+                          <span>
+                            Second Half <small>(Afternoon)</small>
+                          </span>
+                        </button>
+                      </>
+                    )}
                     <button
                       type="button"
-                      className="btn tp-ai-clarification-option tp-ai-clarification-morning btn-sm"
-                      disabled={current.busy}
-                      onClick={() => void send("First Half")}
+                      className="btn btn-sm tp-ai-clarification-back"
+                      onClick={() => update({ clarification: null })}
                     >
-                      <SvgIcon name="morningHalf" size={21} />
-                      <span>
-                        First Half <small>(Morning)</small>
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      className="btn tp-ai-clarification-option tp-ai-clarification-afternoon btn-sm"
-                      disabled={current.busy}
-                      onClick={() => void send("Second Half")}
-                    >
-                      <SvgIcon name="afternoonHalf" size={21} />
-                      <span>
-                        Second Half <small>(Afternoon)</small>
-                      </span>
+                      Cancel clarification
                     </button>
                   </div>
                 )}
@@ -949,8 +1178,8 @@ export default function AIAssistantWidget() {
                   ariaLabel="Message AI Assistant"
                   placeholder={
                     canApprove
-                      ? "Ask me to apply, approve, reject, or cancel leave..."
-                      : "Ask me to apply or cancel leave..."
+                      ? "Ask about leave balance, history, status, or actions..."
+                      : "Ask about leave balance, history, status, or requests..."
                   }
                   value={current.draft}
                   disabled={
