@@ -4,8 +4,10 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using CommonLibCore10;
 using CommonLibCore10.Constants;
 using VUSYSTimeProWebAPI.Application.Abstractions.AIAgents.LeaveManagement;
+using VUSYSTimeProWebAPI.Application.Abstractions.Configuration;
 using VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
 using VUSYSTimeProWebAPI.Infrastructure.Common;
 
@@ -40,159 +42,176 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
     /// <summary>
     /// This Method Is Used To Extract Leave Management Action Using Google Gemini AI.
     /// </summary>
-    public async Task<AILeaveManagementActionM> ExtractLeaveActionAsync(string message, DateOnly today, IReadOnlyCollection<AILeaveTypeOptionM> availableLeaveTypes, CancellationToken cancellationToken = default)
+    /// <param name="message"></param>
+    /// <param name="today"></param>
+    /// <param name="availableLeaveTypes"></param>
+    /// <param name="AIAPIConfigurationService"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public async Task<AILeaveManagementActionM> ExtractLeaveActionAsync(string message, DateOnly today, IReadOnlyCollection<AILeaveTypeOptionM> availableLeaveTypes, IAIAPIConfigurationService AIAPIConfigurationService, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         ArgumentNullException.ThrowIfNull(availableLeaveTypes);
         cancellationToken.ThrowIfCancellationRequested();
 
-        string requestUrl = CommonHelper.GeminiAIKeyOption.GeminiAIUrl?.Trim() ?? string.Empty;
-        string apiKey = CommonHelper.GeminiAIKeyOption.GeminiAIApiKey?.Trim() ?? string.Empty;
-        string configuredModels = CommonHelper.GeminiAIKeyOption.GeminiAIModel?.Trim() ?? string.Empty;
+        var AIAPIDetails = AIAPIConfigurationService.GetAIAPIConfigurationDetails("GoogleGeminiAI");
+        var apiKey = AIAPIDetails != null && AIAPIDetails.AIAPIKey != null ? AESEncrytDecry.DecryptAES256(AIAPIDetails.AIAPIKey.Trim(), Helper.EncryptDecryptKey) : string.Empty;
+        var configuredModels = AIAPIDetails != null && AIAPIDetails.AIModels != null ? AIAPIDetails.AIModels.Trim() : string.Empty;
+        var requestUrl = AIAPIDetails != null && AIAPIDetails.AIAPIURL != null ? AIAPIDetails.AIAPIURL.Trim() : string.Empty;
+        var ErrorMessage = AIAPIDetails != null && AIAPIDetails.ErrorMessage != null ? AIAPIDetails.ErrorMessage.Trim() : string.Empty;
 
-        ArgumentException.ThrowIfNullOrWhiteSpace(requestUrl);
-        ArgumentException.ThrowIfNullOrWhiteSpace(apiKey);
-        ArgumentException.ThrowIfNullOrWhiteSpace(configuredModels);
-
-        if (!Uri.TryCreate(requestUrl, UriKind.Absolute, out Uri? endpoint) ||
-            endpoint.Scheme != Uri.UriSchemeHttps ||
-            !string.Equals(endpoint.Host, "generativelanguage.googleapis.com", StringComparison.OrdinalIgnoreCase) ||
-            endpoint.AbsolutePath.TrimEnd('/') != "/v1beta/interactions" ||
-            !string.IsNullOrEmpty(endpoint.Query) ||
-            !string.IsNullOrEmpty(endpoint.Fragment))
+        if (!string.IsNullOrEmpty(apiKey) && !string.IsNullOrEmpty(configuredModels) && !string.IsNullOrEmpty(requestUrl))
         {
-            throw new InvalidOperationException("Invalid Gemini Interactions API endpoint configuration.");
-        }
+            ArgumentException.ThrowIfNullOrWhiteSpace(requestUrl);
+            ArgumentException.ThrowIfNullOrWhiteSpace(apiKey);
+            ArgumentException.ThrowIfNullOrWhiteSpace(configuredModels);
 
-        // A comma-separated GeminiModel setting allows optional fallback, e.g. "model-one,model-two".
-        string[] candidateModels = configuredModels.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-
-        if (candidateModels.Length == 0)
-        {
-            throw new InvalidOperationException("No Gemini AI models are configured.");
-        }
-
-        string prompt = BuildLeavePrompt(message, today, availableLeaveTypes);
-        Exception? lastCapturedException = null;
-
-        // Process Gemini Models One By One
-        foreach (string currentModel in candidateModels)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            try
+            if (!Uri.TryCreate(requestUrl, UriKind.Absolute, out Uri? endpoint) ||
+                endpoint.Scheme != Uri.UriSchemeHttps ||
+                !string.Equals(endpoint.Host, "generativelanguage.googleapis.com", StringComparison.OrdinalIgnoreCase) ||
+                endpoint.AbsolutePath.TrimEnd('/') != "/v1beta/interactions" ||
+                !string.IsNullOrEmpty(endpoint.Query) ||
+                !string.IsNullOrEmpty(endpoint.Fragment))
             {
-                // Prepare Gemini Interactions API Request
-                var requestBody = new
-                {
-                    model = currentModel,
-                    input = prompt,
-                    response_format = new
-                    {
-                        type = "text",
-                        mime_type = ContentTypeConstants.JSON_CONTENTTYPE,
-                        schema = GetGeminiLeaveManagementJsonSchema()
-                    }
-                };
+                throw new InvalidOperationException("Invalid Gemini Interactions API endpoint configuration.");
+            }
 
-                string requestJson =
-                    JsonSerializer.Serialize(requestBody);
+            // A comma-separated GeminiModel setting allows optional fallback, e.g. "model-one,model-two".
+            string[] candidateModels = configuredModels.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
-                Console.WriteLine($"[Gemini] Processing Leave Management request " + $"using model '{currentModel}'.");
+            if (candidateModels.Length == 0)
+            {
+                throw new InvalidOperationException("No Gemini AI models are configured.");
+            }
 
-                // Send Request Using Existing Retry Implementation
-                string responseJson = await SendGeminiRequestWithRetryAsync(requestUrl, apiKey, requestJson, cancellationToken);
+            string prompt = BuildLeavePrompt(message, today, availableLeaveTypes);
+            Exception? lastCapturedException = null;
+
+            // Process Gemini Models One By One
+            foreach (string currentModel in candidateModels)
+            {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (string.IsNullOrWhiteSpace(responseJson))
-                {
-                    throw new InvalidOperationException("Gemini API returned an empty response.");
-                }
-
-                // Extract Generated JSON From Gemini Response
-                string extractedJson = GetGeminiResponseText(responseJson);
-
-                if (string.IsNullOrWhiteSpace(extractedJson))
-                {
-                    throw new InvalidOperationException("Gemini returned no Leave Management JSON.");
-                }
-
-                // Deserialize Gemini Leave Management Action
-                AILeaveManagementActionM? action;
                 try
                 {
-                    action = JsonSerializer.Deserialize<AILeaveManagementActionM>(extractedJson, JsonOptions);
+                    // Prepare Gemini Interactions API Request
+                    var requestBody = new
+                    {
+                        model = currentModel,
+                        input = prompt,
+                        generation_config = new { thinking_level = "low" },
+                        response_format = new
+                        {
+                            type = "text",
+                            mime_type = ContentTypeConstants.JSON_CONTENTTYPE,
+                            schema = GetGeminiLeaveManagementJsonSchema()
+                        }
+                    };
+
+                    string requestJson =
+                        JsonSerializer.Serialize(requestBody);
+
+                    Console.WriteLine($"[Gemini] Processing Leave Management request " + $"using model '{currentModel}'.");
+
+                    // Send Request Using Existing Retry Implementation
+                    string responseJson = await SendGeminiRequestWithRetryAsync(requestUrl, apiKey, requestJson, cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    if (string.IsNullOrWhiteSpace(responseJson))
+                    {
+                        throw new InvalidOperationException("Gemini API returned an empty response.");
+                    }
+
+                    // Extract Generated JSON From Gemini Response
+                    string extractedJson = GetGeminiResponseText(responseJson);
+
+                    if (string.IsNullOrWhiteSpace(extractedJson))
+                    {
+                        throw new InvalidOperationException("Gemini returned no Leave Management JSON.");
+                    }
+
+                    // Deserialize Gemini Leave Management Action
+                    AILeaveManagementActionM? action;
+                    try
+                    {
+                        action = JsonSerializer.Deserialize<AILeaveManagementActionM>(extractedJson, JsonOptions);
+                    }
+                    catch (JsonException ex)
+                    {
+                        throw new InvalidOperationException("Gemini returned malformed Leave Management JSON: " + Truncate(extractedJson), ex);
+                    }
+
+                    if (action == null)
+                    {
+                        throw new InvalidOperationException("Gemini returned an empty Leave Management Action.");
+                    }
+
+                    // Validate And Normalize Intent
+                    string? normalizedIntent = SupportedIntents.FirstOrDefault(x => string.Equals(x, action.Intent, StringComparison.OrdinalIgnoreCase));
+
+                    if (normalizedIntent == null)
+                    {
+                        throw new InvalidOperationException("Gemini returned an unsupported Leave Management Intent.");
+                    }
+
+                    action.Intent = normalizedIntent;
+                    if (action.DateSearchMode is not ("Exact" or "Overlap"))
+                        throw new InvalidOperationException("Gemini returned an unsupported date search mode.");
+                    if (action.Intent == "ApplyLeave" || action.LeaveRequestID is > 0)
+                        action.DateSearchMode = "Exact";
+
+                    // Normalize Invalid Leave Request ID
+                    if (action.LeaveRequestID <= 0)
+                    {
+                        action.LeaveRequestID = null;
+                    }
+
+                    Console.WriteLine($"[Gemini] Leave Management extraction succeeded " + $"using model '{currentModel}'.");
+
+                    // Authorization, Leave Validation And Confirmation
+                    // Are Handled By AILeaveManagementAgentService.
+                    return action;
                 }
-                catch (JsonException ex)
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
-                    throw new InvalidOperationException("Gemini returned malformed Leave Management JSON: " + Truncate(extractedJson), ex);
+                    // User Or Calling Application Cancelled The Request
+                    throw;
                 }
-
-                if (action == null)
+                catch (GeminiApiException ex) when (ex.IsAvailabilityFailure)
                 {
-                    throw new InvalidOperationException("Gemini returned an empty Leave Management Action.");
+                    // Rate Limit Or Temporary Model Failure: Switch To Next Configured Model
+                    lastCapturedException = ex;
+                    string failureReason = ex.StatusCode == HttpStatusCode.TooManyRequests
+                        ? "rate limited"
+                        : "temporarily unavailable";
+
+                    Console.WriteLine($"[Gemini] Model '{currentModel}' is {failureReason}. " +
+                        $"Switching to next configured model. Error: {ex.Message}");
                 }
-
-                // Validate And Normalize Intent
-                string? normalizedIntent = SupportedIntents.FirstOrDefault(x => string.Equals(x, action.Intent, StringComparison.OrdinalIgnoreCase));
-
-                if (normalizedIntent == null)
+                catch (TimeoutException ex) when (!cancellationToken.IsCancellationRequested)
                 {
-                    throw new InvalidOperationException("Gemini returned an unsupported Leave Management Intent.");
+                    // Model Timeout: Switch To Next Configured Model
+                    lastCapturedException = ex;
+                    Console.WriteLine($"[Gemini] Model '{currentModel}' timed out. " + $"Switching to next configured model. " + $"Error: {ex.Message}");
                 }
-
-                action.Intent = normalizedIntent;
-                if (action.DateSearchMode is not ("Exact" or "Overlap"))
-                    throw new InvalidOperationException("Gemini returned an unsupported date search mode.");
-                if (action.Intent == "ApplyLeave" || action.LeaveRequestID is > 0)
-                    action.DateSearchMode = "Exact";
-
-                // Normalize Invalid Leave Request ID
-                if (action.LeaveRequestID <= 0)
+                catch (HttpRequestException ex) when (!cancellationToken.IsCancellationRequested)
                 {
-                    action.LeaveRequestID = null;
+                    // Network Error: Switch To Next Configured Model
+                    lastCapturedException = ex;
+                    Console.WriteLine($"[Gemini] Network error using model '{currentModel}'. " + $"Switching to next configured model. " + $"Error: {ex.Message}");
                 }
+            }
 
-                Console.WriteLine($"[Gemini] Leave Management extraction succeeded " + $"using model '{currentModel}'.");
-
-                // Authorization, Leave Validation And Confirmation
-                // Are Handled By AILeaveManagementAgentService.
-                return action;
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                // User Or Calling Application Cancelled The Request
-                throw;
-            }
-            catch (GeminiApiException ex) when (ex.IsAvailabilityFailure)
-            {
-                // Rate Limit Or Temporary Model Failure: Switch To Next Configured Model
-                lastCapturedException = ex;
-                string failureReason = ex.StatusCode == HttpStatusCode.TooManyRequests
-                    ? "rate limited"
-                    : "temporarily unavailable";
-
-                Console.WriteLine($"[Gemini] Model '{currentModel}' is {failureReason}. " +
-                    $"Switching to next configured model. Error: {ex.Message}");
-            }
-            catch (TimeoutException ex) when (!cancellationToken.IsCancellationRequested)
-            {
-                // Model Timeout: Switch To Next Configured Model
-                lastCapturedException = ex;
-                Console.WriteLine($"[Gemini] Model '{currentModel}' timed out. " + $"Switching to next configured model. " + $"Error: {ex.Message}");
-            }
-            catch (HttpRequestException ex) when (!cancellationToken.IsCancellationRequested)
-            {
-                // Network Error: Switch To Next Configured Model
-                lastCapturedException = ex;
-                Console.WriteLine($"[Gemini] Network error using model '{currentModel}'. " + $"Switching to next configured model. " + $"Error: {ex.Message}");
-            }
+            // All Configured Models Failed
+            throw new InvalidOperationException($"Unable to extract Leave Management Action. " +
+                $"All {candidateModels.Length} configured Gemini models failed, were rate limited, or timed out.",
+                lastCapturedException);
         }
-
-        // All Configured Models Failed
-        throw new InvalidOperationException($"Unable to extract Leave Management Action. " +
-            $"All {candidateModels.Length} configured Gemini models failed, were rate limited, or timed out.",
-            lastCapturedException);
+        else
+        {
+            throw new InvalidOperationException(ErrorMessage);
+        }
     }
 
     /// <summary>

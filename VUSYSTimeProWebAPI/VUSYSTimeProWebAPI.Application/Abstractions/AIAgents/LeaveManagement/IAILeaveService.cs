@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using VUSYSTimeProWebAPI.Application.Abstractions.Configuration;
 using VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
 
 namespace VUSYSTimeProWebAPI.Application.Abstractions.AIAgents.LeaveManagement;
@@ -10,9 +11,10 @@ public interface IGitHubModelsAIService
     /// </summary>
     /// <param name="message"></param>
     /// <param name="today"></param>
+    /// <param name="AIAPIConfigurationService"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<AILeaveManagementActionM> ExtractLeaveActionAsync(string message, DateOnly today, CancellationToken cancellationToken = default);
+    Task<AILeaveManagementActionM> ExtractLeaveActionAsync(string message, DateOnly today, IAIAPIConfigurationService AIAPIConfigurationService, CancellationToken cancellationToken = default);
 }
 
 public interface IGeminiAIService
@@ -23,19 +25,40 @@ public interface IGeminiAIService
     /// <param name="message"></param>
     /// <param name="today"></param>
     /// <param name="availableLeaveTypes"></param>
+    /// <param name="AIAPIConfigurationService"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<AILeaveManagementActionM> ExtractLeaveActionAsync(string message, DateOnly today, IReadOnlyCollection<AILeaveTypeOptionM> availableLeaveTypes, CancellationToken cancellationToken = default);
+    Task<AILeaveManagementActionM> ExtractLeaveActionAsync(string message, DateOnly today, IReadOnlyCollection<AILeaveTypeOptionM> availableLeaveTypes, IAIAPIConfigurationService AIAPIConfigurationService, CancellationToken cancellationToken = default);
 }
 
 public interface IAILeaveSecurityContext
 {
-    /// <summary>Resolves employees by code or name without exposing other employee data.</summary>
+    /// <summary>
+    /// This Method Is Used To Resolves employees by code or name without exposing other employee data.
+    /// </summary>
+    /// <param name="employeeCode"></param>
+    /// <param name="employeeName"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     Task<IReadOnlyList<(string EmployeeCode, string EmployeeName)>> FindEmployeesForAIAsync(string? employeeCode, string? employeeName, CancellationToken cancellationToken = default);
-    /// <summary>Retrieves leave balances for all employees; caller must authorize first.</summary>
+
+    /// <summary>
+    /// This Method Is Used To Retrieves leave balances for all employees; caller must authorize first.
+    /// </summary>
+    /// <param name="leaveYear"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     Task<DataSet> GetAllEmployeeLeaveBalancesAsync(int leaveYear, CancellationToken cancellationToken = default);
-    /// <summary>Returns the authenticated employee's authoritative leave balances.</summary>
+
+    /// <summary>
+    /// This Method Is Used To Return the authenticated employee's authoritative leave balances.
+    /// </summary>
+    /// <param name="employeeCode"></param>
+    /// <param name="leaveYear"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     Task<DataSet> GetMyLeaveBalancesAsync(string employeeCode, int leaveYear, CancellationToken cancellationToken = default);
+    
     /// <summary>
     /// This Method Is Used To Get Actor.
     /// </summary>
@@ -62,14 +85,18 @@ public interface IAILeaveSecurityContext
     /// <summary>
     /// This Method Is Used To Search Leave Requests By ID, Employee Or Dates.
     /// </summary>
-    Task<IReadOnlyList<AILeaveRequestDetailsM>> SearchLeaveRequestsAsync(
-        AILeaveRequestSearchCriteriaM criteria, CancellationToken cancellationToken = default);
+    /// <param name="criteria"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<IReadOnlyList<AILeaveRequestDetailsM>> SearchLeaveRequestsAsync(AILeaveRequestSearchCriteriaM criteria, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// This Method Is Used To Get Leave Request Details For Review.
     /// </summary>
-    Task<AILeaveRequestDetailsM?> GetLeaveRequestDetailsAsync(
-        int leaveRequestID, CancellationToken cancellationToken = default);
+    /// <param name="leaveRequestID"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<AILeaveRequestDetailsM?> GetLeaveRequestDetailsAsync(int leaveRequestID, CancellationToken cancellationToken = default);
 }
 public interface IAILeaveTypeResolver
 {
@@ -89,14 +116,14 @@ public interface IAILeaveTypeResolver
 public interface IAILeaveConfirmationStore
 {
     /// <summary>
-    /// This Is Used To Add Leave Confirmation.
+    /// This Method Is Used To Store Leave Confirmation Token.
     /// </summary>
     /// <param name="action"></param>
     /// <returns></returns>
     string Add(AILeavePendingAction action);
 
     /// <summary>
-    /// This Method Is Used To Consume The Token.
+    /// This Method Is Used To Consume Store Leave Confirmation Token.
     /// </summary>
     /// <param name="token"></param>
     /// <param name="action"></param>
@@ -122,9 +149,20 @@ public interface IAILeaveManagementAgentService
     Task<DataSet> ConfirmAILeaveManagementAction(AILeaveManagementConfirmRequestParam request, CancellationToken cancellationToken = default);
 }
 
-/// <summary>Single-use store for unresolved leave questions.</summary>
 public interface IAILeaveClarificationStore
 {
+    /// <summary>
+    /// This Method Is Used To Store Leave Clarification Token.
+    /// </summary>
+    /// <param name="action"></param>
+    /// <returns></returns>
     string Add(AILeavePendingClarification action);
+
+    /// <summary>
+    /// This Method Is Used To Consume Store Leave Clarification Token.
+    /// </summary>
+    /// <param name="token"></param>
+    /// <param name="action"></param>
+    /// <returns></returns>
     bool TryConsume(string token, out AILeavePendingClarification? action);
 }

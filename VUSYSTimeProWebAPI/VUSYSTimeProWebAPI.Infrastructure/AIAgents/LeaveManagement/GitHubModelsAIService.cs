@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using VUSYSTimeProWebAPI.Application.Abstractions.AIAgents.LeaveManagement;
+using VUSYSTimeProWebAPI.Application.Abstractions.Configuration;
 using VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
 using VUSYSTimeProWebAPI.Infrastructure.Common;
 
@@ -11,48 +12,47 @@ namespace VUSYSTimeProWebAPI.Infrastructure.AIAgents.LeaveManagement;
 public sealed class GitHubModelsAIService(HttpClient client) : IGitHubModelsAIService
 {
     /// <summary>
-    /// This Method Is Used To Extract Leave Management Action
-    /// Using GitHub Models AI.
+    /// This Method Is Used To Extract Leave Management Action Using GitHub Models AI.
     /// </summary>
     /// <param name="message"></param>
     /// <param name="today"></param>
+    /// <param name="AIAPIConfigurationService"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public async Task<AILeaveManagementActionM> ExtractLeaveActionAsync(string message, DateOnly today, CancellationToken cancellationToken = default)
+    public async Task<AILeaveManagementActionM> ExtractLeaveActionAsync(string message, DateOnly today, IAIAPIConfigurationService AIAPIConfigurationService, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         cancellationToken.ThrowIfCancellationRequested();
 
         // Get GitHub Models Configuration
-        string endpoint = CommonHelper.GeminiAIKeyOption.GeminiAIUrl?.Trim()
-            ?? string.Empty;
+        var AIAPIDetails = AIAPIConfigurationService.GetAIAPIConfigurationDetails("GoogleGeminiAI");
+        var token = AIAPIDetails != null && AIAPIDetails.AIAPIKey != null ? AIAPIDetails.AIAPIKey.Trim() : string.Empty;
+        var model = AIAPIDetails != null && AIAPIDetails.AIModels != null ? AIAPIDetails.AIModels.Trim() : string.Empty;
+        var endpoint = AIAPIDetails != null && AIAPIDetails.AIAPIURL != null ? AIAPIDetails.AIAPIURL.Trim() : string.Empty;
+        var ErrorMessage = AIAPIDetails != null && AIAPIDetails.ErrorMessage != null ? AIAPIDetails.ErrorMessage.Trim() : string.Empty;
 
-        string model = CommonHelper.GeminiAIKeyOption.GeminiAIModel?.Trim()
-            ?? string.Empty;
-
-        string token = CommonHelper.GeminiAIKeyOption.GeminiAIApiKey?.Trim()
-            ?? string.Empty;
-
-        ArgumentException.ThrowIfNullOrWhiteSpace(endpoint);
-        ArgumentException.ThrowIfNullOrWhiteSpace(model);
-        ArgumentException.ThrowIfNullOrWhiteSpace(token);
-
-        if (!Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? endpointUri) ||
-            endpointUri.Scheme != Uri.UriSchemeHttps ||
-            !string.Equals(
-                endpointUri.Host,
-                "models.github.ai",
-                StringComparison.OrdinalIgnoreCase) ||
-            endpointUri.AbsolutePath.TrimEnd('/') !=
-                "/inference/chat/completions")
+        if (!string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(model) && !string.IsNullOrEmpty(endpoint))
         {
-            throw new InvalidOperationException(
-                "Invalid GitHub Models endpoint configuration.");
-        }
+            ArgumentException.ThrowIfNullOrWhiteSpace(endpoint);
+            ArgumentException.ThrowIfNullOrWhiteSpace(model);
+            ArgumentException.ThrowIfNullOrWhiteSpace(token);
 
-        // System Prompt
-        string systemPrompt = """
+            if (!Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? endpointUri) ||
+                endpointUri.Scheme != Uri.UriSchemeHttps ||
+                !string.Equals(
+                    endpointUri.Host,
+                    "models.github.ai",
+                    StringComparison.OrdinalIgnoreCase) ||
+                endpointUri.AbsolutePath.TrimEnd('/') !=
+                    "/inference/chat/completions")
+            {
+                throw new InvalidOperationException(
+                    "Invalid GitHub Models endpoint configuration.");
+            }
+
+            // System Prompt
+            string systemPrompt = """
         You are the AI Leave Management Assistant for VUSYS TimePro.
 
         Your responsibility is to understand employee leave requests
@@ -126,16 +126,16 @@ public sealed class GitHubModelsAIService(HttpClient client) : IGitHubModelsAISe
         Return only the JSON object.
         """;
 
-        systemPrompt +=
-            $"\nApplication Date: {today:yyyy-MM-dd}";
+            systemPrompt +=
+                $"\nApplication Date: {today:yyyy-MM-dd}";
 
-        // GitHub Models Chat Completion Request
-        var payload = new
-        {
-            model = model,
-            temperature = 0,
-            messages = new[]
+            // GitHub Models Chat Completion Request
+            var payload = new
             {
+                model = model,
+                temperature = 0,
+                messages = new[]
+                {
             new
             {
                 role = "system",
@@ -147,206 +147,206 @@ public sealed class GitHubModelsAIService(HttpClient client) : IGitHubModelsAISe
                 content = message
             }
         }
-        };
+            };
 
-        string requestJson = JsonSerializer.Serialize(payload);
+            string requestJson = JsonSerializer.Serialize(payload);
 
-        using HttpRequestMessage request =
-            new HttpRequestMessage(HttpMethod.Post, endpointUri);
+            using HttpRequestMessage request =
+                new HttpRequestMessage(HttpMethod.Post, endpointUri);
 
-        request.Headers.Authorization =
-            new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
 
-        request.Headers.Accept.Add(
-            new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Accept.Add(
+                new MediaTypeWithQualityHeaderValue("application/json"));
 
-        request.Headers.TryAddWithoutValidation(
-            "X-GitHub-Api-Version",
-            "2022-11-28");
+            request.Headers.TryAddWithoutValidation(
+                "X-GitHub-Api-Version",
+                "2022-11-28");
 
-        request.Content = new StringContent(
-            requestJson,
-            Encoding.UTF8,
-            "application/json");
+            request.Content = new StringContent(
+                requestJson,
+                Encoding.UTF8,
+                "application/json");
 
-        // Send Request To GitHub Models
-        using HttpResponseMessage response =
-            await client.SendAsync(
-                request,
-                HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken);
+            // Send Request To GitHub Models
+            using HttpResponseMessage response =
+                await client.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    cancellationToken);
 
-        string responseJson =
-            await response.Content.ReadAsStringAsync(cancellationToken);
+            string responseJson =
+                await response.Content.ReadAsStringAsync(cancellationToken);
 
-        cancellationToken.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
-        // GitHub Models API Diagnostics
-        System.Diagnostics.Debug.WriteLine(
-            $"GitHub Models Request URI: {request.RequestUri}");
+            // GitHub Models API Diagnostics
+            System.Diagnostics.Debug.WriteLine(
+                $"GitHub Models Request URI: {request.RequestUri}");
 
-        System.Diagnostics.Debug.WriteLine(
-            $"GitHub Models Final URI: {response.RequestMessage?.RequestUri}");
+            System.Diagnostics.Debug.WriteLine(
+                $"GitHub Models Final URI: {response.RequestMessage?.RequestUri}");
 
-        System.Diagnostics.Debug.WriteLine(
-            $"GitHub Models HTTP Status: {(int)response.StatusCode}");
+            System.Diagnostics.Debug.WriteLine(
+                $"GitHub Models HTTP Status: {(int)response.StatusCode}");
 
-        System.Diagnostics.Debug.WriteLine(
-            $"GitHub Models Content-Type: {response.Content.Headers.ContentType}");
+            System.Diagnostics.Debug.WriteLine(
+                $"GitHub Models Content-Type: {response.Content.Headers.ContentType}");
 
-        System.Diagnostics.Debug.WriteLine(
-            $"GitHub Models Response Headers: {response.Headers}");
+            System.Diagnostics.Debug.WriteLine(
+                $"GitHub Models Response Headers: {response.Headers}");
 
-        System.Diagnostics.Debug.WriteLine(
-            $"GitHub Models Response Body: {responseJson}");
+            System.Diagnostics.Debug.WriteLine(
+                $"GitHub Models Response Body: {responseJson}");
 
-        cancellationToken.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
-        // Validate HTTP Status
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new InvalidOperationException(
-                $"GitHub Models API request failed. " +
-                $"HTTP Status: {(int)response.StatusCode}. " +
-                $"Response: {responseJson}");
-        }
-
-        // Validate Response Body
-        if (string.IsNullOrWhiteSpace(responseJson))
-        {
-            throw new InvalidOperationException(
-                "GitHub Models API returned an empty response.");
-        }
-
-        string responseContentType =
-            response.Content.Headers.ContentType?.MediaType
-            ?? string.Empty;
-
-        if (!string.Equals(
-            responseContentType,
-            "application/json",
-            StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException(
-                "GitHub Models returned an unexpected content type. " +
-                $"Content-Type: {responseContentType}. " +
-                $"HTTP Status: {(int)response.StatusCode}. " +
-                $"Request URI: {response.RequestMessage?.RequestUri}. " +
-                $"Response: {responseJson}");
-        }
-
-        JsonDocument responseDocument;
-
-        try
-        {
-            responseDocument = JsonDocument.Parse(responseJson);
-        }
-        catch (JsonException ex)
-        {
-            throw new InvalidOperationException(
-                "GitHub Models returned invalid JSON. " +
-                $"Response: {responseJson}",
-                ex);
-        }
-
-        using (responseDocument)
-        {
-            JsonElement root = responseDocument.RootElement;
-
-            // Check Choices
-            if (!root.TryGetProperty(
-                    "choices",
-                    out JsonElement choices) ||
-                choices.ValueKind != JsonValueKind.Array ||
-                choices.GetArrayLength() == 0)
+            // Validate HTTP Status
+            if (!response.IsSuccessStatusCode)
             {
                 throw new InvalidOperationException(
-                    "GitHub Models response does not contain choices.");
+                    $"GitHub Models API request failed. " +
+                    $"HTTP Status: {(int)response.StatusCode}. " +
+                    $"Response: {responseJson}");
             }
 
-            JsonElement firstChoice = choices[0];
-
-            // Check Message
-            if (!firstChoice.TryGetProperty(
-                    "message",
-                    out JsonElement aiMessage))
+            // Validate Response Body
+            if (string.IsNullOrWhiteSpace(responseJson))
             {
                 throw new InvalidOperationException(
-                    "GitHub Models response does not contain message.");
+                    "GitHub Models API returned an empty response.");
             }
 
-            // Check Content
-            if (!aiMessage.TryGetProperty(
-                    "content",
-                    out JsonElement content) ||
-                content.ValueKind != JsonValueKind.String)
-            {
-                throw new InvalidOperationException(
-                    "GitHub Models response does not contain valid content.");
-            }
+            string responseContentType =
+                response.Content.Headers.ContentType?.MediaType
+                ?? string.Empty;
 
-            string aiResponseJson =
-                content.GetString()?.Trim() ?? string.Empty;
-
-            if (string.IsNullOrWhiteSpace(aiResponseJson))
-            {
-                throw new InvalidOperationException(
-                    "GitHub Models returned empty AI content.");
-            }
-
-            // Remove Markdown Code Fences If Present
-            if (aiResponseJson.StartsWith(
-                "```json",
+            if (!string.Equals(
+                responseContentType,
+                "application/json",
                 StringComparison.OrdinalIgnoreCase))
             {
-                aiResponseJson = aiResponseJson[7..].Trim();
-            }
-            else if (aiResponseJson.StartsWith(
-                "```",
-                StringComparison.Ordinal))
-            {
-                aiResponseJson = aiResponseJson[3..].Trim();
-            }
-
-            if (aiResponseJson.EndsWith(
-                "```",
-                StringComparison.Ordinal))
-            {
-                aiResponseJson = aiResponseJson[..^3].Trim();
+                throw new InvalidOperationException(
+                    "GitHub Models returned an unexpected content type. " +
+                    $"Content-Type: {responseContentType}. " +
+                    $"HTTP Status: {(int)response.StatusCode}. " +
+                    $"Request URI: {response.RequestMessage?.RequestUri}. " +
+                    $"Response: {responseJson}");
             }
 
-            // Deserialize AI Leave Management Action
-            AILeaveManagementActionM? leaveAction;
+            JsonDocument responseDocument;
 
             try
             {
-                leaveAction =
-                    JsonSerializer.Deserialize<AILeaveManagementActionM>(
-                        aiResponseJson,
-                        new JsonSerializerOptions
-                        {
-                            PropertyNameCaseInsensitive = true,
-                            NumberHandling =
-                                JsonNumberHandling.AllowReadingFromString
-                        });
+                responseDocument = JsonDocument.Parse(responseJson);
             }
             catch (JsonException ex)
             {
                 throw new InvalidOperationException(
-                    "GitHub Models returned invalid Leave Management JSON. " +
-                    $"AI Content: {aiResponseJson}",
+                    "GitHub Models returned invalid JSON. " +
+                    $"Response: {responseJson}",
                     ex);
             }
 
-            if (leaveAction == null)
+            using (responseDocument)
             {
-                throw new InvalidOperationException(
-                    "Unable to deserialize AI Leave Management Action.");
-            }
+                JsonElement root = responseDocument.RootElement;
 
-            // Validate Intent
-            string[] supportedIntents =
-            {
+                // Check Choices
+                if (!root.TryGetProperty(
+                        "choices",
+                        out JsonElement choices) ||
+                    choices.ValueKind != JsonValueKind.Array ||
+                    choices.GetArrayLength() == 0)
+                {
+                    throw new InvalidOperationException(
+                        "GitHub Models response does not contain choices.");
+                }
+
+                JsonElement firstChoice = choices[0];
+
+                // Check Message
+                if (!firstChoice.TryGetProperty(
+                        "message",
+                        out JsonElement aiMessage))
+                {
+                    throw new InvalidOperationException(
+                        "GitHub Models response does not contain message.");
+                }
+
+                // Check Content
+                if (!aiMessage.TryGetProperty(
+                        "content",
+                        out JsonElement content) ||
+                    content.ValueKind != JsonValueKind.String)
+                {
+                    throw new InvalidOperationException(
+                        "GitHub Models response does not contain valid content.");
+                }
+
+                string aiResponseJson =
+                    content.GetString()?.Trim() ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(aiResponseJson))
+                {
+                    throw new InvalidOperationException(
+                        "GitHub Models returned empty AI content.");
+                }
+
+                // Remove Markdown Code Fences If Present
+                if (aiResponseJson.StartsWith(
+                    "```json",
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    aiResponseJson = aiResponseJson[7..].Trim();
+                }
+                else if (aiResponseJson.StartsWith(
+                    "```",
+                    StringComparison.Ordinal))
+                {
+                    aiResponseJson = aiResponseJson[3..].Trim();
+                }
+
+                if (aiResponseJson.EndsWith(
+                    "```",
+                    StringComparison.Ordinal))
+                {
+                    aiResponseJson = aiResponseJson[..^3].Trim();
+                }
+
+                // Deserialize AI Leave Management Action
+                AILeaveManagementActionM? leaveAction;
+
+                try
+                {
+                    leaveAction =
+                        JsonSerializer.Deserialize<AILeaveManagementActionM>(
+                            aiResponseJson,
+                            new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true,
+                                NumberHandling =
+                                    JsonNumberHandling.AllowReadingFromString
+                            });
+                }
+                catch (JsonException ex)
+                {
+                    throw new InvalidOperationException(
+                        "GitHub Models returned invalid Leave Management JSON. " +
+                        $"AI Content: {aiResponseJson}",
+                        ex);
+                }
+
+                if (leaveAction == null)
+                {
+                    throw new InvalidOperationException(
+                        "Unable to deserialize AI Leave Management Action.");
+                }
+
+                // Validate Intent
+                string[] supportedIntents =
+                {
             "ApplyLeave",
             "ApproveLeave",
             "RejectLeave",
@@ -354,24 +354,29 @@ public sealed class GitHubModelsAIService(HttpClient client) : IGitHubModelsAISe
             "Unknown"
         };
 
-            if (string.IsNullOrWhiteSpace(leaveAction.Intent) ||
-                !supportedIntents.Contains(
-                    leaveAction.Intent,
-                    StringComparer.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException(
-                    "GitHub Models returned an unsupported leave intent.");
-            }
-
-            // Normalize Intent
-            leaveAction.Intent =
-                supportedIntents.First(x =>
-                    string.Equals(
-                        x,
+                if (string.IsNullOrWhiteSpace(leaveAction.Intent) ||
+                    !supportedIntents.Contains(
                         leaveAction.Intent,
-                        StringComparison.OrdinalIgnoreCase));
+                        StringComparer.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException(
+                        "GitHub Models returned an unsupported leave intent.");
+                }
 
-            return leaveAction;
+                // Normalize Intent
+                leaveAction.Intent =
+                    supportedIntents.First(x =>
+                        string.Equals(
+                            x,
+                            leaveAction.Intent,
+                            StringComparison.OrdinalIgnoreCase));
+
+                return leaveAction;
+            }
+        }
+        else
+        {
+            throw new InvalidOperationException(ErrorMessage);
         }
     }
 

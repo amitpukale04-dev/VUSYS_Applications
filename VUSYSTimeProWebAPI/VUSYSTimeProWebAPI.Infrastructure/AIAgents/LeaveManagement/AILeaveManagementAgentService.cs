@@ -3,13 +3,14 @@ using System.Globalization;
 using CommonLibCore10;
 using CommonLibCore10.Constants;
 using VUSYSTimeProWebAPI.Application.Abstractions.AIAgents.LeaveManagement;
+using VUSYSTimeProWebAPI.Application.Abstractions.Configuration;
 using VUSYSTimeProWebAPI.Application.Abstractions.Modules.LeaveManagement;
 using VUSYSTimeProWebAPI.Application.Models;
 using VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
 
 namespace VUSYSTimeProWebAPI.Infrastructure.AIAgents.LeaveManagement;
 
-public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveManagementService leave, IAILeaveSecurityContext security, IAILeaveTypeResolver types, IAILeaveConfirmationStore store, IAILeaveClarificationStore clarificationStore) : IAILeaveManagementAgentService
+public sealed class AILeaveManagementAgentService(IGeminiAIService ai, IAIAPIConfigurationService AIAPIConfigurationService, ILeaveManagementService leave, IAILeaveSecurityContext security, IAILeaveTypeResolver types, IAILeaveConfirmationStore store, IAILeaveClarificationStore clarificationStore) : IAILeaveManagementAgentService
 {
     private static readonly string ErrorStatus = Helper.ToProperCase(MessageTypeConstants.Error);
     private static readonly string SuccessStatus = Helper.ToProperCase(MessageTypeConstants.Success);
@@ -20,7 +21,7 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
     /// <param name="request"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public async Task<DataSet> ProcessAILeaveManagementRequest(AILeaveManagementRequestParam request, CancellationToken ct = default)
+    public async Task<DataSet> ProcessAILeaveManagementRequest(AILeaveManagementRequestParam request,  CancellationToken ct = default)
     {
         if (request is null || string.IsNullOrWhiteSpace(request.Message)) return Result(ErrorStatus, "Enter The Message.");
         AILeaveActor actor = await security.GetActorAsync(ct);
@@ -68,18 +69,16 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
                 {
                     ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5)
                 });
-                return Result(SuccessStatus,
-                    "Please choose First Half (Morning) or Second Half (Afternoon).",
-                    action: pendingClarification.Action, clarificationToken: retryToken);
+                    return Result(SuccessStatus, "Please choose First Half (Morning) or Second Half (Afternoon).", action: pendingClarification.Action, clarificationToken: retryToken);
             }
-            action = pendingClarification.Action;
-            action.HalfDayType = halfDayType;
+                action = pendingClarification.Action;
+                action.HalfDayType = halfDayType;
             }
         }
         else
         {
             IReadOnlyCollection<AILeaveTypeOptionM> availableTypesForExtraction = await types.GetAvailableLeaveTypesAsync(ct);
-            action = await ai.ExtractLeaveActionAsync(request.Message, DateOnly.FromDateTime(DateTime.Now), availableTypesForExtraction, ct);
+            action = await ai.ExtractLeaveActionAsync(request.Message, DateOnly.FromDateTime(DateTime.Now), availableTypesForExtraction, AIAPIConfigurationService, ct);
         }
         IReadOnlyCollection<AILeaveTypeOptionM> availableLeaveTypes = await types.GetAvailableLeaveTypesAsync(ct);
         string intent = action.Intent?.Trim() ?? "Unknown";
@@ -188,8 +187,8 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
                 int year = action.LeaveYear.Value;
                 if (year < 2000 || year > 9999)
                     return Result(ErrorStatus, "Provide a valid leave year.", action: action);
-                fromDate = new DateOnly(year, 1, 1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-                toDate = new DateOnly(year, 12, 31).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                fromDate = new DateOnly(year, 1, 1).ToString(DateTimeFormatConstants.YYYYMMDD_DATEFORMAT, CultureInfo.InvariantCulture);
+                toDate = new DateOnly(year, 12, 31).ToString(DateTimeFormatConstants.YYYYMMDD_DATEFORMAT, CultureInfo.InvariantCulture);
             }
             if (!byId && (string.IsNullOrWhiteSpace(fromDate) != string.IsNullOrWhiteSpace(toDate)))
                 return Result(ErrorStatus, "Please provide both start and end dates.", action: action);
@@ -228,11 +227,8 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
                 return Result(ErrorStatus, "Half-day leave must be for a single date.", action: action);
             if (action.IsHalfDay && string.IsNullOrWhiteSpace(action.HalfDayType))
             {
-                string clarificationToken = clarificationStore.Add(new AILeavePendingClarification(
-                    actor.UserId, actor.EmployeeCode, action, DateTimeOffset.UtcNow.AddMinutes(5)));
-                return Result(SuccessStatus,
-                    $"You requested half-day leave on {from:dd MMMM yyyy}. Would you like First Half (Morning) or Second Half (Afternoon)?",
-                    action: action, clarificationToken: clarificationToken);
+                string clarificationToken = clarificationStore.Add(new AILeavePendingClarification(actor.UserId, actor.EmployeeCode, action, DateTimeOffset.UtcNow.AddMinutes(5)));
+                return Result(SuccessStatus, $"You requested half-day leave on {from:dd MMMM yyyy}. Would you like First Half (Morning) or Second Half (Afternoon)?", action: action, clarificationToken: clarificationToken);
             }
             int? leaveType = AILeaveTypeResolver.ResolveLeaveTypeID(action.LeaveType, availableLeaveTypes);
             if (leaveType is null)
@@ -492,6 +488,11 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
         return isId ? "LeaveRequestID" : "LeaveYear";
     }
 
+    /// <summary>
+    /// This Method Is Used To Extract Ambiguous Leave Reference.
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
     private static int? ExtractAmbiguousLeaveReference(string message)
     {
         var match = System.Text.RegularExpressions.Regex.Match(message,
@@ -500,6 +501,11 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
         return match.Success && int.TryParse(match.Groups[1].Value, out int value) ? value : null;
     }
 
+    /// <summary>
+    /// This Method Is Used To Check Ambiguous Leave Reference.
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
     private static bool IsAmbiguousLeaveReference(string message)
     {
         if (ExtractAmbiguousLeaveReference(message) is null) return false;
@@ -508,6 +514,11 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, ILeaveMan
             System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
     }
 
+    /// <summary>
+    /// This Method Is Used To Parse Half Day Type.
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
     private static string? ParseHalfDayType(string message)
     {
         string value = message.Trim().ToLowerInvariant();

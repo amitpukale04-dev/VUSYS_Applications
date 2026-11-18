@@ -1,4 +1,6 @@
-﻿using CommonLibCore10;
+﻿using System.Net;
+using System.Net.Sockets;
+using CommonLibCore10;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,6 +10,7 @@ using VUSYSTimeProWebAPI.Application.Abstractions.AIAgents.LeaveManagement;
 using VUSYSTimeProWebAPI.Application.Abstractions.Authentication;
 using VUSYSTimeProWebAPI.Application.Abstractions.Caching;
 using VUSYSTimeProWebAPI.Application.Abstractions.Common;
+using VUSYSTimeProWebAPI.Application.Abstractions.Configuration;
 using VUSYSTimeProWebAPI.Application.Abstractions.Email;
 using VUSYSTimeProWebAPI.Application.Abstractions.FileUploads;
 using VUSYSTimeProWebAPI.Application.Abstractions.Modules.Configuration;
@@ -29,6 +32,7 @@ using VUSYSTimeProWebAPI.Infrastructure.AIAgents.LeaveManagement;
 using VUSYSTimeProWebAPI.Infrastructure.Authentication;
 using VUSYSTimeProWebAPI.Infrastructure.Caching;
 using VUSYSTimeProWebAPI.Infrastructure.Common;
+using VUSYSTimeProWebAPI.Infrastructure.Configuration;
 using VUSYSTimeProWebAPI.Infrastructure.Email;
 using VUSYSTimeProWebAPI.Infrastructure.Persistence.Connections;
 using VUSYSTimeProWebAPI.Infrastructure.Persistence.EntityFramework;
@@ -101,6 +105,9 @@ public static class DependencyInjection
         // Users
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+        // Configuration Services
+        services.AddScoped<IAIAPIConfigurationService, AIAPIConfigurationService>();
+
         // SQLDB helper
         services.AddScoped<SQLDBHelper>(serviceProvider =>
         {
@@ -112,9 +119,6 @@ public static class DependencyInjection
 
             MyApplicationKeysOptions applicationKeys =
                 serviceProvider.GetRequiredService<MyApplicationKeysOptions>();
-
-            GeminiAIKeysOptions geminiAIKeys =
-                serviceProvider.GetRequiredService<GeminiAIKeysOptions>();
 
             string decryptedConnectionString =
                 dbConnectionHelper
@@ -177,7 +181,29 @@ public static class DependencyInjection
 
         // AI Agents
         services.AddHttpClient<IGitHubModelsAIService, GitHubModelsAIService>(client => client.Timeout = TimeSpan.FromSeconds(60));
-        services.AddHttpClient<IGeminiAIService, GeminiAIService>(client => client.Timeout = TimeSpan.FromMinutes(5));
+        services.AddHttpClient<IGeminiAIService, GeminiAIService>(client => client.Timeout = TimeSpan.FromMinutes(5))
+        .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+            ConnectCallback = async (context, cancellationToken) =>
+            {
+                // Resolve IPv4 addresses only
+                IPHostEntry entry = await Dns.GetHostEntryAsync(
+                    context.DnsEndPoint.Host, AddressFamily.InterNetwork, cancellationToken);
+        
+                Socket socket = new(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                try
+                {
+                    await socket.ConnectAsync(entry.AddressList, context.DnsEndPoint.Port, cancellationToken);
+                    return new NetworkStream(socket, ownsSocket: true);
+                }
+                catch
+                {
+                    socket.Dispose();
+                    throw;
+                }
+            }
+        });
         services.AddScoped<IAILeaveSecurityContext, AILeaveSecurityContext>();
         services.AddScoped<IAILeaveTypeResolver, AILeaveTypeResolver>();
         services.AddSingleton<IAILeaveConfirmationStore, InMemoryAILeaveConfirmationStore>();

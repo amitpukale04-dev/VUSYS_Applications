@@ -1,15 +1,15 @@
 ﻿using System.Collections.Concurrent;
 using System.Data;
-using System.Globalization;
-using CommonLibCore10;
 using System.Security.Cryptography;
+using CommonLibCore10;
+using CommonLibCore10.Constants;
 using Microsoft.EntityFrameworkCore;
 using VUSYSTimeProWebAPI.Application.Abstractions.AIAgents.LeaveManagement;
 using VUSYSTimeProWebAPI.Application.Abstractions.Common;
 using VUSYSTimeProWebAPI.Application.Abstractions.Users;
 using VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
-using VUSYSTimeProWebAPI.Infrastructure.Persistence.EntityFramework;
 using VUSYSTimeProWebAPI.Infrastructure.Persistence.Constants;
+using VUSYSTimeProWebAPI.Infrastructure.Persistence.EntityFramework;
 
 namespace VUSYSTimeProWebAPI.Infrastructure.AIAgents.LeaveManagement;
 
@@ -36,6 +36,9 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
     /// <summary>
     /// This Method Is Used To Get Leave Request Using Stored Procedure.
     /// </summary>
+    /// <param name="id"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     public async Task<AILeaveRequestSnapshot?> GetLeaveRequestAsync(int id, CancellationToken ct = default)
     {
         AILeaveRequestDetailsM? details = await GetLeaveRequestDetailsAsync(id, ct);
@@ -45,6 +48,11 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
     /// <summary>
     /// This Method Is Used To Retrieve The Authenticated Employee Leave Balance Using The Existing Stored Procedure.
     /// </summary>
+    /// <param name="employeeCode"></param>
+    /// <param name="leaveYear"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
     public async Task<DataSet> GetMyLeaveBalancesAsync(string employeeCode, int leaveYear, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(employeeCode) || leaveYear < 2000 || leaveYear > 9999)
@@ -57,12 +65,18 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
             { "@LeaveYear", leaveYear },
             { "@Type", "GetEmployeeLeaveBalance" }
         };
-        DataSet? ds = await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync("usp_VUSYS_GetEmployeeLeaveBalanceList", parameters, CONST.DBRetType.DATASET, ct) as DataSet;
+        DataSet? ds = await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync(StoredProcedure.EMPLOYEE_LEAVE_BALANCE_DETAIL_LIST, parameters, CONST.DBRetType.DATASET, ct) as DataSet;
         ct.ThrowIfCancellationRequested();
         return ds ?? new DataSet();
     }
 
-    /// <summary>Admin-only use: retrieve all employees' balances for a year.</summary>
+    /// <summary>
+    /// This Method Is Used For Admin-only use: To Retrieve all employees' Leave Balances For a Year.
+    /// </summary>
+    /// <param name="leaveYear"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
     public async Task<DataSet> GetAllEmployeeLeaveBalancesAsync(int leaveYear, CancellationToken ct = default)
     {
         if (leaveYear < 2000 || leaveYear > 9999) throw new ArgumentException("Invalid leave year.");
@@ -74,9 +88,14 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
         return await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync(StoredProcedure.EMPLOYEE_LEAVE_BALANCE_DETAIL_LIST, parameters, CONST.DBRetType.DATASET, ct) as DataSet ?? new DataSet();
     }
 
-    /// <summary>Resolve employee identity from authoritative employee master.</summary>
-    public async Task<IReadOnlyList<(string EmployeeCode, string EmployeeName)>> FindEmployeesForAIAsync(
-        string? employeeCode, string? employeeName, CancellationToken ct = default)
+    /// <summary>
+    /// This Method Is Used To Resolves employees by code or name without exposing other employee data.
+    /// </summary>
+    /// <param name="employeeCode"></param>
+    /// <param name="employeeName"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public async Task<IReadOnlyList<(string EmployeeCode, string EmployeeName)>> FindEmployeesForAIAsync(string? employeeCode, string? employeeName, CancellationToken ct = default)
     {
         string code = employeeCode?.Trim() ?? string.Empty;
         string name = employeeName?.Trim() ?? string.Empty;
@@ -88,19 +107,19 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
             { "@LeaveStatus", DBNull.Value }, { "@ParamType", "GetEmployeeLookupForAI" },
             { "@Intent", string.Empty }, { "@DateSearchMode", "Exact" }, { "@AllowAllEmployees", 0 }
         };
-        DataSet? ds = await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync(
-            StoredProcedure.AI_LEAVE_MANAGEMENT_GET_LEAVE_DETAILS, parameters, CONST.DBRetType.DATASET, ct) as DataSet;
+        DataSet? ds = await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync(StoredProcedure.AI_LEAVE_MANAGEMENT_GET_LEAVE_DETAILS, parameters, CONST.DBRetType.DATASET, ct) as DataSet;
         DataTable? table = ds?.Tables.Cast<DataTable>().FirstOrDefault(t => t.Columns.Contains("EmployeeCode") && t.Columns.Contains("EmployeeName"));
         if (table is null) return Array.Empty<(string, string)>();
-        return table.Rows.Cast<DataRow>().Select(r =>
-            (Convert.ToString(r["EmployeeCode"]) ?? string.Empty, Convert.ToString(r["EmployeeName"]) ?? string.Empty)).ToList();
+        return table.Rows.Cast<DataRow>().Select(r => (Convert.ToString(r["EmployeeCode"]) ?? string.Empty, Convert.ToString(r["EmployeeName"]) ?? string.Empty)).ToList();
     }
 
     /// <summary>
-    /// This Method Is Used To Search Leave Requests Using Stored Procedure.
+    /// This Method Is Used To Search Leave Requests By ID, Employee Or Dates.
     /// </summary>
-    public async Task<IReadOnlyList<AILeaveRequestDetailsM>> SearchLeaveRequestsAsync(
-        AILeaveRequestSearchCriteriaM criteria, CancellationToken ct = default)
+    /// <param name="criteria"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public async Task<IReadOnlyList<AILeaveRequestDetailsM>> SearchLeaveRequestsAsync(AILeaveRequestSearchCriteriaM criteria, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(criteria);
         ct.ThrowIfCancellationRequested();
@@ -121,8 +140,11 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
     }
 
     /// <summary>
-    /// This Method Is Used To Get Leave Request Details For Review Using Stored Procedure.
+    /// This Method Is Used To Get Leave Request Details For Review.
     /// </summary>
+    /// <param name="leaveRequestID"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     public async Task<AILeaveRequestDetailsM?> GetLeaveRequestDetailsAsync(int leaveRequestID, CancellationToken ct = default)
     {
         if (leaveRequestID <= 0) return null;
@@ -131,14 +153,19 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
     }
 
     /// <summary>
-    /// This Method Is Used To Execute AI Leave Request Stored Procedure And Map DataSet.
+    /// This Method Is Used To Execute AI Leave Request and Map the DataSet data which is received from the Stored Procedure.
     /// </summary>
-    private async Task<IReadOnlyList<AILeaveRequestDetailsM>> ExecuteLeaveRequestLookupAsync(
-        string paramType, AILeaveRequestSearchCriteriaM criteria, CancellationToken ct)
+    /// <param name="paramType"></param>
+    /// <param name="criteria"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="InvalidOperationException"></exception>
+    private async Task<IReadOnlyList<AILeaveRequestDetailsM>> ExecuteLeaveRequestLookupAsync(string paramType, AILeaveRequestSearchCriteriaM criteria, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        DateTime? fromDate = ParseIsoDate(criteria.FromDate);
-        DateTime? toDate = ParseIsoDate(criteria.ToDate);
+        DateTime? fromDate = string.IsNullOrWhiteSpace(criteria.FromDate) ? null : DataTypeUtils.ToDateTimeExact(criteria.FromDate.Trim(), DateTimeFormatConstants.YYYYMMDD_DATEFORMAT);
+        DateTime? toDate = string.IsNullOrWhiteSpace(criteria.ToDate) ? null : DataTypeUtils.ToDateTimeExact(criteria.ToDate.Trim(), DateTimeFormatConstants.YYYYMMDD_DATEFORMAT);
         if (fromDate.HasValue && toDate.HasValue && fromDate.Value > toDate.Value)
             throw new ArgumentException("From Date Cannot Be Greater Than To Date.");
 
@@ -156,8 +183,7 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
             { "@AllowAllEmployees", criteria.AllowAllEmployees ? 1 : 0 },
         };
 
-        DataSet? finalDataSet = await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync(
-            StoredProcedure.AI_LEAVE_MANAGEMENT_GET_LEAVE_DETAILS, parameters, CONST.DBRetType.DATASET, ct) as DataSet;
+        DataSet? finalDataSet = await _objSQLDBHelper.ExecuteStoredProcedureWithMultipleParametersAsync(StoredProcedure.AI_LEAVE_MANAGEMENT_GET_LEAVE_DETAILS, parameters, CONST.DBRetType.DATASET, ct) as DataSet;
         ct.ThrowIfCancellationRequested();
 
         // Preserve the existing DataSet validation convention.
@@ -173,10 +199,10 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
         // Error responses from the SP have Status/Message, not leave detail columns.
         if (!table.Columns.Contains("LeaveRequestID"))
         {
-            string status = GetString(table.Rows[0], "Status");
-            if (string.Equals(status, "Error", StringComparison.OrdinalIgnoreCase))
+            string status = DataTypeUtils.GetDataRowValue<string>(table.Rows[0], "Status", string.Empty);
+            if (string.Equals(status, Helper.ToProperCase(MessageTypeConstants.Error), StringComparison.OrdinalIgnoreCase))
             {
-                string message = GetString(table.Rows[0], "Message");
+                string message = DataTypeUtils.GetDataRowValue<string>(table.Rows[0], "Message", string.Empty);
                 if (message.Contains("Not Found", StringComparison.OrdinalIgnoreCase))
                     return Array.Empty<AILeaveRequestDetailsM>();
                 throw new InvalidOperationException(string.IsNullOrWhiteSpace(message)
@@ -187,18 +213,18 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
 
         var records = table.Rows.Cast<DataRow>().Select(row => new AILeaveRequestDetailsM
         {
-            LeaveRequestID = GetInt(row, "LeaveRequestID"),
-            EmployeeCode = GetString(row, "EmployeeCode"),
-            EmployeeName = GetString(row, "EmployeeName"),
-            LeaveTypeID = GetInt(row, "LeaveTypeID"),
-            LeaveType = GetString(row, "LeaveType"),
-            FromDate = GetString(row, "FromDate"),
-            ToDate = GetString(row, "ToDate"),
-            IsHalfDay = GetBool(row, "IsHalfDay"),
-            TotalLeaveDays = GetDecimal(row, "TotalLeaveDays"),
-            Reason = GetString(row, "Reason"),
-            LeaveStatus = GetInt(row, "LeaveStatus"),
-            Remarks = GetString(row, "Remarks")
+            LeaveRequestID = DataTypeUtils.GetDataRowValue<int>(row, "LeaveRequestID"),
+            EmployeeCode = DataTypeUtils.GetDataRowValue<string>(row, "EmployeeCode", string.Empty),
+            EmployeeName = DataTypeUtils.GetDataRowValue<string>(row, "EmployeeName", string.Empty),
+            LeaveTypeID = DataTypeUtils.GetDataRowValue<int>(row, "LeaveTypeID"),
+            LeaveType = DataTypeUtils.GetDataRowValue<string>(row, "LeaveType", string.Empty),
+            FromDate = DataTypeUtils.GetDataRowValue<string>(row, "FromDate", string.Empty),
+            ToDate = DataTypeUtils.GetDataRowValue<string>(row, "ToDate", string.Empty),
+            IsHalfDay = DataTypeUtils.GetDataRowValue<bool>(row, "IsHalfDay"),
+            TotalLeaveDays = DataTypeUtils.GetDataRowValue<decimal>(row, "TotalLeaveDays"),
+            Reason = DataTypeUtils.GetDataRowValue<string>(row, "Reason", string.Empty),
+            LeaveStatus = DataTypeUtils.GetDataRowValue<int>(row, "LeaveStatus"),
+            Remarks = DataTypeUtils.GetDataRowValue<string>(row, "Remarks", string.Empty)
         }).Where(x => x.LeaveRequestID > 0).GroupBy(x => x.LeaveRequestID)
           .Select(x => x.First()).ToList();
 
@@ -214,29 +240,6 @@ public sealed class AILeaveSecurityContext(ICurrentUserService current, AppDbCon
                 x.EmployeeName.Contains(name, StringComparison.OrdinalIgnoreCase)).ToList();
         }
         return records;
-    }
-
-    private static DateTime? ParseIsoDate(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value)) return null;
-        return DateTime.ParseExact(value.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture);
-    }
-
-    private static string GetString(DataRow row, string column) =>
-        row.Table.Columns.Contains(column) && row[column] != DBNull.Value
-            ? Convert.ToString(row[column], CultureInfo.InvariantCulture) ?? string.Empty
-            : string.Empty;
-
-    private static int GetInt(DataRow row, string column) =>
-        int.TryParse(GetString(row, column), NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) ? value : 0;
-
-    private static decimal GetDecimal(DataRow row, string column) =>
-        decimal.TryParse(GetString(row, column), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal value) ? value : 0m;
-
-    private static bool GetBool(DataRow row, string column)
-    {
-        string value = GetString(row, column);
-        return value == "1" || bool.TryParse(value, out bool parsed) && parsed;
     }
 
     /// <summary>
@@ -275,6 +278,8 @@ public sealed class AILeaveTypeResolver(IDropdownService dropdown) : IAILeaveTyp
     /// <summary>
     /// This Method Is Used To Get Available Leave Types.
     /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     public async Task<IReadOnlyCollection<AILeaveTypeOptionM>> GetAvailableLeaveTypesAsync(CancellationToken cancellationToken = default)
     {
         return await dropdown.GetAvailableLeaveTypesForAIAsync(cancellationToken);
@@ -321,7 +326,7 @@ public sealed class InMemoryAILeaveConfirmationStore : IAILeaveConfirmationStore
     private readonly ConcurrentDictionary<string, AILeavePendingAction> _items = new();
 
     /// <summary>
-    /// This Is Used To Add Leave Confirmation.
+    /// This Method Is Used To Store Leave Confirmation Token.
     /// </summary>
     /// <param name="action"></param>
     /// <returns></returns>
@@ -333,7 +338,7 @@ public sealed class InMemoryAILeaveConfirmationStore : IAILeaveConfirmationStore
     }
 
     /// <summary>
-    /// This Method Is Used To Consume The Token.
+    /// This Method Is Used To Consume Store Leave Confirmation Token.
     /// </summary>
     /// <param name="token"></param>
     /// <param name="action"></param>
@@ -353,6 +358,11 @@ public sealed class InMemoryAILeaveClarificationStore : IAILeaveClarificationSto
 {
     private readonly ConcurrentDictionary<string, AILeavePendingClarification> _items = new();
 
+    /// <summary>
+    /// This Method Is Used To Store Leave Clarification Token.
+    /// </summary>
+    /// <param name="action"></param>
+    /// <returns></returns>
     public string Add(AILeavePendingClarification action)
     {
         string token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
@@ -360,6 +370,12 @@ public sealed class InMemoryAILeaveClarificationStore : IAILeaveClarificationSto
         return token;
     }
 
+    /// <summary>
+    /// This Method Is Used To Consume Store Leave Clarification Token.
+    /// </summary>
+    /// <param name="token"></param>
+    /// <param name="action"></param>
+    /// <returns></returns>
     public bool TryConsume(string token, out AILeavePendingClarification? action)
     {
         action = null;
