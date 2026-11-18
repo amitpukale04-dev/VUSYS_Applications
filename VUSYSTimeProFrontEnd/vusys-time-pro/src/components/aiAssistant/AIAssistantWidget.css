@@ -521,46 +521,61 @@
     border: 1px solid #d83a3a77;
 }
 
-/* Animated processing ellipsis; accessible status text remains readable. */
+/* Three animated bouncing dots while the AI Assistant processes a request. */
+.tp-ai-processing {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 38px;
+}
+
 .tp-ai-processing-dots {
     display: inline-flex;
-    white-space: nowrap;
-    margin-left: 1px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 20px;
 }
 
 .tp-ai-processing-dots span {
-    display: inline-block;
-    animation: tp-ai-dot-pulse 1.2s ease-in-out infinite;
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--tp-primary, #6540ed);
+    animation: tp-ai-dot-bounce 1.05s ease-in-out infinite;
+    will-change: transform;
 }
 
 .tp-ai-processing-dots span:nth-child(2) {
-    animation-delay: .2s;
+    animation-delay: .15s;
 }
 
 .tp-ai-processing-dots span:nth-child(3) {
-    animation-delay: .4s;
+    animation-delay: .3s;
 }
 
-@keyframes tp-ai-dot-pulse {
+@keyframes tp-ai-dot-bounce {
 
     0%,
     60%,
     100% {
-        opacity: .3;
         transform: translateY(0);
+        opacity: .5;
     }
 
     30% {
+        transform: translateY(-6px);
         opacity: 1;
-        transform: translateY(-3px);
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
     .tp-ai-processing-dots span {
         animation: none;
-        opacity: 1;
         transform: none;
+        opacity: 1;
+        will-change: auto;
     }
 }
 

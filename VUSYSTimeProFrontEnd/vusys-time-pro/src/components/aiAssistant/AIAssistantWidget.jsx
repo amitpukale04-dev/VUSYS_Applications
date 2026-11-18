@@ -1140,11 +1140,13 @@ export default function AIAssistantWidget() {
                     role="status"
                     aria-label="AI Assistant is processing your request"
                   >
-                    <span>AI Assistant is processing your request</span>
+                    <span className="visually-hidden">
+                      AI Assistant is processing your request
+                    </span>
                     <span className="tp-ai-processing-dots" aria-hidden="true">
-                      <span>.</span>
-                      <span>.</span>
-                      <span>.</span>
+                      <span />
+                      <span />
+                      <span />
                     </span>
                   </div>
                 )}
