@@ -2,7 +2,7 @@
   "AIProviders": [
     {
       "AIProviderName": "GoogleGeminiAI",
-      "AIAPIKey": "heWzVJJlfAw5jmHMbjr1lKBlGUgnfHh6B8rnmBBuFS7422z7rWAqxgzvmTgGICehpz6LDRFoxoIO4ywxTSLREyPZfDwjYZpn5YFoHqTH17M=",
+      "AIAPIKey": "3ywdXfybFVzYHkVh6hmJ8KX6j5SOeuKXvQ+xW01vg2KRMMG/T2yr6wOMzVd3KY+Su0IxQKdya4IrMj3tveTQvmw8EToRbdFvZgO4h6aTmGk=",
       "AIModels": "gemini-3.5-flash-lite,gemini-3.5-flash,gemini-3.6-flash,gemini-3.7-flash,gemini-3.8-flash",
       "AIAPIURL": "https://generativelanguage.googleapis.com/v1beta/interactions",
       "ErrorMessage": "Gemini AI API Configuration Not Found !!!"
