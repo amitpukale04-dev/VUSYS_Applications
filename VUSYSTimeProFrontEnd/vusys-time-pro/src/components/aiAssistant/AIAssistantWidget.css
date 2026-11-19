@@ -1169,3 +1169,183 @@ html[data-theme="dark"] .tp-ai-clarification-afternoon {
 .tp-ai-message-entry>.tp-ai-readonly-results {
     max-width: 100%;
 }
+
+/* Responsive assistant viewport and animated module status icons. */
+.tp-ai-module-card {
+    min-width: 0;
+}
+
+.tp-ai-module-card>span:nth-child(2) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.tp-ai-module-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.tp-ai-module-status svg {
+    flex-shrink: 0;
+}
+
+.tp-ai-module-status-available {
+    color: #087c58;
+    background: #dff8ed;
+    border: 1px solid #a6e8cb;
+}
+
+.tp-ai-module-status-soon {
+    color: #6b55a6;
+    background: #eee9ff;
+    border: 1px solid #d7cafa;
+}
+
+.tp-ai-module-status-available svg {
+    animation: tp-ai-status-pulse 2.2s ease-in-out infinite;
+    transform-origin: center;
+}
+
+.tp-ai-module-status-soon svg {
+    animation: tp-ai-status-clock 3s ease-in-out infinite;
+    transform-origin: center;
+}
+
+@keyframes tp-ai-status-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.17);
+        opacity: .65;
+    }
+}
+
+@keyframes tp-ai-status-clock {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    45% {
+        transform: rotate(16deg);
+    }
+
+    65% {
+        transform: rotate(-8deg);
+    }
+}
+
+html[data-theme="dark"] .tp-ai-module-status-available {
+    color: #8ef1c4;
+    background: #123e32;
+    border-color: #286f53;
+}
+
+html[data-theme="dark"] .tp-ai-module-status-soon {
+    color: #d3c3ff;
+    background: #302450;
+    border-color: #594681;
+}
+
+/* Compact tablet popup, preserving desktop behavior. */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .tp-ai-panel {
+        width: min(430px, calc(100vw - 32px));
+        height: min(580px, calc(100dvh - 120px));
+        max-height: calc(100dvh - 100px);
+    }
+}
+
+/* Compact mobile popup with an independently scrollable conversation. */
+@media (max-width: 767.98px) {
+    .tp-ai-assistant-root {
+        position: fixed;
+        inset: auto max(10px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) auto;
+        z-index: 1050;
+    }
+
+    .tp-ai-panel {
+        position: fixed !important;
+        top: 50% !important;
+        left: max(10px, env(safe-area-inset-left)) !important;
+        right: max(10px, env(safe-area-inset-right)) !important;
+        bottom: auto !important;
+        transform: translateY(-50%) !important;
+        width: auto !important;
+        height: min(510px, calc(100dvh - 120px - env(safe-area-inset-bottom))) !important;
+        max-width: none !important;
+        max-height: calc(100dvh - 120px) !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        resize: none !important;
+        border-radius: 14px;
+    }
+
+    .tp-ai-header {
+        cursor: default;
+        touch-action: auto;
+    }
+
+    .tp-ai-module-list,
+    .tp-ai-messages {
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        overscroll-behavior: contain;
+    }
+
+    .tp-ai-module-card {
+        width: 100%;
+    }
+}
+
+@media (max-width: 420px) {
+    .tp-ai-panel {
+        height: min(470px, calc(100dvh - 120px - env(safe-area-inset-bottom))) !important;
+    }
+}
+
+@media (max-height: 560px) and (max-width: 767.98px) {
+    .tp-ai-panel {
+        height: calc(100dvh - 92px - env(safe-area-inset-bottom)) !important;
+        max-height: calc(100dvh - 92px) !important;
+    }
+}
+
+@media (max-width: 380px) {
+    .tp-ai-module-card {
+        gap: 8px;
+        padding: 11px 9px;
+    }
+
+    .tp-ai-module-status {
+        font-size: 10px;
+        padding: 4px 6px;
+        gap: 3px;
+    }
+
+    .tp-ai-module-status svg {
+        width: 13px;
+        height: 13px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tp-ai-module-status svg {
+        animation: none !important;
+    }
+}

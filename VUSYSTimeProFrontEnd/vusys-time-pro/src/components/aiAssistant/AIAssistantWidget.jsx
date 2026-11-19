@@ -703,7 +703,12 @@ export default function AIAssistantWidget() {
   };
 
   const beginDrag = (event) => {
-    if (event.button !== 0 || event.target.closest("button")) return;
+    if (
+      window.matchMedia("(max-width: 767.98px)").matches ||
+      event.button !== 0 ||
+      event.target.closest("button")
+    )
+      return;
     const panel = event.currentTarget.closest(".tp-ai-panel");
     const bounds = panel.getBoundingClientRect();
     dragRef.current = {
@@ -713,7 +718,8 @@ export default function AIAssistantWidget() {
     event.currentTarget.setPointerCapture(event.pointerId);
   };
   const moveDrag = (event) => {
-    if (!dragRef.current) return;
+    if (window.matchMedia("(max-width: 767.98px)").matches || !dragRef.current)
+      return;
     const panel = event.currentTarget.closest(".tp-ai-panel");
     const width = panel.offsetWidth;
     const height = panel.offsetHeight;
@@ -819,7 +825,15 @@ export default function AIAssistantWidget() {
                     <strong>{module.name}</strong>
                     <small>{module.description}</small>
                   </span>
-                  <span className="tp-ai-module-status">{module.status}</span>
+                  <span
+                    className={`tp-ai-module-status ${module.enabled ? "tp-ai-module-status-available" : "tp-ai-module-status-soon"}`}
+                  >
+                    <SvgIcon
+                      name={module.enabled ? "aiAvailable" : "aiComingSoon"}
+                      size={15}
+                    />
+                    <span>{module.status}</span>
+                  </span>
                 </button>
               ))}
             </div>
