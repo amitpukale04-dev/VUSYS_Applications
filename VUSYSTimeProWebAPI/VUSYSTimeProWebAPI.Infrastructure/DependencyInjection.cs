@@ -208,6 +208,8 @@ public static class DependencyInjection
         services.AddScoped<IAILeaveTypeResolver, AILeaveTypeResolver>();
         services.AddSingleton<IAILeaveConfirmationStore, InMemoryAILeaveConfirmationStore>();
         services.AddSingleton<IAILeaveClarificationStore, InMemoryAILeaveClarificationStore>();
+        services.AddScoped<AILeaveDynamicReportService>();
+        services.AddScoped<AILeaveReportAdminAuthorization>();
         services.AddScoped<IAILeaveManagementAgentService, AILeaveManagementAgentService>();
         
 

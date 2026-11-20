@@ -2,15 +2,17 @@
 using System.Globalization;
 using CommonLibCore10;
 using CommonLibCore10.Constants;
+using Microsoft.AspNetCore.Hosting;
 using VUSYSTimeProWebAPI.Application.Abstractions.AIAgents.LeaveManagement;
 using VUSYSTimeProWebAPI.Application.Abstractions.Configuration;
 using VUSYSTimeProWebAPI.Application.Abstractions.Modules.LeaveManagement;
+using VUSYSTimeProWebAPI.Application.Abstractions.Users;
 using VUSYSTimeProWebAPI.Application.Models;
 using VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
 
 namespace VUSYSTimeProWebAPI.Infrastructure.AIAgents.LeaveManagement;
 
-public sealed class AILeaveManagementAgentService(IGeminiAIService ai, IAIAPIConfigurationService AIAPIConfigurationService, ILeaveManagementService leave, IAILeaveSecurityContext security, IAILeaveTypeResolver types, IAILeaveConfirmationStore store, IAILeaveClarificationStore clarificationStore) : IAILeaveManagementAgentService
+public sealed class AILeaveManagementAgentService(IGeminiAIService ai, IAIAPIConfigurationService AIAPIConfigurationService, ILeaveManagementService leave, IAILeaveSecurityContext security, IAILeaveTypeResolver types, IAILeaveConfirmationStore store, IAILeaveClarificationStore clarificationStore, AILeaveDynamicReportService reportService, IUserHelper UserHelper, IWebHostEnvironment webHostEnvironment) : IAILeaveManagementAgentService
 {
     private static readonly string ErrorStatus = Helper.ToProperCase(MessageTypeConstants.Error);
     private static readonly string SuccessStatus = Helper.ToProperCase(MessageTypeConstants.Success);
@@ -21,7 +23,7 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, IAIAPICon
     /// <param name="request"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public async Task<DataSet> ProcessAILeaveManagementRequest(AILeaveManagementRequestParam request,  CancellationToken ct = default)
+    public async Task<DataSet> ProcessAILeaveManagementRequest(AILeaveManagementRequestParam request, CancellationToken ct = default)
     {
         if (request is null || string.IsNullOrWhiteSpace(request.Message)) return Result(ErrorStatus, "Enter The Message.");
         AILeaveActor actor = await security.GetActorAsync(ct);
@@ -62,15 +64,15 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, IAIAPICon
             }
             else
             {
-            string? halfDayType = ParseHalfDayType(request.Message);
-            if (halfDayType is null)
-            {
-                string retryToken = clarificationStore.Add(pendingClarification with
+                string? halfDayType = ParseHalfDayType(request.Message);
+                if (halfDayType is null)
                 {
-                    ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5)
-                });
+                    string retryToken = clarificationStore.Add(pendingClarification with
+                    {
+                        ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5)
+                    });
                     return Result(SuccessStatus, "Please choose First Half (Morning) or Second Half (Afternoon).", action: pendingClarification.Action, clarificationToken: retryToken);
-            }
+                }
                 action = pendingClarification.Action;
                 action.HalfDayType = halfDayType;
             }
@@ -86,7 +88,10 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, IAIAPICon
         string? targetCode = null;
         string? targetName = null;
         bool allEmployees = false;
-        bool readOnlyIntent = intent is "GetLeaveBalance" or "GetLeaveStatus" or "GetLeaveHistory" or "GetPendingLeaves" or "GetLeaveDetails";
+        // AI reporting is restricted to authenticated Admin users only.
+        if (intent == "GenerateLeaveReport" && Convert.ToInt32(UserHelper.GetUserRoleID()) != 1)
+            return Result(ErrorStatus, "Access denied. AI Leave Reporting is available only to Admin users.", action: action);
+        bool readOnlyIntent = intent is "GetLeaveBalance" or "GetLeaveStatus" or "GetLeaveHistory" or "GetPendingLeaves" or "GetLeaveDetails" or "GenerateLeaveReport";
         if (readOnlyIntent)
         {
             string scope = action.EmployeeScope?.Trim() ?? "Self";
@@ -97,7 +102,7 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, IAIAPICon
             // Never allow an explicit target to be silently downgraded to Self.
             if (scope == "Self" && (suppliedCode.Length > 0 || suppliedName.Length > 0))
                 scope = "SpecificEmployee";
-            bool isAdmin = await security.CanApproveAsync(actor, ct);
+            bool isAdmin = intent == "GenerateLeaveReport" ? true : await security.CanApproveAsync(actor, ct);
             if (scope == "AllEmployees")
             {
                 if (!isAdmin) return Result(ErrorStatus, "Access denied. You are not authorized to view all employees' leave information.", action: action);
@@ -139,7 +144,48 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, IAIAPICon
                     action: action, clarificationToken: clarificationToken);
             }
         }
+
         // Read-only operations never issue confirmation tokens or execute leave actions.
+        if (intent == "GenerateLeaveReport")
+        {
+            if (Convert.ToInt32(UserHelper.GetUserRoleID()) != 1)
+                return Result(ErrorStatus, "Access denied. AI Leave Reporting is available only to Admin users.", action: action);
+
+            if (action.Report is null)
+                return Result(ErrorStatus, "AI did not provide a report definition.", action: action);
+
+            try
+            {
+                string ReportAction = request.Action?.Trim() ?? "View";
+
+                if (ReportAction.Equals("Excel", StringComparison.OrdinalIgnoreCase) || ReportAction.Equals("PDF", StringComparison.OrdinalIgnoreCase))
+                {
+                    string ExportType = ReportAction.Equals("Excel", StringComparison.OrdinalIgnoreCase) ? "Excel" : "PDF";
+                    return await reportService.ExportReportAsync(action.Report, targetCode ?? actor.EmployeeCode, allEmployees, ExportType, webHostEnvironment, ct);
+                }
+
+                if (!ReportAction.Equals("View", StringComparison.OrdinalIgnoreCase))
+                    return Result(ErrorStatus, "Invalid report action. Supported actions: View, Excel and PDF.", action: action);
+
+                DataSet report = await reportService.GenerateReportAsync(action.Report, targetCode ?? actor.EmployeeCode, allEmployees, ct);
+
+                bool hasRecords = report.Tables.Count > 0 && report.Tables[0].Rows.Count > 0;
+
+                DataSet result = Result(
+                    SuccessStatus,
+                    hasRecords ? "Leave report generated successfully." : "No matching records found for the requested report.",
+                    action: action);
+
+                if (report.Tables.Count > 0)
+                    result.Tables.Add(report.Tables[0].Copy());
+
+                return result;
+            }
+            catch (ArgumentException ex)
+            {
+                return Result(ErrorStatus, ex.Message, action: action);
+            }
+        }
         if (intent == "GetLeaveBalance")
         {
             int year = action.LeaveYear ?? DateTime.Now.Year;

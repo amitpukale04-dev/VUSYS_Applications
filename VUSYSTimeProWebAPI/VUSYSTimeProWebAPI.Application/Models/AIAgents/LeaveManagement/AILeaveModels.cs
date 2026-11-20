@@ -13,10 +13,19 @@ public sealed class AILeaveManagementRequestParam
     [Required(ErrorMessage = "Enter The Message.")]
     public string Message { get; set; }
 
-    /// <summary>Token returned when the AI needs a half-day clarification.</summary>
+    /// <summary>
+    /// Token returned when the AI needs a half-day clarification.
+    /// </summary>
     [DefaultValue("")]
     [Display(Name = "Clarification Token")]
     public string? ClarificationToken { get; set; }
+
+    /// <summary>
+    /// Action For Leave Report (Excel, PDF Or View).
+    /// </summary>
+    [DefaultValue("")]
+    [Display(Name = "Action")]
+    public string Action { get; set; } = "View";
 }
 
 public sealed class AILeaveManagementConfirmRequestParam
@@ -97,17 +106,30 @@ public sealed class AILeaveManagementActionM
     /// </summary>
     public string? Remarks { get; set; }
 
-    /// <summary>Exact: match leave dates exactly. Overlap: search requests overlapping the specified period.</summary>
+    /// <summary>
+    /// Exact: match leave dates exactly. Overlap: search requests overlapping the specified period.
+    /// </summary>
     public string DateSearchMode { get; set; } = "Exact";
 
-    /// <summary>Year for read-only balance and leave queries.</summary>
+    /// <summary>
+    /// Year for read-only balance and leave queries
+    /// </summary>
     public int? LeaveYear { get; set; }
 
-    /// <summary>LeaveRequestID, LeaveYear, Ambiguous, or None for read-only numeric references.</summary>
+    /// <summary>
+    /// LeaveRequestID, LeaveYear, Ambiguous, or None for read-only numeric references.
+    /// </summary>
     public string NumericReferenceType { get; set; } = "None";
 
-    /// <summary>Self, SpecificEmployee or AllEmployees. Only for read-only queries.</summary>
+    /// <summary>
+    /// Self, SpecificEmployee or AllEmployees. Only for read-only queries.
+    /// </summary>
     public string EmployeeScope { get; set; } = "Self";
+
+    /// <summary>
+    /// Validated read-only report definition.
+    /// </summary>
+    public AILeaveReportDefinitionM? Report { get; set; }
 }
 
 /// <summary>
@@ -183,7 +205,9 @@ public sealed class AILeaveRequestSearchCriteriaM
     /// </summary>
     public bool ExactDateRange { get; set; } = true;
 
-    /// <summary>AI intent used for database-side eligibility filtering.</summary>
+    /// <summary>
+    /// AI intent used for database-side eligibility filtering.
+    /// </summary>
     public string? Intent { get; set; }
 }
 

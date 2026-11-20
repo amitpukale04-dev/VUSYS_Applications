@@ -263,6 +263,11 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Persistence.Constants
         /// </summary>
         public const string AI_LEAVE_MANAGEMENT_GET_LEAVE_DETAILS = "usp_VUSYS_AILeaveManagement_GetLeaveRequestDetails";
 
+        /// <summary>
+        /// AI_LEAVE_DYNAMIC_REPORT
+        /// </summary>
+        public const string AI_LEAVE_DYNAMIC_REPORT = "usp_VUSYS_AILeaveDynamicReport";
+
         #endregion [Leave Management API]
 
         #region [Report API]

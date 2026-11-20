@@ -30,7 +30,7 @@ namespace VUSYSTimeProWebAPI.Api.Controllers
         /// This Post Action Method Is Used To Process Leave Management Request From AI Agent.
         /// </summary>
         /// <param name="_objAILeaveManagementRequestParam"></param>
-        /// To Process Leave Management Request From AI Agent Below Request Parameters is required Such as Message
+        /// To Process Leave Management Request From AI Agent Below Request Parameters is required Such as Message, ClarificationToken and Action.
         /// <returns>
         /// A JSON-formatted string representing the Processing The Leave Request From AI Agent.
         /// </returns>

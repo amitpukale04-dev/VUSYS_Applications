@@ -35,7 +35,7 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
     private static readonly string[] SupportedIntents =
     [
         "ApplyLeave", "ApproveLeave", "RejectLeave", "CancelLeave",
-        "GetLeaveBalance", "GetLeaveStatus", "GetLeaveHistory", "GetPendingLeaves", "GetLeaveDetails", "Unknown"
+        "GetLeaveBalance", "GetLeaveStatus", "GetLeaveHistory", "GetPendingLeaves", "GetLeaveDetails", "GenerateLeaveReport", "Unknown"
     ];
 
     /// <summary>
@@ -256,6 +256,25 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
         2. ApproveLeave
         3. RejectLeave
         4. CancelLeave
+        IMPORTANT: For any report, list across employees, employee-wise result, grouped result, total, count, summary, comparison, trend, or holiday listing, select GenerateLeaveReport even if the user does not use the word "report".
+        "Show all rejected leave applications" and "Show cancelled leave applications" are GenerateLeaveReport, NOT GetLeaveHistory.
+        "Show leave balances grouped by leave type" is GenerateLeaveReport, NOT GetLeaveBalance.
+        "Show employees with pending leave requests" is GenerateLeaveReport, NOT GetPendingLeaves.
+        "Show my leave balance" remains GetLeaveBalance.
+        For GenerateLeaveReport, use EmployeeScope AllEmployees when the user asks for employee-wise, group-wide, all-employee, staff-wide or organization-wide data, even if they do not literally say "all employees".
+        Use LeaveStatus 1=Pending, 2=Approved, 3=Rejected, 4=Cancelled when reporting current application statuses.
+        For a grouped detail report without a metric, use Aggregate None and GroupBy empty; include the employee or leave-type fields in Columns instead.
+        For a grouped summary, use Aggregate Count or Sum and select an appropriate AggregateColumn.
+        Reporting intent: GenerateLeaveReport. Use this for analytical requests such as employee-wise/month-wise totals, counts, summaries, comparisons, lists of holidays, approved/rejected/cancelled trends, leave balances across employees, and grouped reports. Do not use it for simple existing leave status/balance questions.
+        For GenerateLeaveReport, always provide Report with ReportType LeaveApplications, LeaveBalances, LeaveActions or Holidays; DateField LeavePeriod for LeaveApplications, ActionDate for LeaveActions, HolidayDate for Holidays, LeavePeriod for LeaveBalances.
+        Use ISO yyyy-MM-dd dates, null for absent filters, MaxRows 200, Aggregate None/Count/Sum/Average/Min/Max, and Columns/GroupBy from the approved fields below.
+        LeaveApplications fields: LeaveApplicationID, EmployeeCode, EmployeeName, LeaveTypeCode, LeaveType, FromDate, ToDate, TotalLeaveDays, IsHalfDay, HalfDayType, LeaveStatus, LeaveStatusText, ApproverEmployeeCode, ApprovedOrRejectedDate, ApprovedOrRejectedRemarks.
+        LeaveBalances fields: EmployeeCode, EmployeeName, LeaveYear, LeaveTypeCode, LeaveType, OpeningBalance, AllocatedLeave, UsedLeave, PendingLeave, AvailableBalance.
+        LeaveActions fields: HistoryID, LeaveApplicationID, EmployeeCode, EmployeeName, LeaveType, FromDate, ToDate, TotalLeaveDays, LeaveStatus, ActionType, ActionBy, ActionDate, ApprovedOrRejectedRemarks.
+        Holidays fields: Id, HolidayName, HolidayDate, HolidayYear, HolidayDescription, IsOptionalHoliday.
+        GroupBy must contain only listed fields. For Count use AggregateColumn null. For Sum/Average use a numeric field. If grouping by month is requested, use a date column as GroupBy; backend groups by calendar month.
+        Preserve employee scope rules for reports. Do not invent SQL or arbitrary column names.
+
         5. GetLeaveBalance
         6. GetLeaveStatus
         7. GetLeaveHistory
@@ -695,12 +714,27 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
             LeaveYear = new { type = new[] { "integer", "null" } },
             NumericReferenceType = new { type = "string", @enum = new[] { "None", "LeaveRequestID", "LeaveYear", "Ambiguous" } },
             EmployeeScope = new { type = "string", @enum = new[] { "Self", "SpecificEmployee", "AllEmployees" } },
-            EmployeeCode = new { type = new[] { "string", "null" } }
+            EmployeeCode = new { type = new[] { "string", "null" } },
+            Report = new { type = new[] { "object", "null" }, properties = new
+            {
+                ReportType = new { type = "string", @enum = new[] { "LeaveApplications", "LeaveBalances", "LeaveActions", "Holidays" } },
+                DateField = new { type = "string", @enum = new[] { "LeavePeriod", "ApprovalDate", "ActionDate", "HolidayDate" } },
+                FromDate = new { type = new[] { "string", "null" } },
+                ToDate = new { type = new[] { "string", "null" } },
+                LeaveStatus = new { type = new[] { "integer", "null" } },
+                LeaveYear = new { type = new[] { "integer", "null" } },
+                LeaveTypeID = new { type = new[] { "integer", "null" } },
+                MaxRows = new { type = "integer" },
+                Columns = new { type = "array", items = new { type = "string" } },
+                GroupBy = new { type = "array", items = new { type = "string" } },
+                Aggregate = new { type = "string", @enum = new[] { "None", "Count", "Sum", "Average", "Min", "Max" } },
+                AggregateColumn = new { type = new[] { "string", "null" } }
+            }, required = new[] { "ReportType", "DateField", "FromDate", "ToDate", "LeaveStatus", "LeaveYear", "LeaveTypeID", "MaxRows", "Columns", "GroupBy", "Aggregate", "AggregateColumn" }, additionalProperties = false }
         },
         required = new[]
         {
             "Intent", "LeaveType", "FromDate", "ToDate", "IsHalfDay", "HalfDayType",
-            "Reason", "LeaveRequestID", "EmployeeName", "Remarks", "DateSearchMode", "LeaveYear", "NumericReferenceType", "EmployeeScope", "EmployeeCode"
+            "Reason", "LeaveRequestID", "EmployeeName", "Remarks", "DateSearchMode", "LeaveYear", "NumericReferenceType", "EmployeeScope", "EmployeeCode", "Report"
         },
         additionalProperties = false
     };
@@ -730,7 +764,6 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
             request.Headers.Add("Api-Revision", GeminiApiRevision);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(ContentTypeConstants.JSON_CONTENTTYPE));
             request.Content = new StringContent(requestJson, Encoding.UTF8, ContentTypeConstants.JSON_CONTENTTYPE);
-
             try
             {
                 using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeoutCts.Token);
