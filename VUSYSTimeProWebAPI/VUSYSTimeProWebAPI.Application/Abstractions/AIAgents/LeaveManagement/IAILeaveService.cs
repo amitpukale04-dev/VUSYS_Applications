@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using VUSYSTimeProWebAPI.Application.Abstractions.Configuration;
 using VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
 
@@ -165,4 +165,13 @@ public interface IAILeaveClarificationStore
     /// <param name="action"></param>
     /// <returns></returns>
     bool TryConsume(string token, out AILeavePendingClarification? action);
+}
+
+/// <summary>
+/// This Interface Is Used To Store And Retrieve Validated AI Leave Report Definitions.
+/// </summary>
+public interface IAILeaveReportTokenStore
+{
+    string Add(AILeavePendingReport report);
+    bool TryGet(string token, out AILeavePendingReport? report);
 }

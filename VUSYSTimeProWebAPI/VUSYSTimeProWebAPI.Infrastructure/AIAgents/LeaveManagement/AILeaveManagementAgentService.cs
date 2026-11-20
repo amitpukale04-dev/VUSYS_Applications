@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using System.Globalization;
 using CommonLibCore10;
 using CommonLibCore10.Constants;
@@ -12,7 +12,7 @@ using VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
 
 namespace VUSYSTimeProWebAPI.Infrastructure.AIAgents.LeaveManagement;
 
-public sealed class AILeaveManagementAgentService(IGeminiAIService ai, IAIAPIConfigurationService AIAPIConfigurationService, ILeaveManagementService leave, IAILeaveSecurityContext security, IAILeaveTypeResolver types, IAILeaveConfirmationStore store, IAILeaveClarificationStore clarificationStore, AILeaveDynamicReportService reportService, IUserHelper UserHelper, IWebHostEnvironment webHostEnvironment) : IAILeaveManagementAgentService
+public sealed class AILeaveManagementAgentService(IGeminiAIService ai, IAIAPIConfigurationService AIAPIConfigurationService, ILeaveManagementService leave, IAILeaveSecurityContext security, IAILeaveTypeResolver types, IAILeaveConfirmationStore store, IAILeaveClarificationStore clarificationStore, AILeaveDynamicReportService reportService, IAILeaveReportTokenStore reportTokenStore, IUserHelper UserHelper, IWebHostEnvironment webHostEnvironment) : IAILeaveManagementAgentService
 {
     private static readonly string ErrorStatus = Helper.ToProperCase(MessageTypeConstants.Error);
     private static readonly string SuccessStatus = Helper.ToProperCase(MessageTypeConstants.Success);
@@ -25,7 +25,55 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, IAIAPICon
     /// <returns></returns>
     public async Task<DataSet> ProcessAILeaveManagementRequest(AILeaveManagementRequestParam request, CancellationToken ct = default)
     {
-        if (request is null || string.IsNullOrWhiteSpace(request.Message)) return Result(ErrorStatus, "Enter The Message.");
+        if (request is null) return Result(ErrorStatus, "Enter The Message.");
+        // A report token bypasses Gemini extraction but never bypasses authenticated authorization.
+        if (!string.IsNullOrWhiteSpace(request.ReportToken))
+        {
+            AILeaveActor reportActor = await security.GetActorAsync(ct);
+            if (!int.TryParse(UserHelper.GetUserRoleID(), out int reportRoleID) || reportRoleID != 1)
+                return Result(ErrorStatus, "Access denied. AI Leave Reporting is available only to Admin users.");
+
+            if (!reportTokenStore.TryGet(request.ReportToken, out AILeavePendingReport? pendingReport) || pendingReport is null)
+                return Result(ErrorStatus, "Invalid or expired report token. Generate the report again.");
+
+            if (pendingReport.UserId != reportActor.UserId ||
+                !string.Equals(pendingReport.ActorEmployeeCode, reportActor.EmployeeCode, StringComparison.OrdinalIgnoreCase))
+                return Result(ErrorStatus, "Access denied. Report token belongs to a different user.");
+
+            string tokenAction = request.Action?.Trim() ?? "View";
+            if (tokenAction.Equals("Excel", StringComparison.OrdinalIgnoreCase) || tokenAction.Equals("PDF", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    return await reportService.ExportReportAsync(pendingReport.Definition, pendingReport.EmployeeCode,
+                        pendingReport.AllowAllEmployees, tokenAction, webHostEnvironment, ct);
+                }
+                catch (ArgumentException ex)
+                {
+                    return Result(ErrorStatus, ex.Message);
+                }
+            }
+            if (!tokenAction.Equals("View", StringComparison.OrdinalIgnoreCase))
+                return Result(ErrorStatus, "Invalid report action. Supported actions: View, Excel and PDF.");
+
+            try
+            {
+                DataSet tokenReport = await reportService.GenerateReportAsync(pendingReport.Definition,
+                    pendingReport.EmployeeCode, pendingReport.AllowAllEmployees, ct);
+                DataSet tokenResult = Result(SuccessStatus,
+                    tokenReport.Tables.Count > 0 && tokenReport.Tables[0].Rows.Count > 0
+                        ? "Leave report generated successfully." : "No matching records found for the requested report.");
+                tokenResult.Tables[0].Columns.Add("ReportToken", typeof(string));
+                tokenResult.Tables[0].Rows[0]["ReportToken"] = request.ReportToken;
+                if (tokenReport.Tables.Count > 0) tokenResult.Tables.Add(tokenReport.Tables[0].Copy());
+                return tokenResult;
+            }
+            catch (ArgumentException ex)
+            {
+                return Result(ErrorStatus, ex.Message);
+            }
+        }
+        if (string.IsNullOrWhiteSpace(request.Message)) return Result(ErrorStatus, "Enter The Message.");
         AILeaveActor actor = await security.GetActorAsync(ct);
         AILeaveManagementActionM action;
         if (!string.IsNullOrWhiteSpace(request.ClarificationToken))
@@ -179,6 +227,12 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, IAIAPICon
                 if (report.Tables.Count > 0)
                     result.Tables.Add(report.Tables[0].Copy());
 
+                // Save only the validated report definition and authorized scope; do not store report data.
+                string reportToken = reportTokenStore.Add(new AILeavePendingReport(actor.UserId,
+                    actor.EmployeeCode, targetCode ?? actor.EmployeeCode, allEmployees,
+                    action.Report, DateTimeOffset.UtcNow.AddMinutes(15)));
+                result.Tables[0].Columns.Add("ReportToken", typeof(string));
+                result.Tables[0].Rows[0]["ReportToken"] = reportToken;
                 return result;
             }
             catch (ArgumentException ex)

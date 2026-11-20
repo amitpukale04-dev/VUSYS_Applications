@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
 
 /// <summary>
@@ -66,4 +64,9 @@ public sealed class AILeaveReportDefinitionM
     /// Aggregate Column
     /// </summary>
     public string? AggregateColumn { get; set; }
+
+    /// <summary>
+    /// This Property Is Used To Return Distinct Report Records.
+    /// </summary>
+    public bool Distinct { get; set; } = false;
 }

@@ -264,6 +264,15 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
         For GenerateLeaveReport, use EmployeeScope AllEmployees when the user asks for employee-wise, group-wide, all-employee, staff-wide or organization-wide data, even if they do not literally say "all employees".
         Use LeaveStatus 1=Pending, 2=Approved, 3=Rejected, 4=Cancelled when reporting current application statuses.
         For a grouped detail report without a metric, use Aggregate None and GroupBy empty; include the employee or leave-type fields in Columns instead.
+        DYNAMIC REPORT DISTINCT RULES:
+        - When the user requests distinct, unique, non-duplicate, or one record per entity, set Report.Distinct = true.
+        - When the user requests a detailed report, set Report.Distinct = false; never discard rows merely because employees or leave types repeat.
+        - When Report.Aggregate = None, Report.GroupBy must be an empty array. GroupBy is reserved for aggregation.
+        - For distinct reports, include only the requested identity columns in Report.Columns; uniqueness is based on the selected columns.
+        - Example: "Show distinct employees who have leave balances" => ReportType LeaveBalances, Columns [EmployeeCode, EmployeeName], GroupBy [], Aggregate None, AggregateColumn null, Distinct true.
+        - Example: "Show detailed employee leave balances for 2026" => ReportType LeaveBalances, Columns [EmployeeCode, EmployeeName, LeaveYear, LeaveTypeCode, LeaveType, OpeningBalance, AllocatedLeave, UsedLeave, PendingLeave, AvailableBalance], GroupBy [], Aggregate None, AggregateColumn null, Distinct false.
+        - For grouped summary reports use Aggregate Count/Sum/Average/Min/Max with GroupBy; set Distinct false.
+        - Never infer Distinct true solely because the user says employee-wise or grouped; preserve detail rows unless uniqueness is explicitly requested.
         For a grouped summary, use Aggregate Count or Sum and select an appropriate AggregateColumn.
         Reporting intent: GenerateLeaveReport. Use this for analytical requests such as employee-wise/month-wise totals, counts, summaries, comparisons, lists of holidays, approved/rejected/cancelled trends, leave balances across employees, and grouped reports. Do not use it for simple existing leave status/balance questions.
         For GenerateLeaveReport, always provide Report with ReportType LeaveApplications, LeaveBalances, LeaveActions or Holidays; DateField LeavePeriod for LeaveApplications, ActionDate for LeaveActions, HolidayDate for Holidays, LeavePeriod for LeaveBalances.
@@ -715,21 +724,28 @@ public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
             NumericReferenceType = new { type = "string", @enum = new[] { "None", "LeaveRequestID", "LeaveYear", "Ambiguous" } },
             EmployeeScope = new { type = "string", @enum = new[] { "Self", "SpecificEmployee", "AllEmployees" } },
             EmployeeCode = new { type = new[] { "string", "null" } },
-            Report = new { type = new[] { "object", "null" }, properties = new
+            Report = new
             {
-                ReportType = new { type = "string", @enum = new[] { "LeaveApplications", "LeaveBalances", "LeaveActions", "Holidays" } },
-                DateField = new { type = "string", @enum = new[] { "LeavePeriod", "ApprovalDate", "ActionDate", "HolidayDate" } },
-                FromDate = new { type = new[] { "string", "null" } },
-                ToDate = new { type = new[] { "string", "null" } },
-                LeaveStatus = new { type = new[] { "integer", "null" } },
-                LeaveYear = new { type = new[] { "integer", "null" } },
-                LeaveTypeID = new { type = new[] { "integer", "null" } },
-                MaxRows = new { type = "integer" },
-                Columns = new { type = "array", items = new { type = "string" } },
-                GroupBy = new { type = "array", items = new { type = "string" } },
-                Aggregate = new { type = "string", @enum = new[] { "None", "Count", "Sum", "Average", "Min", "Max" } },
-                AggregateColumn = new { type = new[] { "string", "null" } }
-            }, required = new[] { "ReportType", "DateField", "FromDate", "ToDate", "LeaveStatus", "LeaveYear", "LeaveTypeID", "MaxRows", "Columns", "GroupBy", "Aggregate", "AggregateColumn" }, additionalProperties = false }
+                type = new[] { "object", "null" },
+                properties = new
+                {
+                    ReportType = new { type = "string", @enum = new[] { "LeaveApplications", "LeaveBalances", "LeaveActions", "Holidays" } },
+                    DateField = new { type = "string", @enum = new[] { "LeavePeriod", "ApprovalDate", "ActionDate", "HolidayDate" } },
+                    FromDate = new { type = new[] { "string", "null" } },
+                    ToDate = new { type = new[] { "string", "null" } },
+                    LeaveStatus = new { type = new[] { "integer", "null" } },
+                    LeaveYear = new { type = new[] { "integer", "null" } },
+                    LeaveTypeID = new { type = new[] { "integer", "null" } },
+                    MaxRows = new { type = "integer" },
+                    Columns = new { type = "array", items = new { type = "string" } },
+                    GroupBy = new { type = "array", items = new { type = "string" } },
+                    Aggregate = new { type = "string", @enum = new[] { "None", "Count", "Sum", "Average", "Min", "Max" } },
+                    AggregateColumn = new { type = new[] { "string", "null" } },
+                    Distinct = new { type = "boolean" }
+                },
+                required = new[] { "ReportType", "DateField", "FromDate", "ToDate", "LeaveStatus", "LeaveYear", "LeaveTypeID", "MaxRows", "Columns", "GroupBy", "Aggregate", "AggregateColumn", "Distinct" },
+                additionalProperties = false
+            }
         },
         required = new[]
         {

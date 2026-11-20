@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 namespace VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
 
@@ -26,6 +26,13 @@ public sealed class AILeaveManagementRequestParam
     [DefaultValue("")]
     [Display(Name = "Action")]
     public string Action { get; set; } = "View";
+
+    /// <summary>
+    /// Previously generated report token for View, Excel or PDF.
+    /// </summary>
+    [DefaultValue("")]
+    [Display(Name = "Report Token")]
+    public string? ReportToken { get; set; }
 }
 
 public sealed class AILeaveManagementConfirmRequestParam

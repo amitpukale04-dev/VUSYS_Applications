@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Sockets;
 using CommonLibCore10;
 using Microsoft.EntityFrameworkCore;
@@ -209,7 +209,7 @@ public static class DependencyInjection
         services.AddSingleton<IAILeaveConfirmationStore, InMemoryAILeaveConfirmationStore>();
         services.AddSingleton<IAILeaveClarificationStore, InMemoryAILeaveClarificationStore>();
         services.AddScoped<AILeaveDynamicReportService>();
-        services.AddScoped<AILeaveReportAdminAuthorization>();
+        services.AddSingleton<IAILeaveReportTokenStore, InMemoryAILeaveReportTokenStore>();
         services.AddScoped<IAILeaveManagementAgentService, AILeaveManagementAgentService>();
         
 

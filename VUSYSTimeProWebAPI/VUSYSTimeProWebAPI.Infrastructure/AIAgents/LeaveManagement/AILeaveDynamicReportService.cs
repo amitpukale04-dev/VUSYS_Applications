@@ -133,8 +133,14 @@ public sealed class AILeaveDynamicReportService(SQLDBHelper _objSQLDBHelper)
         string[] columns = definition.Columns.Count == 0 ? allowed : definition.Columns.Distinct(StringComparer.Ordinal).ToArray();
         foreach (string column in columns) result.Columns.Add(column, source.Columns[column].DataType);
         IEnumerable<DataRow> detailRows = source.Rows.Cast<DataRow>();
-        if (groupFields.Length > 0)
-            detailRows = detailRows.GroupBy(r => string.Join("\u001f", groupFields.Select(field => FormatGroupValue(r[field])))).Select(g => g.First());
+        if (definition.Distinct)
+        {
+            detailRows = detailRows
+                .GroupBy(r => string.Join(
+                    "\u001f",
+                    columns.Select(column => FormatGroupValue(r[column]))))
+                .Select(g => g.First());
+        }
         foreach (DataRow original in detailRows)
         {
             DataRow row = result.NewRow();
