@@ -1,11 +1,12 @@
 using System.Data;
 using System.Globalization;
-using System.Net;
 using System.Text;
 using CommonLibCore10;
 using CommonLibCore10.Constants;
 using Microsoft.AspNetCore.Hosting;
+using VUSYSTimeProWebAPI.Application.Abstractions.Common;
 using VUSYSTimeProWebAPI.Application.Models.AIAgents.LeaveManagement;
+using VUSYSTimeProWebAPI.Infrastructure.Common;
 using VUSYSTimeProWebAPI.Infrastructure.Persistence.Constants;
 using static CommonLibCore10.CONST;
 
@@ -14,7 +15,9 @@ namespace VUSYSTimeProWebAPI.Infrastructure.AIAgents.LeaveManagement;
 /// <summary>
 /// This Service Is Used To Execute Validated Read Only AI Leave Reports.
 /// </summary>
-public sealed class AILeaveDynamicReportService(SQLDBHelper _objSQLDBHelper)
+/// <param name="_objSQLDBHelper"></param>
+/// <param name="ContentTypeSvc"></param>
+public sealed class AILeaveDynamicReportService(SQLDBHelper _objSQLDBHelper, IContentTypeService ContentTypeSvc)
 {
     private static readonly Dictionary<string, string[]> AllowedColumns = new(StringComparer.Ordinal)
     {
@@ -179,23 +182,57 @@ public sealed class AILeaveDynamicReportService(SQLDBHelper _objSQLDBHelper)
             }, TableName);
 
         string ReportTitle = GetReportTitle(definition);
-        string FileNameWithoutExtension = $"VUSYS_AILeaveReport_{definition.ReportType}_{DateTime.Now:yyyyMMdd_HHmmss}";
+        string FileNameWithoutExtension = $"VUSYS_LeaveReport_{definition.ReportType}_{DateTime.Now.ToString(DateTimeFormatConstants.YYYYMMDD_HHMMSS_COMPACT_DATETIMEFORMAT)}";
         string FileName = FileNameWithoutExtension + (exportType == "Excel" ? FileTypes.Xlsx : FileTypes.Pdf);
         string ContentType = exportType == "Excel" ? ContentTypeConstants.EXCEL_XLSX_CONTENTTYPE : ContentTypeConstants.PDF_CONTENTTYPE;
         string FileBase64 = string.Empty;
 
+        DataTable excelTable = source.Copy();
+        // Add SLNo As First Column
+        if (!excelTable.Columns.Contains("SLNo"))
+        {
+            Helper.AddNewColumnToDataTable(excelTable, "SLNo", typeof(int));
+            excelTable.Columns["SLNo"].SetOrdinal(0);
+        }
+
+        // Generate Sequential SLNo
+        excelTable.AsEnumerable().Select((row, index) => new { Row = row, SLNo = index + 1 }).ToList().ForEach(x => x.Row["SLNo"] = x.SLNo);
+
+
+        // Convert IsHalfDay Values From True/False To Yes/No
+        if (excelTable.Columns.Contains("IsHalfDay"))
+        {
+            int columnIndex = excelTable.Columns["IsHalfDay"]!.Ordinal;
+
+            // Convert Boolean Column To String Column
+            if (excelTable.Columns["IsHalfDay"]!.DataType == typeof(bool))
+            {
+                Helper.AddNewColumnToDataTable(excelTable, "IsHalfDay_Text", typeof(string));
+                excelTable.Columns["IsHalfDay_Text"].SetOrdinal(columnIndex);
+                excelTable.AsEnumerable().ToList().ForEach(row => row["IsHalfDay_Text"] = row["IsHalfDay"] != DBNull.Value ? Convert.ToBoolean(row["IsHalfDay"]) ? "Yes" : "No" : string.Empty);
+                Helper.RemoveColumnFromDataTable(excelTable, "IsHalfDay");
+                Helper.RenameDataTableColumnName(excelTable, "IsHalfDay_Text", "IsHalfDay");
+            }
+            else
+            {
+                excelTable.AsEnumerable().Where(row => row["IsHalfDay"] != DBNull.Value).ToList()
+                    .ForEach(row =>
+                    {
+                        string value = Convert.ToString(row["IsHalfDay"])?.Trim() ?? string.Empty;
+                        row["IsHalfDay"] = value.Equals("true", StringComparison.OrdinalIgnoreCase) || value == "1" ? "Yes" : "No";
+                    });
+            }
+        }
+
         if (exportType == "Excel")
         {
             ct.ThrowIfCancellationRequested();
-            DataTable excelTable = source.Copy();
             int NoOfColumns = excelTable.Columns.Count;
             string SheetName = "AI Leave Report";
             string lastColumn = GetExcelColumnName(NoOfColumns);
             string[] numericColumns = excelTable.Columns.Cast<DataColumn>()
                 .Where(x => IsNumericType(x.DataType)).Select(x => x.ColumnName).ToArray();
-            FileBase64 = ExcelHelper.ExportToExcelBase64(excelTable, SheetName, ReportTitle,
-                $"A1:{lastColumn}1", 1, NoOfColumns, true, NoOfColumns, false, 0,
-                "#FFFFFF", FileName, true, numericColumns, "#4F81BD", "#DCE6F1", true);
+            FileBase64 = ExcelHelper.ExportToExcelBase64(excelTable, SheetName, ReportTitle, $"A1:{lastColumn}1", 1, NoOfColumns, true, NoOfColumns, false, 0, "#FFFFFF", FileName, true, numericColumns, "#4F81BD", "#DCE6F1", true);
             //string Folder = CommonHelper.SaveFileToFolder(FileBase64, exportType == "Excel" ? FileTypes.Xlsx : FileTypes.Pdf, webHostEnvironment);
         }
         else
@@ -203,14 +240,16 @@ public sealed class AILeaveDynamicReportService(SQLDBHelper _objSQLDBHelper)
             string TempFilePath = Path.Combine(Path.GetTempPath(), $"VUSYS_AILeaveReport_{Guid.NewGuid():N}.html");
             try
             {
-                string html = BuildReportHTML(source, ReportTitle);
+                string html = await BuildReportHTML(excelTable, ReportTitle, ContentTypeSvc, webHostEnvironment);
                 await File.WriteAllTextAsync(TempFilePath, html, Encoding.UTF8, ct);
                 ct.ThrowIfCancellationRequested();
                 byte[] pdfBytes = PDFHelper.ConvertHTMLToPDF(TempFilePath, true, false, null, false, null, false, null, null);
                 ct.ThrowIfCancellationRequested();
                 if (pdfBytes.Length > 0)
+                {
                     FileBase64 = Convert.ToBase64String(pdfBytes);
-                //string Folder = CommonHelper.SaveFileToFolder(FileBase64, exportType == "Excel" ? FileTypes.Xlsx : FileTypes.Pdf, webHostEnvironment);
+                    //string Folder = CommonHelper.SaveFileToFolder(FileBase64, exportType == "Excel" ? FileTypes.Xlsx : FileTypes.Pdf, webHostEnvironment);
+                }
             }
             finally
             {
@@ -249,7 +288,7 @@ public sealed class AILeaveDynamicReportService(SQLDBHelper _objSQLDBHelper)
         };
         if (definition.LeaveYear.HasValue) title += $" - {definition.LeaveYear.Value}";
         if (!string.IsNullOrWhiteSpace(definition.FromDate) || !string.IsNullOrWhiteSpace(definition.ToDate))
-            title += $" ({definition.FromDate ?? "All"} to {definition.ToDate ?? "All"})";
+            title += $" ({DateTimeHelper.ConvertDateTimeStringToSpecificFormat(definition.FromDate, DateTimeFormatConstants.DDMMMYYYY_SLASH_DATEFORMAT) ?? "All"} to {DateTimeHelper.ConvertDateTimeStringToSpecificFormat(definition.ToDate, DateTimeFormatConstants.DDMMMYYYY_SLASH_DATEFORMAT) ?? "All"})";
         return title;
     }
 
@@ -279,36 +318,75 @@ public sealed class AILeaveDynamicReportService(SQLDBHelper _objSQLDBHelper)
         return result.ToString();
     }
 
-    private static string BuildReportHTML(DataTable table, string title)
+    /// <summary>
+    /// This Method Is Used To Build Dynamic AI Leave Report HTML Using The PDF Template.
+    /// </summary>
+    /// <param name="table"></param>
+    /// <param name="title"></param>
+    /// <param name="ContentTypeSvc"></param>
+    /// <param name="webHostEnvironment"></param>
+    /// <returns></returns>
+    private static async Task<string> BuildReportHTML(DataTable table, string title, IContentTypeService ContentTypeSvc, IWebHostEnvironment webHostEnvironment)
     {
-        StringBuilder sb = new StringBuilder();
-        sb.AppendLine("<!DOCTYPE html><html><head><meta charset='utf-8'/>");
-        sb.AppendLine("<style>@page { size: A4 landscape; margin: 12mm; } body { font-family: Arial, sans-serif; font-size: 9px; color: #222; } h2 { text-align: center; margin: 0 0 12px 0; } table { width: 100%; border-collapse: collapse; table-layout: auto; } thead { display: table-header-group; } tr { page-break-inside: avoid; } th, td { border: 1px solid #aaa; padding: 5px; overflow-wrap: anywhere; } th { background: #4F81BD; color: #fff; text-align: left; } tbody tr:nth-child(even) { background: #f0f4f9; }</style></head><body>");
-        sb.AppendLine($"<h2>{WebUtility.HtmlEncode(title)}</h2>");
-        sb.AppendLine("<table><thead><tr>");
+        string html = await CommonHelper.ReadHTMLTemplateUsingStreamReaderAsync(webHostEnvironment, "AILeaveReportPDFTemplate.html");
+        StringBuilder reportHeaders = new StringBuilder();
+        StringBuilder reportRows = new StringBuilder();
+
+        // Generate Dynamic Table Headers Based On The Report Columns.
         foreach (DataColumn column in table.Columns)
-            sb.AppendLine($"<th>{WebUtility.HtmlEncode(column.ColumnName)}</th>");
-        sb.AppendLine("</tr></thead><tbody>");
+        {
+            reportHeaders.AppendLine($"<th>{Helper.EncodeHTMLText(column.ColumnName)}</th>");
+        }
+
+        // Generate Dynamic Table Rows Based On The Report Records.
         foreach (DataRow row in table.Rows)
         {
-            sb.AppendLine("<tr>");
+            reportRows.AppendLine("<tr>");
             foreach (DataColumn column in table.Columns)
             {
                 object value = row[column];
                 string text = value == DBNull.Value ? string.Empty : value is DateTime date
-                    ? date.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture)
+                    ? date.ToString(DateTimeFormatConstants.DDMMMYYYY_DATEFORMAT, CultureInfo.InvariantCulture)
                     : Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
-                sb.AppendLine($"<td>{WebUtility.HtmlEncode(text)}</td>");
+
+                string cellClass = column.ColumnName == "SLNo" ? " class=\"col-slno\""
+                    : IsNumericType(column.DataType) ? " class=\"col-number\"" : string.Empty;
+                reportRows.AppendLine($"<td{cellClass}>{Helper.EncodeHTMLText(text)}</td>");
             }
-            sb.AppendLine("</tr>");
+            reportRows.AppendLine("</tr>");
         }
-        sb.AppendLine("</tbody></table></body></html>");
-        return sb.ToString();
+
+        // Replace Dynamic Report Placeholders.
+        html = html.Replace("#CompanyName#", "VUSYS TECHNOLOGY")
+            .Replace("#ReportTitle#", Helper.EncodeHTMLText(title))
+            .Replace("#FooterText#", Helper.EncodeHTMLText(title))
+            .Replace("#ReportTableHeaders#", reportHeaders.ToString())
+            .Replace("#ReportTableRows#", reportRows.ToString());
+
+        string LogoFileName = "VUSYS_HeaderLogo.png";
+        string logoPath = Path.Combine(CommonHelper.GetActualPath(webHostEnvironment, "Content"), "Images", LogoFileName);
+        if (File.Exists(logoPath))
+        {
+            string LogoBase64 = FileHelper.ConvertFileToBase64(logoPath);
+            if (!string.IsNullOrEmpty(LogoBase64))
+            {
+                string LogoImageFileContentType = ContentTypeSvc.GetFileContentType(LogoFileName);
+                string imgSrc = $"data:{LogoImageFileContentType};base64,{LogoBase64}";
+                string LogoImage = $@"<img src='{imgSrc}' alt='VUSYS Technology Logo'/>";
+                html = html.Replace("#CompanyLogo#", LogoImage);
+            }
+        }
+        return html;
     }
 
+    /// <summary>
+    /// This Method Is Used To Format Group Value.
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
     private static string FormatGroupValue(object value)
     {
         if (value == DBNull.Value) return string.Empty;
-        return value is DateTime date ? date.ToString("yyyy-MM", CultureInfo.InvariantCulture) : Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
+        return value is DateTime date ? date.ToString(DateTimeFormatConstants.YYYYMM_DATEFORMAT, CultureInfo.InvariantCulture) : Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
     }
 }

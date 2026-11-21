@@ -172,6 +172,18 @@ public interface IAILeaveClarificationStore
 /// </summary>
 public interface IAILeaveReportTokenStore
 {
+    /// <summary>
+    /// This Method Is Used To Generate And Store A Secure Leave Report Token.
+    /// </summary>
+    /// <param name="report"></param>
+    /// <returns></returns>
     string Add(AILeavePendingReport report);
+
+    /// <summary>
+    /// This Method Is Used To Retrieve An Unexpired Report Definition Without Consuming Its Token.
+    /// </summary>
+    /// <param name="token"></param>
+    /// <param name="report"></param>
+    /// <returns></returns>
     bool TryGet(string token, out AILeavePendingReport? report);
 }

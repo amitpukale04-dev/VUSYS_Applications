@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>#CompanyName# - #ReportTitle#</title>
+    <style>
+        :root {
+            --brand: #563D7C;
+            --brand-dark: #3D295B;
+            --brand-light: #F3EFF8;
+            --ink: #292536;
+            --muted: #746D80;
+            --line: #DED8E8;
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 5mm 13mm 10mm 13mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 9pt;
+            color: #292536;
+            background: #ffffff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* A natural-height document avoids pushing the final row onto another page. */
+        .ai-leave-paper {
+            position: relative;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .ai-leave-report {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Logo and company title share the same left starting edge. */
+        .ai-leave-header {
+            width: 100%;
+            display: block;
+            border-bottom: 3px solid #563D7C;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+        }
+
+        /* The supplied logo PNG has wide transparent margins. Clip those
+           margins inside this left-aligned viewport so the VUT artwork is
+           visibly larger without changing the Base64 binding. */
+        .ai-leave-header-logo {
+            display: block;
+            position: relative;
+            width: 116px;
+            height: 83px;
+            overflow: hidden;
+            margin: 0 0 3px 0;
+            padding: 0;
+        }
+
+            .ai-leave-header-logo img {
+                display: block;
+                width: 280px !important;
+                max-width: none !important;
+                max-height: none !important;
+                height: auto !important;
+                margin-left: -82px !important;
+                object-fit: contain;
+            }
+
+        .ai-leave-header-company {
+            display: block;
+            margin: 0;
+            padding: 0;
+        }
+
+        .ai-leave-company-name {
+            margin: 0;
+            font-size: 18pt;
+            line-height: 1.15;
+            font-weight: 800;
+            letter-spacing: .4px;
+            color: #563D7C;
+        }
+
+        .ai-leave-company-subtitle {
+            margin: 4px 0 0;
+            color: #746D80;
+            font-size: 8pt;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+
+        .ai-leave-title-block {
+            margin: 0 0 14px;
+            text-align: center;
+        }
+
+        .ai-leave-eyebrow {
+            color: #563D7C;
+            font-size: 8pt;
+            font-weight: bold;
+            letter-spacing: 1.7px;
+            text-transform: uppercase;
+        }
+
+        .ai-leave-report-title {
+            color: #3D295B;
+            font-size: 15pt;
+            line-height: 1.25;
+            font-weight: 800;
+            margin: 6px 0 8px;
+        }
+
+        .ai-leave-title-accent {
+            width: 45px;
+            height: 3px;
+            background: #563D7C;
+            margin: 0 auto;
+        }
+
+
+        .ai-leave-table-frame {
+            position: relative;
+            z-index: 1;
+        }
+
+        .ai-leave-report-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            border: 1px solid #DED8E8;
+        }
+
+            .ai-leave-report-table thead {
+                display: table-header-group;
+            }
+
+            .ai-leave-report-table th {
+                padding: 9px 10px;
+                background: #563D7C;
+                color: #ffffff;
+                text-align: left;
+                font-size: 8.5pt;
+                border-right: 1px solid #806B9C;
+            }
+
+                .ai-leave-report-table th:last-child {
+                    border-right: 0;
+                }
+
+            .ai-leave-report-table td {
+                padding: 9px 10px;
+                font-size: 8.7pt;
+                line-height: 1.25;
+                vertical-align: middle;
+                border-bottom: 1px solid #DED8E8;
+                overflow-wrap: break-word;
+            }
+
+            .ai-leave-report-table tbody tr:nth-child(even) td {
+                background: #F3EFF8;
+            }
+
+            .ai-leave-report-table tbody tr:last-child td {
+                border-bottom: 0;
+            }
+
+            .ai-leave-report-table tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            .ai-leave-report-table td:first-child {
+                font-weight: bold;
+                color: #3D295B;
+            }
+
+        /* Footer follows the table, avoiding an otherwise nearly empty last page. */
+        .ai-leave-footer {
+            position: relative;
+            z-index: 1;
+            margin-top: 13px;
+            padding-top: 8px;
+            border-top: 2px solid #563D7C;
+            color: #746D80;
+            font-size: 7.6pt;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .ai-leave-footer-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+            .ai-leave-footer-table td {
+                padding: 0;
+                vertical-align: top;
+                line-height: 1.45;
+            }
+
+        .ai-leave-footer-left {
+            width: 70%;
+        }
+
+        .ai-leave-footer-right {
+            width: 30%;
+            text-align: right;
+        }
+
+        .ai-leave-footer-brand {
+            color: #563D7C;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+
+
+        /* Dynamic leave reports: readable text and natural header wrapping. */
+        .ai-leave-report-table {
+            table-layout: auto;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+            .ai-leave-report-table th {
+                padding: 8px 5px;
+                font-size: 8pt;
+                font-weight: 700;
+                line-height: 1.35;
+                vertical-align: middle;
+                white-space: normal;
+                overflow-wrap: break-word;
+                word-break: normal;
+            }
+
+            .ai-leave-report-table td {
+                padding: 7px 5px;
+                font-size: 8.5pt;
+                line-height: 1.4;
+                vertical-align: middle;
+                overflow-wrap: break-word;
+                word-break: normal;
+            }
+
+                .ai-leave-report-table td:first-child {
+                    font-weight: normal;
+                    color: inherit;
+                }
+
+                .ai-leave-report-table td.ai-leave-col-slno {
+                    text-align: center;
+                    font-weight: bold;
+                    color: #3D295B;
+                }
+
+                .ai-leave-report-table td.ai-leave-col-number {
+                    text-align: right;
+                }
+
+        @media screen {
+            body {
+                background: #F0EEF3;
+                padding: 18px 10px;
+            }
+
+            .ai-leave-paper {
+                width: 297mm;
+                min-height: 210mm;
+                padding: 12mm 13mm 13mm;
+                background: #ffffff;
+                box-shadow: 0 5px 25px rgba(30, 20, 45, .13);
+            }
+        }
+
+        @media screen and (max-width: 850px) {
+            body {
+                padding: 0;
+            }
+
+            .ai-leave-paper {
+                width: 100%;
+                min-height: 100vh;
+                padding: 18px 12px;
+                box-shadow: none;
+            }
+
+            .ai-leave-header-logo {
+                width: 105px;
+                height: 76px;
+                margin-bottom: 3px;
+            }
+
+                .ai-leave-header-logo img {
+                    width: 255px !important;
+                    margin-left: -75px !important;
+                    max-width: none !important;
+                    max-height: none !important;
+                }
+
+            .ai-leave-company-name {
+                font-size: 14pt;
+            }
+
+            .ai-leave-report-title {
+                font-size: 12pt;
+            }
+
+            .ai-leave-report-table th {
+                padding: 7px 4px;
+                font-size: 8pt;
+            }
+
+            .ai-leave-report-table td {
+                padding: 7px 4px;
+                font-size: 8.5pt;
+            }
+
+            .ai-leave-footer {
+                font-size: 7pt;
+            }
+        }
+
+        @media print {
+            html, body {
+                width: auto;
+                background: #ffffff;
+            }
+
+            .ai-leave-paper {
+                width: auto;
+                min-height: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ai-leave-paper">
+        <main class="ai-leave-report">
+            <header class="ai-leave-header">
+                <div class="ai-leave-header-logo">#CompanyLogo#</div>
+                <div class="ai-leave-header-company">
+                    <h1 class="ai-leave-company-name">#CompanyName#</h1>
+                    <p class="ai-leave-company-subtitle">Grow Together</p>
+                </div>
+            </header>
+
+            <section class="ai-leave-title-block">
+                <div class="ai-leave-eyebrow">Leave Management Report</div>
+                <h2 class="ai-leave-report-title">#ReportTitle#</h2>
+                <div class="ai-leave-title-accent"></div>
+            </section>
+
+            <div class="ai-leave-table-frame">
+                <table class="ai-leave-report-table">
+                    <thead>
+                        <tr>
+                            #ReportTableHeaders#
+                        </tr>
+                    </thead>
+                    <tbody>
+                        #ReportTableRows#
+                    </tbody>
+                </table>
+            </div>
+            <footer class="ai-leave-footer">
+                <table class="ai-leave-footer-table">
+                    <tr>
+                        <td class="ai-leave-footer-left"><span class="ai-leave-footer-brand">#CompanyName#</span></td>
+                        <td class="ai-leave-footer-right">#FooterText#</td>
+                    </tr>
+                </table>
+            </footer>
+        </main>
+    </div>
+</body>
+</html>

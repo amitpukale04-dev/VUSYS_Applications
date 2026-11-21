@@ -16,6 +16,9 @@ public sealed class InMemoryAILeaveReportTokenStore : IAILeaveReportTokenStore
     /// <summary>
     /// This Method Is Used To Generate And Store A Secure Report Token.
     /// </summary>
+    /// <param name="report"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
     public string Add(AILeavePendingReport report)
     {
         ArgumentNullException.ThrowIfNull(report);
@@ -40,6 +43,9 @@ public sealed class InMemoryAILeaveReportTokenStore : IAILeaveReportTokenStore
     /// <summary>
     /// This Method Is Used To Retrieve An Unexpired Report Definition Without Consuming Its Token.
     /// </summary>
+    /// <param name="token"></param>
+    /// <param name="report"></param>
+    /// <returns></returns>
     public bool TryGet(string token, out AILeavePendingReport? report)
     {
         report = null;
@@ -54,11 +60,15 @@ public sealed class InMemoryAILeaveReportTokenStore : IAILeaveReportTokenStore
         return true;
     }
 
+    /// <summary>
+    /// This Method Is Used To Clone Report Definition.
+    /// </summary>
+    /// <param name="report"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     private static AILeavePendingReport Clone(AILeavePendingReport report)
     {
-        AILeaveReportDefinitionM definition = JsonSerializer.Deserialize<AILeaveReportDefinitionM>(
-            JsonSerializer.Serialize(report.Definition))
-            ?? throw new InvalidOperationException("Unable to clone the report definition.");
+        AILeaveReportDefinitionM definition = JsonSerializer.Deserialize<AILeaveReportDefinitionM>(JsonSerializer.Serialize(report.Definition)) ?? throw new InvalidOperationException("Unable to clone the report definition.");
         return report with { Definition = definition };
     }
 }

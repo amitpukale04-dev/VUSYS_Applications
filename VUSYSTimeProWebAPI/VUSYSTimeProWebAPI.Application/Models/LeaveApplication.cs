@@ -36,6 +36,12 @@ namespace VUSYSTimeProWebAPI.Application.Models
         public int LeaveStatus { get; set; } = 1;
 
         /// <summary>
+        /// Is Request From AI Assistant
+        /// </summary>
+        [Display(Name = "Is Request From AI Assistant")]
+        public bool IsRequestFromAIAssistant { get; set; }
+
+        /// <summary>
         /// Action Type
         /// </summary>
         [DefaultValue("")]

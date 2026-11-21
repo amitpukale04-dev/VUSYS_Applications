@@ -477,6 +477,7 @@ public sealed class AILeaveManagementAgentService(IGeminiAIService ai, IAIAPICon
                 ToDate = action.ToDate!,
                 IsHalfDay = action.IsHalfDay,
                 HalfDayType = action.HalfDayType,
+                IsRequestFromAIAssistant = true,
                 Reason = action.Reason!,
                 CreatedBy = actor.UserId,
                 ActionBy = actor.UserId,
