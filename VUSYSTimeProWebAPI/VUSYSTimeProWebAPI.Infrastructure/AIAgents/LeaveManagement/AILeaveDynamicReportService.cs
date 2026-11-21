@@ -73,15 +73,10 @@ public sealed class AILeaveDynamicReportService(SQLDBHelper _objSQLDBHelper, ICo
             "LeaveBalances" => "LeavePeriod",
             _ => throw new ArgumentException("Invalid report date field.")
         };
-        static DateTime? ParseDate(string? value)
-        {
-            if (string.IsNullOrWhiteSpace(value)) return null;
-            if (!DateTime.TryParseExact(value, DateTimeFormatConstants.YYYYMMDD_DATEFORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
-                throw new ArgumentException("Report dates must use yyyy-MM-dd.");
-            return date;
-        }
-        DateTime? from = ParseDate(definition.FromDate);
-        DateTime? to = ParseDate(definition.ToDate);
+        
+        DateTime? from = string.IsNullOrWhiteSpace(definition.FromDate) ? null : DataTypeUtils.ToDateTimeExact(definition.FromDate.Trim(), DateTimeFormatConstants.YYYYMMDD_DATEFORMAT);
+        DateTime? to = string.IsNullOrWhiteSpace(definition.ToDate) ? null : DataTypeUtils.ToDateTimeExact(definition.ToDate.Trim(), DateTimeFormatConstants.YYYYMMDD_DATEFORMAT);
+
         if (from > to) throw new ArgumentException("FromDate cannot be after ToDate.");
         if (definition.ReportType == "LeaveBalances" && (from.HasValue || to.HasValue))
             throw new ArgumentException("Leave balances support LeaveYear rather than date range.");
