@@ -7,8 +7,10 @@ import { aiAssistantModules } from "./aiAssistantModules";
 import {
   processAILeaveRequest,
   confirmAILeaveAction,
+  exportAILeaveReport,
 } from "../../services/aiLeaveManagementService";
 import "./AIAssistantWidget.css";
+import { exportBase64File } from "../../utils/fileExportUtils";
 import { convertDateToSpecifiedFormat } from "../../utils/dateUtils";
 
 const initialConversation = () => ({
@@ -121,7 +123,8 @@ const restoreConversation = (userKey) => {
           (m) =>
             ["user", "assistant", "success", "error"].includes(m?.type) &&
             typeof m?.text === "string",
-        ),
+        )
+        .map(({ id, type, text, time }) => ({ id, type, text, time })),
       draft: typeof saved.draft === "string" ? saved.draft : "",
     };
   } catch {
@@ -270,6 +273,204 @@ function ReadOnlyLeaveResults({ result }) {
   );
 }
 
+// Report state belongs to the individual assistant message, never to the conversation globally.
+function AILeaveReport({ report, onExport, onRegenerate }) {
+  const [page, setPage] = useState(1);
+  const [exporting, setExporting] = useState("");
+  const [error, setError] = useState("");
+  const [expired, setExpired] = useState(false);
+  const busyRef = useRef(false);
+  const rows = report.rows;
+  const columns = Array.from(
+    rows.reduce((keys, row) => {
+      Object.keys(row || {}).forEach((key) => keys.add(key));
+      return keys;
+    }, new Set()),
+  );
+  const pages = Math.max(1, Math.ceil(rows.length / 30));
+  const currentPage = Math.min(page, pages);
+  const dateField = (key) => /(?:date|^FromDate$|^ToDate$)/i.test(key);
+  const formatCell = (key, value) => {
+    if (value === null || value === undefined || value === "") return "—";
+    if (dateField(key))
+      return (
+        convertDateToSpecifiedFormat(value, "dd-MMM-yyyy") || String(value)
+      );
+    return typeof value === "boolean" ? (value ? "Yes" : "No") : String(value);
+  };
+  const download = async (type) => {
+    if (busyRef.current || !report.token) return;
+    busyRef.current = true;
+    setExporting(type);
+    setError("");
+    try {
+      const file = await onExport(report, type);
+      exportBase64File({
+        base64Content: file.FileBase64,
+        contentType: file.ContentType,
+        fileName: file.FileName,
+      });
+    } catch (exception) {
+      const serverMessage =
+        exception?.response?.data?.data?.AI_LEAVE_MANAGEMENT_RESPONSE?.[0]
+          ?.Message ||
+        exception?.response?.data?.message ||
+        exception?.message ||
+        "";
+      const tokenError =
+        exception?.isReportTokenError || /token|expired/i.test(serverMessage);
+      if (tokenError) setExpired(true);
+      setError(
+        tokenError
+          ? "This report has expired. Regenerate it to download a fresh copy."
+          : exception?.message || "Unable to download the report.",
+      );
+    } finally {
+      busyRef.current = false;
+      setExporting("");
+    }
+  };
+  return (
+    <section className="tp-ai-report" aria-label="AI Leave Report">
+      <div className="tp-ai-report-heading">
+        <SvgIcon name="calendar" size={16} />
+        <strong>AI Leave Report</strong>
+      </div>
+      {rows.length ? (
+        <div
+          className="tp-ai-report-scroll"
+          tabIndex={0}
+          role="region"
+          aria-label="Scrollable report table"
+        >
+          <table className="tp-ai-report-table">
+            <thead>
+              <tr>
+                {columns.map((key) => (
+                  <th key={key} scope="col">
+                    {key}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows
+                .slice((currentPage - 1) * 30, currentPage * 30)
+                .map((row, index) => (
+                  <tr key={index}>
+                    {columns.map((key) => (
+                      <td
+                        key={key}
+                        className={
+                          typeof row?.[key] === "number" ||
+                          (typeof row?.[key] === "string" &&
+                            /^-?\d+(?:\.\d+)?$/.test(row[key]) &&
+                            !/(?:code|id|year|phone|zip)/i.test(key))
+                            ? "tp-ai-report-numeric"
+                            : ""
+                        }
+                      >
+                        {formatCell(key, row?.[key])}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="tp-ai-report-empty">No records found for this report.</p>
+      )}
+      <div className="tp-ai-report-footer">
+        <span>Total Records: {rows.length}</span>
+        {pages > 1 && (
+          <div className="tp-ai-report-pages">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setPage(currentPage - 1)}
+              aria-label="Previous page"
+            >
+              ‹
+            </button>
+            <span>
+              Page {currentPage} of {pages}
+            </span>
+            <button
+              type="button"
+              disabled={currentPage === pages}
+              onClick={() => setPage(currentPage + 1)}
+              aria-label="Next page"
+            >
+              ›
+            </button>
+          </div>
+        )}
+      </div>
+      {error && (
+        <div className="tp-ai-report-error" role="alert">
+          {error}
+        </div>
+      )}
+      <div className="tp-ai-report-actions">
+        {expired || !report.token ? (
+          <button
+            type="button"
+            className="btn btn-sm tp-ai-report-regenerate"
+            disabled={!!exporting}
+            onClick={() => onRegenerate(report)}
+          >
+            Regenerate Report
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="btn btn-sm tp-ai-report-excel tp-ai-report-icon-button"
+              disabled={!!exporting}
+              title={
+                exporting === "Excel" ? "Exporting Excel..." : "Download Excel"
+              }
+              aria-label={
+                exporting === "Excel" ? "Exporting Excel" : "Download Excel"
+              }
+              onClick={() => void download("Excel")}
+            >
+              {exporting === "Excel" ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  aria-hidden="true"
+                />
+              ) : (
+                <SvgIcon name="aiExcelFile" size={20} />
+              )}
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm tp-ai-report-pdf tp-ai-report-icon-button"
+              disabled={!!exporting}
+              title={exporting === "PDF" ? "Exporting PDF..." : "Download PDF"}
+              aria-label={
+                exporting === "PDF" ? "Exporting PDF" : "Download PDF"
+              }
+              onClick={() => void download("PDF")}
+            >
+              {exporting === "PDF" ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  aria-hidden="true"
+                />
+              ) : (
+                <SvgIcon name="aiPdfFile" size={20} />
+              )}
+            </button>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default function AIAssistantWidget() {
   const { user, isAuthenticated, authStage } = useAuth();
   const { hasPermission, isLoading: permissionsLoading } =
@@ -281,6 +482,16 @@ export default function AIAssistantWidget() {
     user?.isAIAssistantEnabled === true &&
     (role === "admin" || role === "employee") &&
     !permissionsLoading;
+  const isReportAdmin =
+    Number(
+      user?.roleId ??
+        user?.RoleId ??
+        user?.RoleID ??
+        user?.roleID ??
+        user?.Role?.RoleId,
+    ) === 1 || role === "admin";
+  const [regeneratingId, setRegeneratingId] = useState(null);
+  const regenerationRef = useRef(false);
   const canApply = hasPermission("My Leave Requests", "Apply");
   const canApprove = hasPermission("Leave Approval/Rejection List", "Approve");
   const [open, setOpen] = useState(false);
@@ -289,10 +500,14 @@ export default function AIAssistantWidget() {
   const [remarksDraft, setRemarksDraft] = useState("");
   const dragRef = useRef(null);
   const [moduleId, setModuleId] = useState(null);
+  const [reportsSubmodule, setReportsSubmodule] = useState(null);
+  const conversationKey =
+    moduleId === "reports" ? "leaveReports" : "leaveManagement";
   const [conversations, setConversations] = useState({
     leaveManagement: initialConversation(),
+    leaveReports: initialConversation(),
   });
-  const current = conversations.leaveManagement;
+  const current = conversations[conversationKey];
   const messagesEndRef = useRef(null);
   const requestRef = useRef(false);
   const selectionRef = useRef(null);
@@ -309,10 +524,12 @@ export default function AIAssistantWidget() {
       selectionRef.current = null;
       setOpen(false);
       setModuleId(null);
+      setReportsSubmodule(null);
       setConversations({
         leaveManagement: sessionKey
           ? restoreConversation(sessionKey)
           : initialConversation(),
+        leaveReports: initialConversation(),
       });
       setInputError("");
       setPanelPosition(null);
@@ -325,7 +542,9 @@ export default function AIAssistantWidget() {
       localStorage.setItem(
         storageKey(sessionKey),
         JSON.stringify({
-          messages: conversations.leaveManagement.messages.slice(-100),
+          messages: conversations.leaveManagement.messages
+            .slice(-100)
+            .map(({ id, type, text, time }) => ({ id, type, text, time })),
           draft: conversations.leaveManagement.draft,
         }),
       );
@@ -347,10 +566,10 @@ export default function AIAssistantWidget() {
   const update = (change) =>
     setConversations((previous) => ({
       ...previous,
-      leaveManagement:
+      [conversationKey]:
         typeof change === "function"
-          ? change(previous.leaveManagement)
-          : { ...previous.leaveManagement, ...change },
+          ? change(previous[conversationKey])
+          : { ...previous[conversationKey], ...change },
     }));
   const append = (type, text) =>
     update((previous) => ({
@@ -395,6 +614,12 @@ export default function AIAssistantWidget() {
       .join(", ") || "with leave-related questions"
   }. How can I help you today?`;
 
+  const reportSuggestions = [
+    "Generate employee-wise leave balance report for 2026",
+    "Show distinct employees who have leave balances",
+    "Generate leave applications report for 2026",
+    "Generate holiday report for 2026",
+  ];
   const send = async (overrideMessage = null) => {
     const message = readable(
       typeof overrideMessage === "string" ? overrideMessage : current.draft,
@@ -429,8 +654,23 @@ export default function AIAssistantWidget() {
       messages: [...previous.messages, newMessage("user", message)],
     }));
     try {
-      const details = await processAILeaveRequest(message, clarificationToken);
+      const details = await processAILeaveRequest(
+        message,
+        clarificationToken,
+        !clarificationToken && isReportAdmin
+          ? { action: "View", reportToken: "" }
+          : null,
+      );
       if (epoch !== epochRef.current) return;
+      if (
+        moduleId === "reports" &&
+        !details.report &&
+        !details.ClarificationToken
+      ) {
+        throw new Error(
+          "Please enter a leave reporting request. Other leave actions are available under Leave Management.",
+        );
+      }
       const token = readable(details.ConfirmationToken);
       const nextClarificationToken = readable(details.ClarificationToken);
       const isReadOnly =
@@ -446,6 +686,14 @@ export default function AIAssistantWidget() {
             }
           : null;
       selectionRef.current = selection;
+      const reportResult =
+        details.report === true && isReportAdmin
+          ? {
+              originalMessage: message,
+              token: readable(details.ReportToken),
+              rows: Array.isArray(details.reportRows) ? details.reportRows : [],
+            }
+          : null;
       const readOnlyResult =
         isReadOnly && !nextClarificationToken
           ? {
@@ -499,6 +747,7 @@ export default function AIAssistantWidget() {
                   : "Request processed."),
             ),
             ...(readOnlyResult ? { readOnlyResult } : {}),
+            ...(reportResult ? { reportResult } : {}),
           },
         ],
         pending: token && !remarksStep ? { ...details, token } : null,
@@ -529,6 +778,47 @@ export default function AIAssistantWidget() {
         requestRef.current = false;
         update({ busy: false });
       }
+    }
+  };
+
+  const exportReport = (report, type) =>
+    exportAILeaveReport(report.originalMessage, report.token, type);
+
+  const regenerateReport = async (report, messageId) => {
+    if (regenerationRef.current || requestRef.current) return;
+    regenerationRef.current = true;
+    setRegeneratingId(messageId);
+    const epoch = epochRef.current;
+    try {
+      const details = await processAILeaveRequest(report.originalMessage, "", {
+        action: "View",
+        reportToken: "",
+      });
+      if (epoch !== epochRef.current) return;
+      if (!details.report || !readable(details.ReportToken))
+        throw new Error("The report could not be regenerated.");
+      update((previous) => ({
+        ...previous,
+        messages: previous.messages.map((item) =>
+          item.id === messageId
+            ? {
+                ...item,
+                text: details.Message || item.text,
+                reportResult: {
+                  originalMessage: report.originalMessage,
+                  token: readable(details.ReportToken),
+                  rows: details.reportRows || [],
+                },
+              }
+            : item,
+        ),
+      }));
+    } catch (error) {
+      if (epoch === epochRef.current)
+        append("error", error?.message || "Unable to regenerate the report.");
+    } finally {
+      regenerationRef.current = false;
+      if (epoch === epochRef.current) setRegeneratingId(null);
     }
   };
 
@@ -673,6 +963,23 @@ export default function AIAssistantWidget() {
       "The pending action was cancelled. No changes were submitted.",
     );
   };
+  const openModule = (id) => {
+    if (requestRef.current || regenerationRef.current) return;
+    if (id === "reports" && !isReportAdmin) return;
+    setModuleId(id);
+    setReportsSubmodule(null);
+    setInputError("");
+  };
+  const goBackModule = () => {
+    if (requestRef.current || regenerationRef.current) return;
+    if (moduleId === "reports" && reportsSubmodule) {
+      setReportsSubmodule(null);
+    } else {
+      setModuleId(null);
+      setReportsSubmodule(null);
+    }
+    setInputError("");
+  };
   const resetConversation = () => {
     if (requestRef.current) return;
     epochRef.current += 1;
@@ -769,7 +1076,13 @@ export default function AIAssistantWidget() {
           >
             <div>
               <strong>
-                {moduleId ? "AI Assistant — Leave Management" : "AI Assistant"}
+                {moduleId === "reports"
+                  ? reportsSubmodule
+                    ? "AI Assistant — Leave Reports"
+                    : "AI Assistant — Reports"
+                  : moduleId
+                    ? "AI Assistant — Leave Management"
+                    : "AI Assistant"}
               </strong>
               <small>Your smart TimePro assistant</small>
             </div>
@@ -779,12 +1092,12 @@ export default function AIAssistantWidget() {
                   type="button"
                   title="Back to Modules"
                   aria-label="Back to Modules"
-                  onClick={() => setModuleId(null)}
+                  onClick={goBackModule}
                 >
                   <SvgIcon name="arrowLeft" size={18} />
                 </button>
               )}
-              {moduleId && (
+              {moduleId && (moduleId !== "reports" || reportsSubmodule) && (
                 <button
                   type="button"
                   title="New Conversation"
@@ -812,30 +1125,62 @@ export default function AIAssistantWidget() {
                 different activities in TimePro using natural-language
                 conversations. Please select a module to get started.
               </p>
-              {aiAssistantModules.map((module) => (
-                <button
-                  type="button"
-                  key={module.id}
-                  className="tp-ai-module-card"
-                  disabled={!module.enabled}
-                  onClick={() => setModuleId(module.id)}
-                >
-                  <SvgIcon name={module.icon} size={24} />
-                  <span>
-                    <strong>{module.name}</strong>
-                    <small>{module.description}</small>
-                  </span>
-                  <span
-                    className={`tp-ai-module-status ${module.enabled ? "tp-ai-module-status-available" : "tp-ai-module-status-soon"}`}
+              {aiAssistantModules
+                .filter((module) => !module.adminOnly || isReportAdmin)
+                .map((module) => (
+                  <button
+                    type="button"
+                    key={module.id}
+                    className="tp-ai-module-card"
+                    disabled={!module.enabled}
+                    onClick={() => openModule(module.id)}
                   >
-                    <SvgIcon
-                      name={module.enabled ? "aiAvailable" : "aiComingSoon"}
-                      size={15}
-                    />
-                    <span>{module.status}</span>
-                  </span>
-                </button>
-              ))}
+                    <SvgIcon name={module.icon} size={24} />
+                    <span>
+                      <strong>{module.name}</strong>
+                      <small>{module.description}</small>
+                    </span>
+                    <span
+                      className={`tp-ai-module-status ${module.enabled ? "tp-ai-module-status-available" : "tp-ai-module-status-soon"}`}
+                    >
+                      <SvgIcon
+                        name={module.enabled ? "aiAvailable" : "aiComingSoon"}
+                        size={15}
+                      />
+                      <span>{module.status}</span>
+                    </span>
+                  </button>
+                ))}
+            </div>
+          ) : moduleId === "reports" && !reportsSubmodule ? (
+            <div className="tp-ai-module-list tp-ai-report-submodules">
+              <p>Select a reporting module to generate and export reports.</p>
+              <button
+                type="button"
+                className="tp-ai-module-card"
+                onClick={() => setReportsSubmodule("leaveReports")}
+              >
+                <SvgIcon name="aiLeaveReports" size={24} />
+                <span>
+                  <strong>Leave Reports</strong>
+                  <small>Generate and export leave reports using AI.</small>
+                </span>
+                <span className="tp-ai-module-status tp-ai-module-status-available">
+                  <SvgIcon name="aiAvailable" size={15} />
+                  <span>Available</span>
+                </span>
+              </button>
+              <button type="button" className="tp-ai-module-card" disabled>
+                <SvgIcon name="aiTimesheetReports" size={24} />
+                <span>
+                  <strong>Timesheet Reports</strong>
+                  <small>AI timesheet reporting will be available later.</small>
+                </span>
+                <span className="tp-ai-module-status tp-ai-module-status-soon">
+                  <SvgIcon name="aiComingSoon" size={15} />
+                  <span>Coming Soon</span>
+                </span>
+              </button>
             </div>
           ) : (
             <>
@@ -845,7 +1190,11 @@ export default function AIAssistantWidget() {
                 aria-live="polite"
                 aria-relevant="additions text"
               >
-                <div className="tp-ai-bubble assistant">{welcome}</div>
+                <div className="tp-ai-bubble assistant">
+                  {moduleId === "reports"
+                    ? "Hello! I can generate and export leave reports. Describe the report you need."
+                    : welcome}
+                </div>
                 {current.messages.map((message) => (
                   <div key={message.id} className="tp-ai-message-entry">
                     <div className={`tp-ai-bubble ${message.type}`}>
@@ -854,6 +1203,21 @@ export default function AIAssistantWidget() {
                     </div>
                     {message.readOnlyResult && (
                       <ReadOnlyLeaveResults result={message.readOnlyResult} />
+                    )}
+                    {message.reportResult && isReportAdmin && (
+                      <AILeaveReport
+                        key={`${message.id}-${message.reportResult.token}`}
+                        report={message.reportResult}
+                        onExport={exportReport}
+                        onRegenerate={(report) =>
+                          void regenerateReport(report, message.id)
+                        }
+                      />
+                    )}
+                    {regeneratingId === message.id && (
+                      <div className="tp-ai-report-loading" role="status">
+                        Regenerating report...
+                      </div>
                     )}
                   </div>
                 ))}
@@ -1170,7 +1534,10 @@ export default function AIAssistantWidget() {
                 !current.pending &&
                 !current.selection && (
                   <div className="tp-ai-suggestions">
-                    {permittedSuggestions.map((prompt) => (
+                    {(moduleId === "reports"
+                      ? reportSuggestions
+                      : permittedSuggestions
+                    ).map((prompt) => (
                       <button
                         type="button"
                         key={prompt}
@@ -1193,9 +1560,11 @@ export default function AIAssistantWidget() {
                   rows={2}
                   ariaLabel="Message AI Assistant"
                   placeholder={
-                    canApprove
-                      ? "Ask about leave balance, history, status, or actions..."
-                      : "Ask about leave balance, history, status, or requests..."
+                    moduleId === "reports"
+                      ? "Describe the leave report to generate..."
+                      : canApprove
+                        ? "Ask about leave balance, history, status, or actions..."
+                        : "Ask about leave balance, history, status, or requests..."
                   }
                   value={current.draft}
                   disabled={

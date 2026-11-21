@@ -235,6 +235,32 @@ const paths = {
       <path d="m18.2 19.2 2.3 2.3" />
     </>
   ),
+  aiLeaveReports: (
+    <>
+      <path d="M4 3h11l5 5v13H4z" />
+      <path d="M15 3v5h5M8 12h8M8 16h5" />
+      <path d="m15 17 2 2 3-4" />
+    </>
+  ),
+  aiTimesheetReports: (
+    <>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M8 3v4M16 3v4M3 10h18M7 14h4M7 18h4M15 14h3M15 18h3" />
+    </>
+  ),
+  aiExcelFile: (
+    <>
+      <path d="M5 2.5h10l4 4v15H5zM15 2.5v5h4" />
+      <path d="m8 12 6 7m0-7-6 7" />
+      <path d="M8 9h4" />
+    </>
+  ),
+  aiPdfFile: (
+    <>
+      <path d="M5 2.5h10l4 4v15H5zM15 2.5v5h4" />
+      <path d="M8 12v7m0-7h2a2 2 0 0 1 0 4H8M13 12v7h1a3 3 0 0 0 0-7h-1M18 12h-2v7m0-4h2" />
+    </>
+  ),
   exportExcel: (
     <>
       <path d="M5 3h10l4 4v14H5z" />

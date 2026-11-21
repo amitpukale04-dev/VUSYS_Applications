@@ -1,34 +1,38 @@
 // src/utils/fileExportUtils.js
+import { CONTENT_TYPE_CONSTANTS } from "../constants/ContentTypeConstants";
+import { FILE_EXTENSION_CONSTANTS } from "../constants/FileExtensionConstants";
 
 const DEFAULT_FILE_NAME = "download";
-const DEFAULT_CONTENT_TYPE = "application/octet-stream";
+const DEFAULT_CONTENT_TYPE = CONTENT_TYPE_CONSTANTS.DEFAULT;
 
 const CONTENT_TYPE_EXTENSION_MAP = Object.freeze({
-  "application/pdf": ".pdf",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
-  "application/vnd.ms-excel": ".xls",
-  "text/csv": ".csv",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
-  "application/msword": ".doc",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
-  "application/vnd.ms-powerpoint": ".ppt",
-  "application/zip": ".zip",
-  "application/x-zip-compressed": ".zip",
-  "application/json": ".json",
-  "text/plain": ".txt",
-  "text/html": ".html",
-  "image/png": ".png",
-  "image/jpeg": ".jpg",
-  "image/jpg": ".jpg",
-  "image/gif": ".gif",
-  "image/webp": ".webp",
-  "image/bmp": ".bmp",
-  "image/svg+xml": ".svg",
-  "video/mp4": ".mp4",
-  "video/mpeg": ".mpeg",
-  "video/webm": ".webm",
-  "audio/mpeg": ".mp3",
-  "audio/wav": ".wav",
+  [CONTENT_TYPE_CONSTANTS.PDF]: FILE_EXTENSION_CONSTANTS.PDF,
+  [CONTENT_TYPE_CONSTANTS.EXCEL_XLSX]: FILE_EXTENSION_CONSTANTS.EXCEL_XLSX,
+  [CONTENT_TYPE_CONSTANTS.EXCEL_XLS]: FILE_EXTENSION_CONSTANTS.EXCEL_XLS,
+  [CONTENT_TYPE_CONSTANTS.CSV]: FILE_EXTENSION_CONSTANTS.CSV,
+  [CONTENT_TYPE_CONSTANTS.WORD_DOCX]: FILE_EXTENSION_CONSTANTS.WORD_DOCX,
+  [CONTENT_TYPE_CONSTANTS.WORD_DOC]: FILE_EXTENSION_CONSTANTS.WORD_DOC,
+  [CONTENT_TYPE_CONSTANTS.POWERPOINT_PPTX]:
+    FILE_EXTENSION_CONSTANTS.POWERPOINT_PPTX,
+  [CONTENT_TYPE_CONSTANTS.POWERPOINT_PPT]:
+    FILE_EXTENSION_CONSTANTS.POWERPOINT_PPT,
+  [CONTENT_TYPE_CONSTANTS.ZIP]: FILE_EXTENSION_CONSTANTS.ZIP,
+  [CONTENT_TYPE_CONSTANTS.ZIP_COMPRESSED]: FILE_EXTENSION_CONSTANTS.ZIP,
+  [CONTENT_TYPE_CONSTANTS.JSON]: FILE_EXTENSION_CONSTANTS.JSON,
+  [CONTENT_TYPE_CONSTANTS.TEXT]: FILE_EXTENSION_CONSTANTS.TEXT,
+  [CONTENT_TYPE_CONSTANTS.HTML]: FILE_EXTENSION_CONSTANTS.HTML,
+  [CONTENT_TYPE_CONSTANTS.PNG]: FILE_EXTENSION_CONSTANTS.PNG,
+  [CONTENT_TYPE_CONSTANTS.JPEG]: FILE_EXTENSION_CONSTANTS.JPEG,
+  [CONTENT_TYPE_CONSTANTS.JPG]: FILE_EXTENSION_CONSTANTS.JPEG,
+  [CONTENT_TYPE_CONSTANTS.GIF]: FILE_EXTENSION_CONSTANTS.GIF,
+  [CONTENT_TYPE_CONSTANTS.WEBP]: FILE_EXTENSION_CONSTANTS.WEBP,
+  [CONTENT_TYPE_CONSTANTS.BMP]: FILE_EXTENSION_CONSTANTS.BMP,
+  [CONTENT_TYPE_CONSTANTS.SVG]: FILE_EXTENSION_CONSTANTS.SVG,
+  [CONTENT_TYPE_CONSTANTS.MP4]: FILE_EXTENSION_CONSTANTS.MP4,
+  [CONTENT_TYPE_CONSTANTS.MPEG_VIDEO]: FILE_EXTENSION_CONSTANTS.MPEG_VIDEO,
+  [CONTENT_TYPE_CONSTANTS.WEBM]: FILE_EXTENSION_CONSTANTS.WEBM,
+  [CONTENT_TYPE_CONSTANTS.MP3]: FILE_EXTENSION_CONSTANTS.MP3,
+  [CONTENT_TYPE_CONSTANTS.WAV]: FILE_EXTENSION_CONSTANTS.WAV,
 });
 
 const normalizeContentType = (contentType = "") =>
@@ -45,7 +49,10 @@ const hasFileExtension = (fileName = "") => {
   );
   const lastDotIndex = normalizedFileName.lastIndexOf(".");
 
-  return lastDotIndex > lastSlashIndex + 0 && lastDotIndex < normalizedFileName.length - 1;
+  return (
+    lastDotIndex > lastSlashIndex + 0 &&
+    lastDotIndex < normalizedFileName.length - 1
+  );
 };
 
 const getDataUrlParts = (value = "") => {
@@ -66,7 +73,10 @@ const getDataUrlParts = (value = "") => {
   const metadataParts = metadata.split(";");
   const contentType = normalizeContentType(metadataParts[0]);
   const isBase64 = metadataParts.some(
-    (part) => String(part || "").trim().toLowerCase() === "base64",
+    (part) =>
+      String(part || "")
+        .trim()
+        .toLowerCase() === "base64",
   );
 
   return {
@@ -192,7 +202,6 @@ export const exportBase64File = ({
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-
   window.setTimeout(() => {
     URL.revokeObjectURL(objectUrl);
   }, 0);

@@ -1,10 +1,12 @@
+import { CONTENT_TYPE_CONSTANTS } from "../constants/ContentTypeConstants";
 import { APP_CONFIG, buildApiUrl } from "./environmentConfig";
 
 export const baseUrl = APP_CONFIG.apiBaseUrl;
 export const Enviroment = APP_CONFIG.environment;
 export const VersionNo = APP_CONFIG.versionNo;
-export const ContentType = "application/json";
-export const MultiPartFormDataContentType = "multipart/form-data";
+export const ContentType = CONTENT_TYPE_CONSTANTS.JSON;
+export const MultiPartFormDataContentType =
+  CONTENT_TYPE_CONSTANTS.MULTIPART_FORM_DATA;
 
 /**
  * Central API endpoint definitions.

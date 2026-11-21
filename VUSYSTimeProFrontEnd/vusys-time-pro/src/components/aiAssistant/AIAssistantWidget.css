@@ -329,26 +329,17 @@
     font-weight: 600;
 }
 
-.tp-ai-confirm-accept {
+.tp-ai-confirm-accept,
+.tp-ai-confirm-cancel {
     background: linear-gradient(110deg, #5145e9, #7731e8);
     border: 1px solid #6550ea;
     color: #fff;
 }
 
-.tp-ai-confirm-accept:hover {
+.tp-ai-confirm-accept:hover, 
+.tp-ai-confirm-cancel:hover {
     color: #fff;
     filter: brightness(1.08);
-}
-
-.tp-ai-confirm-cancel {
-    background: var(--bs-body-bg);
-    border: 1px solid var(--tp-form-control-border, #d2d7e2);
-    color: var(--bs-body-color);
-}
-
-.tp-ai-confirm-cancel:hover {
-    background: var(--bs-tertiary-bg);
-    color: var(--bs-body-color);
 }
 
 .tp-ai-input-error {
@@ -441,13 +432,6 @@
 
 .tp-ai-suggestions button {
     background: var(--tp-bg);
-    color: var(--tp-text);
-    border-color: var(--tp-form-control-border);
-}
-
-.tp-ai-confirm-cancel,
-.tp-ai-confirm-cancel:hover {
-    background: var(--tp-card);
     color: var(--tp-text);
     border-color: var(--tp-form-control-border);
 }
@@ -1347,5 +1331,212 @@ html[data-theme="dark"] .tp-ai-module-status-soon {
 @media (prefers-reduced-motion: reduce) {
     .tp-ai-module-status svg {
         animation: none !important;
+    }
+}
+
+/* Dynamic AI Leave Report: contained inside its own conversation message. */
+.tp-ai-message-entry,
+.tp-ai-report {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.tp-ai-report {
+    margin: 8px 0 12px;
+    padding: 12px;
+    border: 1px solid var(--tp-border, #d2d7e2);
+    border-radius: 12px;
+    background: var(--tp-card-bg, var(--bs-body-bg));
+    color: var(--bs-body-color);
+}
+
+.tp-ai-report-heading {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    color: var(--bs-body-color);
+}
+
+.tp-ai-report-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 310px;
+    border-radius: 8px;
+    border: 1px solid var(--tp-border, #d2d7e2);
+}
+
+.tp-ai-report-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.tp-ai-report-table th,
+.tp-ai-report-table td {
+    padding: 9px 11px;
+    border-bottom: 1px solid var(--tp-border, #d2d7e2);
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    max-width: 220px;
+}
+
+.tp-ai-report-table th {
+    background: var(--bs-tertiary-bg);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    font-weight: 700;
+}
+
+.tp-ai-report-table .tp-ai-report-numeric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.tp-ai-report-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.tp-ai-report-pages {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tp-ai-report-pages button {
+    border: 1px solid var(--tp-border, #d2d7e2);
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    border-radius: 6px;
+    min-width: 28px;
+    min-height: 28px;
+}
+
+.tp-ai-report-pages button:disabled {
+    opacity: .4;
+}
+
+.tp-ai-report-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.tp-ai-report-actions .btn {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.tp-ai-report-excel {
+    color: #fff;
+    background: #16835b;
+    border-color: #16835b;
+}
+
+.tp-ai-report-pdf {
+    color: #fff;
+    background: #6540ed;
+    border-color: #6540ed;
+}
+
+.tp-ai-report-regenerate {
+    color: #fff;
+    background: #6540ed;
+    border-color: #6540ed;
+}
+
+.tp-ai-report-excel:hover,
+.tp-ai-report-pdf:hover,
+.tp-ai-report-regenerate:hover {
+    color: #fff;
+    filter: brightness(.91);
+}
+
+.tp-ai-report-error {
+    margin-top: 8px;
+    color: var(--bs-danger-text-emphasis, #b42318);
+    font-size: 12px;
+}
+
+.tp-ai-report-empty,
+.tp-ai-report-loading {
+    font-size: 12px;
+    color: var(--bs-secondary-color);
+}
+
+@media (max-width: 480px) {
+    .tp-ai-report {
+        padding: 9px;
+    }
+
+    .tp-ai-report-actions .btn {
+        flex: 1 1 125px;
+    }
+}
+
+/* AI Reports module and compact document export actions. Existing panel geometry is unchanged. */
+.tp-ai-report-submodules {
+    min-width: 0;
+}
+
+.tp-ai-report-actions .tp-ai-report-icon-button {
+    width: 38px;
+    height: 36px;
+    min-width: 38px;
+    flex: 0 0 38px;
+    padding: 5px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: none;
+}
+
+.tp-ai-report-actions .tp-ai-report-icon-button:hover,
+.tp-ai-report-actions .tp-ai-report-icon-button:focus-visible {
+    color: #fff;
+    filter: none;
+    box-shadow: none;
+}
+
+.tp-ai-report-actions .tp-ai-report-excel,
+.tp-ai-report-actions .tp-ai-report-excel:hover,
+.tp-ai-report-actions .tp-ai-report-excel:focus-visible {
+    background-color: #16835b;
+    border-color: #16835b;
+    color: #fff;
+}
+
+.tp-ai-report-actions .tp-ai-report-pdf,
+.tp-ai-report-actions .tp-ai-report-pdf:hover,
+.tp-ai-report-actions .tp-ai-report-pdf:focus-visible {
+    background-color: #6540ed;
+    border-color: #6540ed;
+    color: #fff;
+}
+
+.tp-ai-report-actions .tp-ai-report-icon-button:disabled {
+    opacity: .65;
+}
+
+@media (max-width: 480px) {
+    .tp-ai-report-actions .tp-ai-report-icon-button {
+        flex: 0 0 38px;
     }
 }

@@ -8,6 +8,15 @@ export const aiAssistantModules = Object.freeze([
     status: "Available",
   },
   {
+    id: "reports",
+    name: "Reports",
+    icon: "report",
+    description: "Generate and export AI reports.",
+    enabled: true,
+    adminOnly: true,
+    status: "Available",
+  },
+  {
     id: "timesheet",
     name: "Timesheet",
     icon: "timesheet",
