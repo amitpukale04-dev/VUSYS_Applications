@@ -1,0 +1,1 @@
+export const ROUTE_CONSTANTS={AUTH:{LOGIN:"/login",FORGOT_PASSWORD:"/login",RESET_PASSWORD:"/login",OTP_AUTHENTICATION:"/login",CHANGE_PASSWORD:"/configuration",USER_PROFILE:"/user-profile"},COMMON:{ERROR:"/error"},CODE_REVIEW:{REPOSITORIES:"/repositories",PULL_REQUESTS:"/pull-requests",NEW_REVIEW:"/reviews/new",HISTORY:"/reviews/history",CONFIGURATION:"/configuration"}};

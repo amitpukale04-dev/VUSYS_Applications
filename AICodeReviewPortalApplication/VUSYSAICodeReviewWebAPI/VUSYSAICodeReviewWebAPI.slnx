@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="VUSYSAICodeReviewWebAPI.Api/VUSYSAICodeReviewWebAPI.Api.csproj" />
+  <Project Path="VUSYSAICodeReviewWebAPI.Application/VUSYSAICodeReviewWebAPI.Application.csproj" />
+  <Project Path="VUSYSAICodeReviewWebAPI.Domain/VUSYSAICodeReviewWebAPI.Domain.csproj" />
+  <Project Path="VUSYSAICodeReviewWebAPI.Infrastructure/VUSYSAICodeReviewWebAPI.Infrastructure.csproj" />
+  <Project Path="VUSYSAICodeReviewWebAPI.Tests/VUSYSAICodeReviewWebAPI.Tests.csproj" />
+</Solution>

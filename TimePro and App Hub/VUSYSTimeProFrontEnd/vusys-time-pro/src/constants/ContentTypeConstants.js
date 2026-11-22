@@ -1,0 +1,32 @@
+export const CONTENT_TYPE_CONSTANTS = Object.freeze({
+  DEFAULT: "application/octet-stream",
+  MULTIPART_FORM_DATA: "multipart/form-data",
+  PDF: "application/pdf",
+  EXCEL_XLSX:
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  EXCEL_XLS: "application/vnd.ms-excel",
+  CSV: "text/csv",
+  WORD_DOCX:
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  WORD_DOC: "application/msword",
+  POWERPOINT_PPTX:
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  POWERPOINT_PPT: "application/vnd.ms-powerpoint",
+  ZIP: "application/zip",
+  ZIP_COMPRESSED: "application/x-zip-compressed",
+  JSON: "application/json",
+  TEXT: "text/plain",
+  HTML: "text/html",
+  PNG: "image/png",
+  JPEG: "image/jpeg",
+  JPG: "image/jpg",
+  GIF: "image/gif",
+  WEBP: "image/webp",
+  BMP: "image/bmp",
+  SVG: "image/svg+xml",
+  MP4: "video/mp4",
+  MPEG_VIDEO: "video/mpeg",
+  WEBM: "video/webm",
+  MP3: "audio/mpeg",
+  WAV: "audio/wav",
+});

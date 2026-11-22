@@ -1,0 +1,140 @@
+.tp-pr-changes {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tp-pr-heading,
+.tp-pr-file-toggle,
+.tp-pr-file-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .65rem;
+}
+
+.tp-pr-heading { justify-content: space-between; margin-bottom: .75rem; }
+.tp-pr-heading h3 { margin: 0; }
+.tp-pr-changes h4 { font-size: 1rem; }
+.tp-pr-description { white-space: pre-wrap; }
+.tp-pr-filter { max-width: 22rem; margin-bottom: 1rem; }
+
+.tp-pr-file {
+  border: 1px solid var(--tp-border);
+  border-radius: .6rem;
+  overflow: hidden;
+  margin-top: .65rem;
+}
+
+.tp-pr-file-toggle {
+  width: 100%;
+  text-align: start;
+  padding: .65rem .8rem;
+  background: var(--tp-bg);
+  color: var(--tp-text);
+  border: 0;
+}
+
+.tp-pr-file-toggle:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
+.tp-pr-file-name { flex: 1 1 14rem; min-width: 0; font-weight: 600; }
+.tp-pr-counts { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tp-pr-notice, .tp-pr-file-actions { margin: 0; padding: .65rem .8rem; }
+
+.tp-pr-code-scroll {
+  max-width: 100%;
+  max-height: 34rem;
+  overflow: auto;
+  border-block: 1px solid var(--tp-border);
+}
+
+.tp-pr-code {
+  width: max-content;
+  min-width: 100%;
+  font: .8rem/1.55 ui-monospace, Consolas, monospace;
+  color: var(--tp-text);
+}
+
+.tp-pr-code td { padding: 0 .5rem; vertical-align: top; }
+.tp-pr-hunk { background: var(--tp-bg); }
+.tp-pr-line-added { background: rgba(45, 170, 95, .16); }
+.tp-pr-line-removed { background: rgba(224, 65, 85, .16); }
+.tp-pr-line-metadata { font-style: italic; }
+.tp-pr-line-number { width: 3.5rem; text-align: end; opacity: .85; }
+.tp-pr-marker { width: 1.4rem; text-align: center; }
+.tp-pr-source, .tp-pr-hunk td { white-space: pre; tab-size: 4; }
+
+.tp-pr-versions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+  padding: .75rem;
+}
+
+.tp-pr-version { min-width: 0; }
+.tp-pr-version h5 { font-size: .9rem; }
+.tp-pr-version p { margin-bottom: .4rem; }
+@media (max-width: 767px) {
+  .tp-pr-versions { grid-template-columns: minmax(0, 1fr); }
+  .tp-pr-code td { padding-inline: .3rem; }
+  .tp-pr-line-number { width: 2.6rem; }
+}
+
+.tp-pr-selector { padding-block: .75rem; }
+.tp-pr-selector summary { font-weight: 700; cursor: pointer; overflow-wrap: anywhere; }
+.tp-pr-selector form { margin-top: 1rem; }
+.tp-pr-workspace-nav { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .85rem; }
+.tp-pr-ai-actions .tp-cr-btn { margin: .25rem .55rem .25rem 0; }
+.tp-manual-review textarea { resize: vertical; }
+.tp-manual-review > p { margin-block: .85rem; }
+.tp-manual-comments { padding-inline-start: 1.25rem; }
+.tp-manual-comments li { margin-bottom: .8rem; overflow-wrap: anywhere; }
+.tp-manual-comments p { white-space: pre-wrap; }
+.tp-pr-add-comment {
+  margin-inline-start: .35rem;
+  border: 1px solid var(--tp-border);
+  border-radius: .25rem;
+  color: var(--tp-text);
+  background: var(--tp-card);
+  line-height: 1.2;
+}
+.tp-pr-compare-dialog {
+  width: min(94vw, 114rem);
+  max-width: none;
+  max-height: 92vh;
+  max-height: 92dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  padding: 1rem;
+  border: 1px solid var(--tp-border);
+  border-radius: .75rem;
+  background: var(--tp-card);
+  color: var(--tp-text);
+}
+.tp-pr-compare-dialog::backdrop { background: rgba(8, 12, 25, .66); }
+.tp-pr-compare-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-bottom: .55rem;
+}
+.tp-pr-compare-header h4 { margin: 0; }
+.tp-pr-compare-header button { flex-shrink: 0; }
+.tp-pr-version-path { overflow-wrap: anywhere; font: .8rem/1.5 ui-monospace, Consolas, monospace; }
+.tp-pr-version-scroll {
+  position: relative;
+  height: min(53vh, 42rem);
+  height: min(53dvh, 42rem);
+  overscroll-behavior: contain;
+  border: 1px solid var(--tp-border);
+  border-radius: .4rem;
+  background: var(--tp-bg);
+}
+.tp-pr-compare-dialog .tp-pr-versions { padding: 0; }
+
+@media (max-width: 767px) {
+  .tp-pr-compare-dialog { width: calc(100vw - 1rem); padding: .75rem; }
+  .tp-pr-version-scroll { height: 27vh; height: 27dvh; }
+  .tp-pr-compare-header { flex-wrap: wrap; }
+  .tp-pr-workspace-nav .tp-cr-btn { flex: 1 1 auto; }
+}

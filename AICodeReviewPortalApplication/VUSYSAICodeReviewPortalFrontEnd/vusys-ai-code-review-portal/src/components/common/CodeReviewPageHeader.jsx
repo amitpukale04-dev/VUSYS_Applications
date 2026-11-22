@@ -1,0 +1,1 @@
+export default function CodeReviewPageHeader({title,description,icon="bi-code-slash",children}){return <div className="tp-cr-page"><div className="tp-cr-title"><div><h2><i className={`bi ${icon} me-2`}/>{title}</h2><p>{description}</p></div><div className="tp-cr-title-actions">{children}</div></div></div>}
