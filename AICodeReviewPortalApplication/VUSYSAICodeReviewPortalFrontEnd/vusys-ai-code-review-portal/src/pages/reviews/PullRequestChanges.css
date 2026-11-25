@@ -138,3 +138,47 @@
   .tp-pr-compare-header { flex-wrap: wrap; }
   .tp-pr-workspace-nav .tp-cr-btn { flex: 1 1 auto; }
 }
+
+.tp-pr-github-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .45rem;
+  margin: 0;
+}
+
+.tp-pr-github-status-label {
+  margin-inline-end: .2rem;
+  font-size: .8rem;
+  font-weight: 700;
+}
+
+.tp-pr-github-status .tp-cr-status {
+  border-radius: 999px;
+  padding: .35rem .65rem;
+  font-size: .75rem;
+}
+
+.tp-pr-github-status .tp-cr-status-warning {
+  color: #805100;
+}
+
+.tp-pr-github-status .tp-cr-status-success {
+  color: #08674a;
+}
+
+.tp-pr-github-status .tp-cr-status-danger {
+  color: #a22239;
+  background: rgba(220, 53, 69, .13);
+}
+
+[data-theme="dark"] .tp-pr-github-status .tp-cr-status-warning,
+[data-bs-theme="dark"] .tp-pr-github-status .tp-cr-status-warning { color: #ffda85; }
+
+[data-theme="dark"] .tp-pr-github-status .tp-cr-status-success,
+[data-bs-theme="dark"] .tp-pr-github-status .tp-cr-status-success { color: #71ebbf; }
+
+[data-theme="dark"] .tp-pr-github-status .tp-cr-status-danger,
+[data-bs-theme="dark"] .tp-pr-github-status .tp-cr-status-danger { color: #ff9bab; }
+
+.tp-pr-github-status + p { margin-top: .75rem; }

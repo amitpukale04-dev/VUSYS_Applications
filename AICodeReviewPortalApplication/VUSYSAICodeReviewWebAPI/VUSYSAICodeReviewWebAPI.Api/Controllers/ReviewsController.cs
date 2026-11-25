@@ -36,14 +36,14 @@ public sealed class ReviewsController(ReviewService reviews, IOptions<GitHubOpti
     [RequestSizeLimit(200_000)]
     public async Task<IActionResult> PublishManual(ManualReviewRequest request)
     {
-        long gitHubReviewId = await reviews.PublishManual(request, RequestCancellationToken);
-        return Ok(new { published = true, gitHubReviewId });
+        var publication = await reviews.PublishManual(request, RequestCancellationToken);
+        return Ok(publication);
     }
 
     [HttpPost("publish")]
     public async Task<IActionResult> Publish(PublishRequest request)
     {
-        long gitHubReviewId = await reviews.Publish(request, RequestCancellationToken);
-        return Ok(new { published = true, gitHubReviewId });
+        var publication = await reviews.Publish(request, RequestCancellationToken);
+        return Ok(publication);
     }
 }

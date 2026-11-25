@@ -18,6 +18,20 @@ public interface IGitHubService
     Task<long> Publish(string owner, string repo, int number, string sha, string body, InlineComment[] comments, CancellationToken ct);
 }
 
+public interface IPullRequestActions
+{
+    Task<PullActionStatus> Status(string owner, string repo, int number, CancellationToken ct);
+    Task<JsonElement> Threads(string owner, string repo, int number, string? cursor, CancellationToken ct);
+    Task<JsonElement> ThreadComments(string owner, string repo, int number, string threadId, string? cursor, CancellationToken ct);
+    Task UpdateThread(string owner, string repo, int number, string threadId, string? reply, CancellationToken ct);
+    Task<PullActionResult> Execute(string owner, string repo, int number, string sha, bool merge, CancellationToken ct);
+}
+
+public interface IReviewEmail
+{
+    Task<(string Status, string Message)> Notify(Pull pull, string repository, long reviewId, string body, CancellationToken ct);
+}
+
 public interface IGeminiService
 {
     Task<(string Summary, List<Finding> Findings)> Review(string diff, CancellationToken ct);

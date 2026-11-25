@@ -44,12 +44,12 @@ export default function Login() {
     useFormValidation(codeReviewLoginValidationRules);
   const navigate = useNavigate();
   const location = useLocation();
-  // ProtectedRoute supplies the originally requested URL, including its query string.
+  // ProtectedRoute supplies the originally requested URL, including its navigation state.
   const requestedLocation = location.state?.from;
   const destination =
     requestedLocation?.pathname?.startsWith("/") &&
     !requestedLocation.pathname.startsWith("//")
-      ? `${requestedLocation.pathname}${requestedLocation.search || ""}${requestedLocation.hash || ""}`
+      ? `${requestedLocation.pathname}${requestedLocation.hash || ""}`
       : "/";
 
   const updateField = (name, value) => {
@@ -121,7 +121,10 @@ export default function Login() {
       const redirectHomeAfterLogout =
         sessionStorage.getItem(STORAGE_KEYS.redirectHomeAfterLogout) === "true";
       sessionStorage.removeItem(STORAGE_KEYS.redirectHomeAfterLogout);
-      navigate(redirectHomeAfterLogout ? "/" : destination, { replace: true });
+      navigate(redirectHomeAfterLogout ? "/" : destination, {
+        replace: true,
+        state: redirectHomeAfterLogout ? null : requestedLocation?.state,
+      });
     } catch (error) {
       if (error?.isApiValidationError) {
         applyApiValidationErrors(

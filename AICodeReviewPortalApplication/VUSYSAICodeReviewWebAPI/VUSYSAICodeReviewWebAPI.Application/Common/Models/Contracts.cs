@@ -3,6 +3,18 @@ using System.Text.Json;
 
 namespace VUSYSAICodeReviewWebAPI.Application.Common.Models;
 
+public record PullActionRequest(
+    [Required, RegularExpression("[a-fA-F0-9]{40}")] string HeadSha);
+
+public record PullActionStatus(string State, string TargetBranch, string HeadSha, string? ReviewDecision,
+    bool InMergeQueue, bool MergeQueueEnabled, bool Draft, bool Stacked, string[] MergeBlockers, bool CommentPublished, bool Approved);
+
+public record ReviewThreadRequest([Required, StringLength(256)] string ThreadId);
+public record ReviewReplyRequest([Required, StringLength(256)] string ThreadId, [Required, StringLength(10000)] string Body);
+public record PullActionResult(string Status, string Message, string Actor);
+public record ReviewPublication(bool Published, long GitHubReviewId, string EmailStatus, string EmailMessage,
+    bool PublicationRecorded);
+
 public record LoginRequest([Required, StringLength(200)] string Username, [Required, StringLength(1024)] string Password);
 public record LoginResponse(string Token, string Username, DateTime ExpiresUtc);
 public record ReviewRequest([Required] string Owner, [Required] string Repo, [Range(1, int.MaxValue)] int Number);

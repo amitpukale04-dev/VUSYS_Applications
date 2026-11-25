@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import CodeReviewPageHeader from "../../components/common/CodeReviewPageHeader";
 import ConfirmModal from "../../components/common/ConfirmModal";
 import {
@@ -10,6 +10,8 @@ import { showApiError } from "../../utils/showApiError";
 import ToastService from "../../services/toastService";
 import PullRequestChanges from "./PullRequestChanges";
 import ManualReview from "./ManualReview";
+import PullRequestActions from "./PullRequestActions";
+import ReviewConversations from "./ReviewConversations";
 import ReviewSelectionDialog from "../../components/common/ReviewSelectionDialog";
 
 const validate = (repo, number) => {
@@ -33,7 +35,7 @@ const validate = (repo, number) => {
   };
 };
 
-function ReviewWorkspace({ initialRepo, initialNumber, setParams }) {
+function ReviewWorkspace({ initialRepo, initialNumber, onSelectPull }) {
   const [repo, setRepo] = useState(initialRepo);
   const [number, setNumber] = useState(initialNumber);
   const [errors, setErrors] = useState({});
@@ -44,7 +46,14 @@ function ReviewWorkspace({ initialRepo, initialNumber, setParams }) {
   );
   const [result, setResult] = useState(null);
   const [activity, setActivity] = useState("");
+  const [statusRevision, setStatusRevision] = useState(0);
+  const reviewChanged = () => setStatusRevision((previous) => previous + 1);
   const [view, setView] = useState("changes");
+  const changedFiles = useRef(null);
+  const openChangedFiles = () => {
+    setView("changes");
+    requestAnimationFrame(() => changedFiles.current?.focus());
+  };
   const [pull, setPull] = useState(null);
   const [commentTarget, setTarget] = useState(null);
   const target =
@@ -85,8 +94,9 @@ function ReviewWorkspace({ initialRepo, initialNumber, setParams }) {
     setActivity("publish");
     try {
       const [owner, name] = result.repository.split("/");
-      await publishReview(result.id, owner, name, result.pullNumber);
-      setResult((previous) => ({ ...previous, published: true }));
+      const publication = await publishReview(result.id, owner, name, result.pullNumber);
+      setResult((previous) => ({ ...previous, ...publication }));
+      reviewChanged();
       ToastService.success("COMMENT review published to GitHub.");
     } catch (exception) {
       showApiError(exception);
@@ -191,12 +201,7 @@ function ReviewWorkspace({ initialRepo, initialNumber, setParams }) {
           onClose={() => setPickerOpen(false)}
           onSelect={(name, pullNumber) => {
             if (initialRepo !== name || initialNumber !== String(pullNumber)) {
-              setParams((current) => {
-                const next = new URLSearchParams(current);
-                next.set("repository", name);
-                next.set("pr", String(pullNumber));
-                return next;
-              });
+              onSelectPull(name, pullNumber);
             } else {
               setRepo(name);
               setNumber(String(pullNumber));
@@ -217,6 +222,7 @@ function ReviewWorkspace({ initialRepo, initialNumber, setParams }) {
             ["changes", "Changed Files"],
             ["ai", "AI Review"],
             ["manual", "Manual Review"],
+            ["conversations", "Review Conversations"],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -228,16 +234,24 @@ function ReviewWorkspace({ initialRepo, initialNumber, setParams }) {
               {label}
             </button>
           ))}
+          <button type="button" className="tp-cr-btn tp-cr-btn-outline"
+            disabled={Boolean(activity) || !pull} onClick={reviewChanged}>
+            <i className="bi bi-arrow-clockwise" aria-hidden="true" /> Refresh PR Status
+          </button>
         </nav>
       )}
       {selection && (
-        <div hidden={view !== "changes"}>
+        <PullRequestActions key={`actions:${selection.repo}#${selection.number}`} selection={selection} pull={pull}
+          busy={Boolean(activity)} setActivity={setActivity} statusRevision={statusRevision} />
+      )}
+      {selection && (
+        <div ref={changedFiles} tabIndex={-1} aria-label="Changed files" hidden={view !== "changes"}>
           <PullRequestChanges
             key={`${selection.repo}#${selection.number}`}
             {...selection}
             onSnapshot={setPull}
             onComment={(line) => {
-              setTarget({ line, headSha: pull.headSha, baseSha: pull.baseSha });
+              if (!target) setTarget({ line, headSha: pull.headSha, baseSha: pull.baseSha });
               setView("manual");
             }}
           />
@@ -251,8 +265,14 @@ function ReviewWorkspace({ initialRepo, initialNumber, setParams }) {
             pull={pull}
             target={target}
             setTarget={setTarget}
+            onPublished={reviewChanged}
+            onChooseFile={openChangedFiles}
+            active={view === "manual"}
           />
         </div>
+      )}
+      {selection && view === "conversations" && (
+        <ReviewConversations key={`conversations:${selection.repo}#${selection.number}`} selection={selection} onUpdated={reviewChanged} />
       )}
       {view === "ai" && (
         <section className="tp-cr-panel tp-pr-ai-actions">
@@ -282,6 +302,8 @@ function ReviewWorkspace({ initialRepo, initialNumber, setParams }) {
         <section className="tp-cr-panel">
           <h3 className="tp-cr-section-title">Review Summary</h3>
           <p>{result.summary}</p>
+          {result.emailMessage && <p role="status">{result.emailMessage}</p>}
+          {result.publicationRecorded === false && <p role="alert">GitHub published the review. The portal could not update review history.</p>}
           <div className="tp-cr-summary-tags">
             <span className="tp-cr-status tp-cr-status-neutral">
               Review #{result.id}
@@ -348,15 +370,16 @@ function ReviewWorkspace({ initialRepo, initialNumber, setParams }) {
 }
 
 export default function ReviewWorkspacePage() {
-  const [params, setParams] = useSearchParams();
-  const initialRepo = params.get("repository") || "";
-  const initialNumber = params.get("pr") || "";
+  const { state } = useLocation();
+  const navigate = useNavigate();
+  const initialRepo = state?.repository || "";
+  const initialNumber = String(state?.pr ?? "");
   return (
     <ReviewWorkspace
       key={JSON.stringify([initialRepo, initialNumber])}
       initialRepo={initialRepo}
       initialNumber={initialNumber}
-      setParams={setParams}
+      onSelectPull={(repository, pr) => navigate("/reviews/new", { state: { repository, pr } })}
     />
   );
 }

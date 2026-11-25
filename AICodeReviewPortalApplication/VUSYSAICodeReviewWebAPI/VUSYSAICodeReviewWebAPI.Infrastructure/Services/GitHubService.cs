@@ -12,7 +12,7 @@ using VUSYSAICodeReviewWebAPI.Application.Features;
 
 namespace VUSYSAICodeReviewWebAPI.Infrastructure.Services;
 
-public sealed class GitHubService(HttpClient http, IOptions<GitHubOptions> configuration) : IGitHubService
+public sealed partial class GitHubService(HttpClient http, IOptions<GitHubOptions> configuration) : IGitHubService, IPullRequestActions
 {
     private const int FileLimit = 3000;
     private const int ContentLimit = 512 * 1024;
@@ -202,15 +202,15 @@ public sealed class GitHubService(HttpClient http, IOptions<GitHubOptions> confi
     }
 
     private async Task<(JsonElement Data, bool HasNext)> Send(HttpMethod method, string route, object? payload,
-        CancellationToken ct, string accept = "application/vnd.github+json")
+        CancellationToken ct, string accept = "application/vnd.github+json", string? actorToken = null, string? apiVersion = null)
     {
-        if (string.IsNullOrWhiteSpace(options.Token))
+        if (string.IsNullOrWhiteSpace(actorToken ?? options.Token))
             throw new PortalException(503, "GitHub credentials are missing.");
         using var request = new HttpRequestMessage(method, new Uri("https://api.github.com/" + route));
         request.Headers.UserAgent.ParseAdd("VUSYS-CodeReview/1.0");
         request.Headers.Accept.ParseAdd(accept);
-        request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", options.Token);
+        request.Headers.Add("X-GitHub-Api-Version", apiVersion ?? (actorToken is null ? "2022-11-28" : "2026-03-10"));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", actorToken ?? options.Token);
         if (payload is not null)
             request.Content = JsonContent.Create(payload);
         using var response = await http.SendAsync(request, ct);
@@ -230,6 +230,7 @@ public sealed class GitHubService(HttpClient http, IOptions<GitHubOptions> confi
                 HttpStatusCode.NotFound => new PortalException(404, "GitHub resource is unavailable or inaccessible."),
                 HttpStatusCode.Unauthorized => new PortalException(502, "GitHub rejected server credentials."),
                 HttpStatusCode.Forbidden => new PortalException(403, "GitHub denied the operation."),
+                HttpStatusCode.Conflict => new PortalException(409, "GitHub reported a conflict. Refresh the PR and check its status."),
                 HttpStatusCode.UnprocessableEntity => new PortalException(422, "GitHub rejected the requested operation."),
                 _ => new PortalException(502, "GitHub could not complete the operation.")
             };

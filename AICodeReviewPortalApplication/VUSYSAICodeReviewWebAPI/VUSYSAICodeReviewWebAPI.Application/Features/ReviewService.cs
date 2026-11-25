@@ -7,7 +7,7 @@ using VUSYSAICodeReviewWebAPI.Domain;
 
 namespace VUSYSAICodeReviewWebAPI.Application.Features;
 
-public sealed class ReviewService(IGitHubService gitHub, IGeminiService gemini, IReviewRepository repository)
+public sealed class ReviewService(IGitHubService gitHub, IGeminiService gemini, IReviewRepository repository, IReviewEmail email)
 {
     private const int ReviewInputLimit = 120_000;
 
@@ -85,7 +85,7 @@ public sealed class ReviewService(IGitHubService gitHub, IGeminiService gemini, 
         return outdatedResults;
     }
 
-    public async Task<long> Publish(PublishRequest input, CancellationToken ct)
+    public async Task<ReviewPublication> Publish(PublishRequest input, CancellationToken ct)
     {
         var (review, body, comments) = await PreparePublication(input, ct);
         var current = await gitHub.Pull(input.Owner, input.Repo, input.Number, ct);
@@ -97,12 +97,10 @@ public sealed class ReviewService(IGitHubService gitHub, IGeminiService gemini, 
             throw new PortalException(409, "A review already claims publication for this PR commit.");
         long gitHubId = await gitHub.Publish(input.Owner, input.Repo, input.Number, review.CommitSha,
             body + $"\n\n<!-- vusys-review:{review.Id} -->", comments, ct);
-        using var finalizeTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-        await repository.Complete(review.Id, gitHubId, finalizeTimeout.Token);
-        return gitHubId;
+        return await FinalizePublication(review.Id, gitHubId, current, review.Repository, body);
     }
 
-    public async Task<long> PublishManual(ManualReviewRequest input, CancellationToken ct)
+    public async Task<ReviewPublication> PublishManual(ManualReviewRequest input, CancellationToken ct)
     {
         gitHub.EnsureAllowed(input.Owner, input.Repo);
         var body = input.Body?.Trim();
@@ -149,9 +147,35 @@ public sealed class ReviewService(IGitHubService gitHub, IGeminiService gemini, 
         long id = await repository.ClaimManual(review, fingerprint, ct);
         long gitHubId = await gitHub.Publish(input.Owner, input.Repo, input.Number, current.HeadSha,
             summary + $"\n\n<!-- vusys-review:{id} -->", comments.ToArray(), ct);
+        var emailBody = summary + "\n\n" + string.Join("\n\n", requested.Select(comment =>
+            $"{comment.FileName}:{comment.Line}\n{comment.Body.Trim()}"));
+        return await FinalizePublication(id, gitHubId, current, repositoryName, emailBody);
+    }
+
+    private async Task<ReviewPublication> FinalizePublication(long id, long gitHubId, Pull pull, string repositoryName, string body)
+    {
+        bool recorded = true;
         using var finalizeTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-        await repository.Complete(id, gitHubId, finalizeTimeout.Token);
-        return gitHubId;
+        try
+        {
+            await repository.Complete(id, gitHubId, finalizeTimeout.Token);
+        }
+        catch (Exception)
+        {
+            // The existing publication claim prevents another write even if SQL finalization fails.
+            recorded = false;
+        }
+
+        using var emailTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        try
+        {
+            var (status, message) = await email.Notify(pull, repositoryName, gitHubId, body, emailTimeout.Token);
+            return new(true, gitHubId, status, message, recorded);
+        }
+        catch (Exception)
+        {
+            return new(true, gitHubId, "failed", "Author email delivery failed or could not be confirmed.", recorded);
+        }
     }
 
     public async Task<object> Preview(PublishRequest input, CancellationToken ct)

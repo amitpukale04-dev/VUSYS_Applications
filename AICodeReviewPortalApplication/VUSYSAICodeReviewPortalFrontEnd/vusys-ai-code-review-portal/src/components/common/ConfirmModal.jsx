@@ -13,6 +13,8 @@ export default function ConfirmModal({
   confirmText = "Yes, Confirm",
   cancelText = "No",
   loading = false,
+  confirmDisabled = false,
+  children,
 }) {
   useEffect(() => {
     if (!show) return undefined;
@@ -58,6 +60,7 @@ export default function ConfirmModal({
 
         <div className="tp-confirm-body">
           <p>{message}</p>
+          {children}
           <div className="tp-confirm-actions">
             <button
               type="button"
@@ -71,7 +74,7 @@ export default function ConfirmModal({
               type="button"
               className="tp-confirm-yes"
               onClick={onConfirm}
-              disabled={loading}
+              disabled={loading || confirmDisabled}
             >
               {loading ? (
                 <>

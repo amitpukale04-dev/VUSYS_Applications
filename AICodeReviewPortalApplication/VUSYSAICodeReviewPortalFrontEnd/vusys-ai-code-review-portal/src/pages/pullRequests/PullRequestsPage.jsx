@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { listPullRequests } from "../../services/codeReviewService";
 import { showApiError } from "../../utils/showApiError";
 import CodeReviewPageHeader from "../../components/common/CodeReviewPageHeader";
@@ -14,8 +14,8 @@ const validateRepository = (value) => {
   return "";
 };
 export default function PullRequestsPage() {
-  const [params, setParams] = useSearchParams();
-  const selectedRepository = params.get("repository") || "";
+  const { state } = useLocation();
+  const selectedRepository = state?.repository || "";
   const [repository, setRepository] = useState(selectedRepository);
   const [error, setError] = useState("");
   const [rows, setRows] = useState([]);
@@ -54,8 +54,8 @@ export default function PullRequestsPage() {
       setRepository(name);
       setPickerOpen(false);
       if (name === selectedRepository) setReload((current) => current + 1);
-      else setParams((current) => { const next = new URLSearchParams(current); next.set("repository", name); return next; });
+      else navigate("/pull-requests", { state: { repository: name } });
     }} />}
-    <CodeReviewTable rows={rows} empty={loading ? "Loading pull requests..." : "No pull requests loaded."} columns={[{ key: "number", label: "PR #", render: (row) => <strong>#{row.number}</strong> }, { key: "title", label: "Title" }, { key: "state", label: "Status", render: (row) => <span className={`tp-cr-status ${row.state === "open" ? "tp-cr-status-success" : "tp-cr-status-neutral"}`}>{row.state}</span> }, { key: "action", label: "Action", render: (row) => <button type="button" className="tp-cr-btn tp-cr-btn-outline tp-cr-btn-sm" onClick={() => navigate(`/reviews/new?repository=${encodeURIComponent(loadedRepository)}&pr=${row.number}`)}><i className="bi bi-code-slash" aria-hidden="true"/> View Changes</button> }]} />
+    <CodeReviewTable rows={rows} empty={loading ? "Loading pull requests..." : "No pull requests loaded."} columns={[{ key: "number", label: "PR #", render: (row) => <strong>#{row.number}</strong> }, { key: "title", label: "Title" }, { key: "state", label: "Status", render: (row) => <span className={`tp-cr-status ${row.state === "open" ? "tp-cr-status-success" : "tp-cr-status-neutral"}`}>{row.state}</span> }, { key: "action", label: "Action", render: (row) => <button type="button" className="tp-cr-btn tp-cr-btn-outline tp-cr-btn-sm" onClick={() => navigate("/reviews/new", { state: { repository: loadedRepository, pr: row.number } })}><i className="bi bi-code-slash" aria-hidden="true"/> View Changes</button> }]} />
   </>;
 }

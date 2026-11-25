@@ -15,7 +15,11 @@ public static class DependencyInjection
     {
         services.Configure<GitHubOptions>(configuration.GetSection("GitHub"));
         services.Configure<GeminiOptions>(configuration.GetSection("Gemini"));
-        services.AddHttpClient<IGitHubService, GitHubService>(client => client.Timeout = TimeSpan.FromSeconds(40))
+        services.Configure<ReviewEmailOptions>(configuration.GetSection("ReviewEmail"));
+        services.AddScoped<IReviewEmail, ReviewEmailService>();
+        services.AddScoped<IGitHubService>(provider => provider.GetRequiredService<GitHubService>());
+        services.AddScoped<IPullRequestActions>(provider => provider.GetRequiredService<GitHubService>());
+        services.AddHttpClient<GitHubService>(client => client.Timeout = TimeSpan.FromSeconds(40))
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
         services.AddHttpClient<IGeminiService, GeminiService>(client => client.Timeout = TimeSpan.FromSeconds(100))
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });

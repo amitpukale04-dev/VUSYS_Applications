@@ -69,7 +69,7 @@ function ChangedFile({ file, owner, repo, number, headSha, baseSha, onComment })
                 <td className="tp-pr-line-number">{line.oldLineNumber}</td>
                 <td className="tp-pr-line-number">{line.newLineNumber}
                   {line.newLineNumber && file.diffCompleteness === "Complete" && <button type="button" className="tp-pr-add-comment"
-                    aria-label={`Comment on line ${line.newLineNumber}`}
+                    aria-label={`Comment on line ${line.newLineNumber} in ${file.fileName}`} title="Add inline comment"
                     onClick={() => onComment({ fileName: file.fileName, line: line.newLineNumber })}>+</button>}
                 </td>
                 <td className="tp-pr-marker">{line.lineType === "Added" ? "+" : line.lineType === "Removed" ? "−" : ""}</td>
