@@ -58,7 +58,7 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Email
                 SendEmailRequestParam.HasAttachment = hasAttachment;
                 cancellationToken.ThrowIfCancellationRequested();
                 CommonSendEmailRequestParam commonSendEmailRequestParam = _mapper.Map<CommonSendEmailRequestParam>(SendEmailRequestParam);
-                bool isEmailSent = Helper.SendEmail(commonSendEmailRequestParam);
+                bool isEmailSent = EmailHelper.SendEmail(commonSendEmailRequestParam);
                 finalDataSet = BuildEmailResponseDataSet(isEmailSent);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -100,7 +100,7 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Email
                 SendEmailRequestParam.attachments =attachments;
                 cancellationToken.ThrowIfCancellationRequested();
                 CommonSendEmailRequestParam commonSendEmailRequestParam = _mapper.Map<CommonSendEmailRequestParam>(SendEmailRequestParam);
-                bool isEmailSent = Helper.SendEmailWithMultipleAttachments(commonSendEmailRequestParam);
+                bool isEmailSent = EmailHelper.SendEmailWithMultipleAttachments(commonSendEmailRequestParam);
                 finalDataSet = BuildEmailResponseDataSet(isEmailSent);
             }
             catch (OperationCanceledException)
