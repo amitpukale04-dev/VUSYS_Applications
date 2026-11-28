@@ -225,6 +225,15 @@ export const aiLeaveManagement = Object.freeze({
   ),
 });
 
+export const aiTimesheetManagement = Object.freeze({
+  process: buildApiUrl(
+    "/api/AIAgentTimesheetManagement/ProcessAITimesheetManagementRequest",
+  ),
+  confirm: buildApiUrl(
+    "/api/AIAgentTimesheetManagement/ConfirmAITimesheetManagementAction",
+  ),
+});
+
 export const apiUrl = (path = "") => buildApiUrl(path);
 
 export const ensureBaseUrl = () => {

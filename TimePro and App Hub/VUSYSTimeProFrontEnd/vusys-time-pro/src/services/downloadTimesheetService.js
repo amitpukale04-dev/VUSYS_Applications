@@ -78,7 +78,7 @@ const stripHtml = (value = "") => {
     .trim();
 };
 
-const normalizeTimesheetRow = (row = {}) => ({
+export const normalizeTimesheetRow = (row = {}) => ({
   slNo: normalizeNumber(row?.SLNo ?? row?.slNo),
   employeeCode: normalizeString(row?.EmployeeCode ?? row?.employeeCode),
   name: normalizeString(row?.Name ?? row?.name),

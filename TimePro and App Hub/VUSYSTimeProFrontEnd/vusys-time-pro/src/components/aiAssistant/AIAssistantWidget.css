@@ -336,7 +336,7 @@
     color: #fff;
 }
 
-.tp-ai-confirm-accept:hover, 
+.tp-ai-confirm-accept:hover,
 .tp-ai-confirm-cancel:hover {
     color: #fff;
     filter: brightness(1.08);
@@ -1539,4 +1539,71 @@ html[data-theme="dark"] .tp-ai-module-status-soon {
     .tp-ai-report-actions .tp-ai-report-icon-button {
         flex: 0 0 38px;
     }
+}
+
+/* AI Timesheet Management — reuse the existing conversation card theme. */
+.tp-ai-timesheet-card {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.tp-ai-timesheet-card .tp-ai-confirm-field>* {
+    min-width: 0;
+}
+
+.tp-ai-timesheet-card .badge {
+    white-space: normal;
+    text-align: right;
+}
+
+.tp-ai-timesheet-card .tp-ai-confirm-actions {
+    align-items: center;
+}
+
+/* Excel attachment for reviewing a timesheet before confirmation. */
+.tp-ai-timesheet-excel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--tp-form-control-border, #d2d7e2);
+}
+
+.tp-ai-timesheet-excel-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 160px;
+    min-width: 0;
+}
+
+.tp-ai-timesheet-excel-symbol {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+    height: 34px;
+    border-radius: 7px;
+    background: var(--bs-success-bg-subtle);
+    color: var(--bs-success-text-emphasis);
+}
+
+.tp-ai-timesheet-excel-name {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.tp-ai-timesheet-excel-name small,
+.tp-ai-timesheet-excel-name span {
+    color: var(--bs-secondary-color);
+}
+
+.tp-ai-timesheet-excel .tp-ai-report-actions {
+    margin: 0;
 }

@@ -126,7 +126,16 @@ public sealed class AITimesheetManagementAgentService(
     private async Task<DataSet> ProcessApproverActionAsync(AITimesheetActor actor, AITimesheetManagementActionM action, CancellationToken cancellationToken)
     {
         if (!actor.IsApprover)
-            return Response("Error", "Only authorized approvers can view, download, approve or reject submitted timesheets.", action);
+        {
+            string permissionMessage = action.Intent switch
+            {
+                "ApproveTimesheet" => "Timesheet approval permission denied.",
+                "RejectTimesheet" => "Timesheet reject permission denied.",
+                _ => "Only authorized approvers can view, download, approve or reject submitted timesheets."
+            };
+
+            return Response("Error", permissionMessage, action);
+        }
 
         if (action.TimesheetMonth is null || action.TimesheetYear is null)
             return Clarify(actor, action, "Please specify the missing month or year of the timesheet.");
@@ -176,12 +185,39 @@ public sealed class AITimesheetManagementAgentService(
                     employee: employeeCode, id: Convert.ToInt32(row["ProjectTimeSheetID"], CultureInfo.InvariantCulture),
                     hours: Convert.ToString(row["TotalHoursWorked"], CultureInfo.InvariantCulture) ?? "",
                     timesheetStatus: Convert.ToString(row["TimesheetApprovalStatus"]) ?? "");
+            int id = Convert.ToInt32(row["ProjectTimeSheetID"], CultureInfo.InvariantCulture);
+            DataSet export = await timesheetService.GetOrExportEmployeeTimesheetList(new ProjectTimesheetApproveRejection
+            {
+                ProjectID = 0,
+                ProjectTimeSheetID = id,
+                EmployeeCode = employeeCode,
+                TimesheetMonth = Month(action),
+                TimesheetYear = action.TimesheetYear.Value,
+                Action = "Export"
+            }, cancellationToken);
+            DataTable? exportTable = export?.Tables["EMPLOYEE_TIMESHEET_EXPORTED_RESPONSE"];
+            if (exportTable is null || exportTable.Rows.Count != 1 ||
+                !exportTable.Columns.Contains("Status") || !exportTable.Columns.Contains("FileName") ||
+                !exportTable.Columns.Contains("ContentType") || !exportTable.Columns.Contains("FileBase64") ||
+                !string.Equals(Convert.ToString(exportTable.Rows[0]["Status"]), "Success", StringComparison.OrdinalIgnoreCase) ||
+                string.IsNullOrWhiteSpace(Convert.ToString(exportTable.Rows[0]["FileName"])) ||
+                string.IsNullOrWhiteSpace(Convert.ToString(exportTable.Rows[0]["ContentType"])) ||
+                string.IsNullOrWhiteSpace(Convert.ToString(exportTable.Rows[0]["FileBase64"])))
+                return Response("Error", "Unable to generate the timesheet Excel file. Please repeat your request.", action,
+                    employee: employeeCode, id: id, hours: Convert.ToString(row["TotalHoursWorked"], CultureInfo.InvariantCulture) ?? "",
+                    timesheetStatus: Convert.ToString(row["TimesheetApprovalStatus"]) ?? "");
+
             if (string.IsNullOrWhiteSpace(action.Remarks) || action.Remarks.Length > 2000)
-                return Clarify(actor, action with { Remarks = null }, $"Please provide {(action.Intent == "ApproveTimesheet" ? "approval" : "rejection")} remarks for {candidates[0].Name}'s timesheet for {Month(action)} {action.TimesheetYear} (maximum 2000 characters).", row);
+            {
+                DataSet result = Clarify(actor, action with { Remarks = null }, $"Please provide {(action.Intent == "ApproveTimesheet" ? "approval" : "rejection")} remarks for {candidates[0].Name}'s timesheet for {Month(action)} {action.TimesheetYear} (maximum 2000 characters).", row);
+                result.Tables.Add(exportTable.Copy());
+                return result;
+            }
             action = action with { Remarks = action.Remarks.Trim() };
-            int id = Convert.ToInt32(row["ProjectTimeSheetID"]);
             string token = confirmations.Add(new(actor.UserId, actor.EmployeeCode, action, employeeCode, id, DateTimeOffset.UtcNow.Add(TokenLifetime)));
-            return Response("ConfirmationRequired", $"Confirm {action.Intent} for {candidates[0].Name} ({employeeCode}), {Month(action)} {action.TimesheetYear}? Remarks: {action.Remarks}", action, token, employee: employeeCode, id: id, hours: Convert.ToString(row["TotalHoursWorked"], CultureInfo.InvariantCulture) ?? "", timesheetStatus: Convert.ToString(row["TimesheetApprovalStatus"]) ?? "");
+            DataSet confirmationResult = Response("ConfirmationRequired", $"Confirm {action.Intent} for {candidates[0].Name} ({employeeCode}), {Month(action)} {action.TimesheetYear}? Remarks: {action.Remarks}", action, token, employee: employeeCode, id: id, hours: Convert.ToString(row["TotalHoursWorked"], CultureInfo.InvariantCulture) ?? "", timesheetStatus: Convert.ToString(row["TimesheetApprovalStatus"]) ?? "");
+            confirmationResult.Tables.Add(exportTable.Copy());
+            return confirmationResult;
         }
 
         // Existing monthly view and Excel export use the same service and SQL branch.

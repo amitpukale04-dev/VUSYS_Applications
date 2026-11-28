@@ -10,6 +10,13 @@ import {
   exportAILeaveReport,
 } from "../../services/aiLeaveManagementService";
 import "./AIAssistantWidget.css";
+import AITimesheetResult from "./AITimesheetResult";
+import {
+  processAITimesheetRequest,
+  confirmAITimesheetAction,
+} from "../../services/aiTimesheetManagementService";
+import ToastService from "../../services/toastService";
+import { showApiError } from "../../utils/showApiError";
 import { exportBase64File } from "../../utils/fileExportUtils";
 import { convertDateToSpecifiedFormat } from "../../utils/dateUtils";
 
@@ -502,10 +509,15 @@ export default function AIAssistantWidget() {
   const [moduleId, setModuleId] = useState(null);
   const [reportsSubmodule, setReportsSubmodule] = useState(null);
   const conversationKey =
-    moduleId === "reports" ? "leaveReports" : "leaveManagement";
+    moduleId === "timesheet"
+      ? "timesheet"
+      : moduleId === "reports"
+        ? "leaveReports"
+        : "leaveManagement";
   const [conversations, setConversations] = useState({
     leaveManagement: initialConversation(),
     leaveReports: initialConversation(),
+    timesheet: initialConversation(),
   });
   const current = conversations[conversationKey];
   const messagesEndRef = useRef(null);
@@ -530,6 +542,7 @@ export default function AIAssistantWidget() {
           ? restoreConversation(sessionKey)
           : initialConversation(),
         leaveReports: initialConversation(),
+        timesheet: initialConversation(),
       });
       setInputError("");
       setPanelPosition(null);
@@ -620,10 +633,236 @@ export default function AIAssistantWidget() {
     "Generate leave applications report for 2026",
     "Generate holiday report for 2026",
   ];
+  const timesheetSuggestions = [
+    "Submit my timesheet.",
+    "Resubmit my rejected timesheet.",
+    "Check my timesheet status.",
+    "Show my approval details.",
+    "Show my rejection remarks.",
+    ...([true, 1, "1", "true"].includes(user?.isApprover ?? user?.IsApprover)
+      ? [
+          "View employee timesheet.",
+          "Download employee timesheet.",
+          "Approve employee timesheet.",
+          "Reject employee timesheet.",
+          "Check employee timesheet status.",
+        ]
+      : []),
+  ];
+
+  // Timesheet tokens and result cards remain in the independent in-memory conversation.
+  const finishTimesheetCard = (previous, id, actionState, approvalStatus) => ({
+    ...previous,
+    pending: null,
+    messages: previous.messages.map((item) =>
+      item.id === id
+        ? {
+            ...item,
+            timesheetResult: {
+              ...item.timesheetResult,
+              actionState,
+              details: {
+                ...item.timesheetResult.details,
+                ...(approvalStatus
+                  ? { TimesheetApprovalStatus: approvalStatus }
+                  : {}),
+              },
+            },
+          }
+        : item,
+    ),
+  });
+  const sendTimesheet = async (message, fromRemarks = false) => {
+    if (current.clarification?.requiresRemarks && !fromRemarks) return;
+    if (!message || requestRef.current) return;
+    if (message.length > 2000) {
+      setInputError("Enter a maximum of 2000 characters.");
+      return;
+    }
+    const token = current.clarification?.token || "";
+    const epoch = epochRef.current;
+    requestRef.current = true;
+    setInputError("");
+    update((previous) => {
+      const next = previous.pending
+        ? finishTimesheetCard(previous, previous.pending.id, "Cancelled")
+        : previous;
+      return {
+        ...next,
+        pending: null,
+        clarification: null,
+        busy: true,
+        draft: "",
+        messages: [...next.messages, newMessage("user", message)],
+      };
+    });
+    try {
+      const result = await processAITimesheetRequest(message, token);
+      if (epoch !== epochRef.current) return;
+      const details = result.details;
+      const confirmation =
+        result.status === "confirmationrequired" &&
+        readable(details.ConfirmationToken) &&
+        [
+          "SubmitTimesheet",
+          "ResubmitTimesheet",
+          "ApproveTimesheet",
+          "RejectTimesheet",
+        ].includes(details.Intent);
+      const clarification =
+        result.status === "clarificationrequired" &&
+        readable(details.ClarificationToken);
+      const invalidStep =
+        (result.status === "confirmationrequired" && !confirmation) ||
+        (result.status === "clarificationrequired" && !clarification);
+      const failed = invalidStep || result.status === "error";
+      if (result.file) {
+        exportBase64File({
+          base64Content: result.file.FileBase64,
+          contentType: result.file.ContentType,
+          fileName: result.file.FileName,
+        });
+      }
+      const item = newMessage(
+        failed ? "error" : "assistant",
+        invalidStep
+          ? "The timesheet response is incomplete. Please repeat your request."
+          : result.message ||
+              (result.rows
+                ? result.rows.length
+                  ? "Timesheet details retrieved."
+                  : "No timesheet records found."
+                : result.file
+                  ? "Timesheet download started."
+                  : "Timesheet request completed."),
+      );
+      const { ConfirmationToken, ClarificationToken, ...safeDetails } = details;
+      item.timesheetResult = {
+        details: safeDetails,
+        rows: result.rows,
+        fileName: result.file?.FileName,
+        reviewFile: result.reviewFile,
+        reviewFileError: result.reviewFileError,
+        actionState: confirmation ? "Awaiting confirmation" : "",
+      };
+      update((previous) => ({
+        ...previous,
+        messages: [...previous.messages, item],
+        pending: confirmation
+          ? { id: item.id, token: ConfirmationToken, Intent: details.Intent }
+          : null,
+        clarification: clarification
+          ? {
+              token: ClarificationToken,
+              requiresRemarks:
+                ["ApproveTimesheet", "RejectTimesheet"].includes(
+                  details.Intent,
+                ) &&
+                !readable(details.Remarks) &&
+                /\bremarks\b/i.test(result.message || ""),
+              intent: details.Intent,
+              remarksDraft: "",
+            }
+          : null,
+      }));
+    } catch (error) {
+      if (epoch === epochRef.current) {
+        const message =
+          error?.response?.data?.data?.AI_TIMESHEET_MANAGEMENT_RESPONSE?.[0]
+            ?.Message ||
+          error?.message ||
+          "Unable to process the timesheet request.";
+        append("error", message);
+        showApiError(error, message);
+      }
+    } finally {
+      if (epoch === epochRef.current) {
+        requestRef.current = false;
+        update({ busy: false });
+      }
+    }
+  };
+  const confirmTimesheet = async () => {
+    if (!current.pending?.token || requestRef.current) return;
+    const pending = current.pending;
+    const epoch = epochRef.current;
+    requestRef.current = true;
+    update((previous) => ({
+      ...finishTimesheetCard(previous, pending.id, "Processing"),
+      busy: true,
+    }));
+    try {
+      const result = await confirmAITimesheetAction(pending.token);
+      if (epoch !== epochRef.current) return;
+      const success = result.status === "success";
+      const status = {
+        SubmitTimesheet: "Pending For Approval",
+        ResubmitTimesheet: "Pending For Approval",
+        ApproveTimesheet: "Approved",
+        RejectTimesheet: "Rejected",
+      }[pending.Intent];
+      const message =
+        result.message ||
+        (success
+          ? "Timesheet action completed."
+          : "Confirmation could not be completed. Please repeat your request.");
+      update((previous) => {
+        const next = finishTimesheetCard(
+          previous,
+          pending.id,
+          success ? "Completed" : "Not completed",
+          success ? status : null,
+        );
+        return {
+          ...next,
+          messages: [
+            ...next.messages,
+            newMessage(success ? "success" : "error", message),
+          ],
+        };
+      });
+      if (success) ToastService.success(message);
+    } catch (error) {
+      if (epoch === epochRef.current) {
+        update((previous) =>
+          finishTimesheetCard(
+            previous,
+            pending.id,
+            "Confirmation outcome unknown. Check timesheet status before repeating.",
+          ),
+        );
+        append(
+          "error",
+          error?.response?.data?.data?.AI_TIMESHEET_MANAGEMENT_RESPONSE?.[0]
+            ?.Message ||
+            "Unable to confirm the timesheet action. Check its status before repeating.",
+        );
+        showApiError(error, "Unable to confirm the timesheet action.");
+      }
+    } finally {
+      if (epoch === epochRef.current) {
+        requestRef.current = false;
+        update({ busy: false });
+      }
+    }
+  };
+  const cancelTimesheet = () => {
+    if (requestRef.current) return;
+    update((previous) =>
+      previous.pending
+        ? finishTimesheetCard(previous, previous.pending.id, "Cancelled")
+        : { ...previous, clarification: null },
+    );
+    append(
+      "assistant",
+      "The pending request was cancelled. No changes were submitted.",
+    );
+  };
   const send = async (overrideMessage = null) => {
     const message = readable(
       typeof overrideMessage === "string" ? overrideMessage : current.draft,
     );
+    if (moduleId === "timesheet") return sendTimesheet(message);
     const clarificationToken = readable(current.clarification?.token);
     if (
       !message ||
@@ -1080,9 +1319,11 @@ export default function AIAssistantWidget() {
                   ? reportsSubmodule
                     ? "AI Assistant — Leave Reports"
                     : "AI Assistant — Reports"
-                  : moduleId
-                    ? "AI Assistant — Leave Management"
-                    : "AI Assistant"}
+                  : moduleId === "timesheet"
+                    ? "AI Assistant — Timesheet Management"
+                    : moduleId
+                      ? "AI Assistant — Leave Management"
+                      : "AI Assistant"}
               </strong>
               <small>Your smart TimePro assistant</small>
             </div>
@@ -1193,7 +1434,9 @@ export default function AIAssistantWidget() {
                 <div className="tp-ai-bubble assistant">
                   {moduleId === "reports"
                     ? "Hello! I can generate and export leave reports. Describe the report you need."
-                    : welcome}
+                    : moduleId === "timesheet"
+                      ? "How can I help you with your timesheet today?"
+                      : welcome}
                 </div>
                 {current.messages.map((message) => (
                   <div key={message.id} className="tp-ai-message-entry">
@@ -1201,6 +1444,15 @@ export default function AIAssistantWidget() {
                       <span>{message.text}</span>
                       <small>{message.time}</small>
                     </div>
+                    {message.timesheetResult && (
+                      <AITimesheetResult
+                        result={message.timesheetResult}
+                        active={current.pending?.id === message.id}
+                        busy={current.busy}
+                        onConfirm={confirmTimesheet}
+                        onCancel={cancelTimesheet}
+                      />
+                    )}
                     {message.readOnlyResult && (
                       <ReadOnlyLeaveResults result={message.readOnlyResult} />
                     )}
@@ -1221,68 +1473,83 @@ export default function AIAssistantWidget() {
                     )}
                   </div>
                 ))}
-                {current.clarification && !current.busy && (
-                  <div
-                    className="tp-ai-clarification-card"
-                    role="group"
-                    aria-label={
-                      current.clarification.kind === "requestOrYear"
-                        ? "Clarify leave request ID or year"
-                        : "Select half-day leave type"
-                    }
-                  >
-                    {current.clarification.kind === "requestOrYear" ? (
-                      <>
-                        <button
-                          type="button"
-                          className="btn tp-ai-clarification-option tp-ai-clarification-morning btn-sm"
-                          onClick={() => void send("Request ID")}
-                        >
-                          <SvgIcon name="calendar" size={19} /> Leave Request ID
-                        </button>
-                        <button
-                          type="button"
-                          className="btn tp-ai-clarification-option tp-ai-clarification-afternoon btn-sm"
-                          onClick={() => void send("Leave Year")}
-                        >
-                          <SvgIcon name="calendar" size={19} /> Leave Year
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          className="btn tp-ai-clarification-option tp-ai-clarification-morning btn-sm"
-                          disabled={current.busy}
-                          onClick={() => void send("First Half")}
-                        >
-                          <SvgIcon name="morningHalf" size={21} />
-                          <span>
-                            First Half <small>(Morning)</small>
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          className="btn tp-ai-clarification-option tp-ai-clarification-afternoon btn-sm"
-                          disabled={current.busy}
-                          onClick={() => void send("Second Half")}
-                        >
-                          <SvgIcon name="afternoonHalf" size={21} />
-                          <span>
-                            Second Half <small>(Afternoon)</small>
-                          </span>
-                        </button>
-                      </>
-                    )}
+                {moduleId === "timesheet" &&
+                  current.clarification &&
+                  !current.clarification.requiresRemarks &&
+                  !current.busy && (
                     <button
                       type="button"
-                      className="btn btn-sm tp-ai-clarification-back"
-                      onClick={() => update({ clarification: null })}
+                      className="btn tp-ai-confirm-cancel btn-sm"
+                      onClick={cancelTimesheet}
                     >
-                      Cancel clarification
+                      Cancel Clarification
                     </button>
-                  </div>
-                )}
+                  )}
+                {moduleId !== "timesheet" &&
+                  current.clarification &&
+                  !current.busy && (
+                    <div
+                      className="tp-ai-clarification-card"
+                      role="group"
+                      aria-label={
+                        current.clarification.kind === "requestOrYear"
+                          ? "Clarify leave request ID or year"
+                          : "Select half-day leave type"
+                      }
+                    >
+                      {current.clarification.kind === "requestOrYear" ? (
+                        <>
+                          <button
+                            type="button"
+                            className="btn tp-ai-clarification-option tp-ai-clarification-morning btn-sm"
+                            onClick={() => void send("Request ID")}
+                          >
+                            <SvgIcon name="calendar" size={19} /> Leave Request
+                            ID
+                          </button>
+                          <button
+                            type="button"
+                            className="btn tp-ai-clarification-option tp-ai-clarification-afternoon btn-sm"
+                            onClick={() => void send("Leave Year")}
+                          >
+                            <SvgIcon name="calendar" size={19} /> Leave Year
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            className="btn tp-ai-clarification-option tp-ai-clarification-morning btn-sm"
+                            disabled={current.busy}
+                            onClick={() => void send("First Half")}
+                          >
+                            <SvgIcon name="morningHalf" size={21} />
+                            <span>
+                              First Half <small>(Morning)</small>
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn tp-ai-clarification-option tp-ai-clarification-afternoon btn-sm"
+                            disabled={current.busy}
+                            onClick={() => void send("Second Half")}
+                          >
+                            <SvgIcon name="afternoonHalf" size={21} />
+                            <span>
+                              Second Half <small>(Afternoon)</small>
+                            </span>
+                          </button>
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-sm tp-ai-clarification-back"
+                        onClick={() => update({ clarification: null })}
+                      >
+                        Cancel clarification
+                      </button>
+                    </div>
+                  )}
                 {current.selection && (
                   <div className="tp-ai-selection-card">
                     <div className="tp-ai-selection-heading">
@@ -1384,6 +1651,74 @@ export default function AIAssistantWidget() {
                     </button>
                   </div>
                 )}
+                {moduleId === "timesheet" &&
+                  current.clarification?.requiresRemarks && (
+                    <div className="tp-ai-confirm-card tp-ai-remarks-card">
+                      <div className="tp-ai-remarks-title">
+                        <SvgIcon name="approval" size={18} />
+                        <strong>Provide Remarks</strong>
+                      </div>
+                      <p>
+                        {current.clarification.intent === "RejectTimesheet"
+                          ? "Reject timesheet"
+                          : "Approve timesheet"}
+                        . Enter remarks before reviewing the final confirmation.
+                      </p>
+                      <label
+                        htmlFor="tp-ai-timesheet-remarks"
+                        className="tp-ai-remarks-label"
+                      >
+                        Remarks <span aria-hidden="true">*</span>
+                      </label>
+                      <textarea
+                        id="tp-ai-timesheet-remarks"
+                        className="form-control tp-ai-remarks-input"
+                        rows={3}
+                        maxLength={2000}
+                        value={current.clarification.remarksDraft || ""}
+                        disabled={current.busy}
+                        placeholder="Enter your remarks..."
+                        onChange={(event) => {
+                          const remarksDraft = event.target.value;
+                          update((previous) => ({
+                            ...previous,
+                            clarification: {
+                              ...previous.clarification,
+                              remarksDraft,
+                            },
+                          }));
+                          if (inputError) setInputError("");
+                        }}
+                      />
+                      <div className="tp-ai-confirm-actions">
+                        <button
+                          type="button"
+                          className="btn tp-ai-confirm-accept btn-sm"
+                          disabled={
+                            current.busy ||
+                            !readable(current.clarification.remarksDraft)
+                          }
+                          onClick={() =>
+                            void sendTimesheet(
+                              readable(current.clarification.remarksDraft),
+                              true,
+                            )
+                          }
+                        >
+                          <SvgIcon name="approval" size={16} /> Continue to
+                          Confirmation
+                        </button>
+                        <button
+                          type="button"
+                          className="btn tp-ai-confirm-cancel btn-sm"
+                          disabled={current.busy}
+                          onClick={cancelTimesheet}
+                        >
+                          <SvgIcon name="close" size={16} /> Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 {current.remarksStep && (
                   <div className="tp-ai-confirm-card tp-ai-remarks-card">
                     <div className="tp-ai-remarks-title">
@@ -1462,7 +1797,7 @@ export default function AIAssistantWidget() {
                     </p>
                   </div>
                 )}
-                {current.pending && (
+                {moduleId !== "timesheet" && current.pending && (
                   <div className="tp-ai-confirm-card">
                     <strong>Confirm leave action</strong>
                     {confirmationFields
@@ -1536,7 +1871,9 @@ export default function AIAssistantWidget() {
                   <div className="tp-ai-suggestions">
                     {(moduleId === "reports"
                       ? reportSuggestions
-                      : permittedSuggestions
+                      : moduleId === "timesheet"
+                        ? timesheetSuggestions
+                        : permittedSuggestions
                     ).map((prompt) => (
                       <button
                         type="button"
@@ -1558,20 +1895,25 @@ export default function AIAssistantWidget() {
                   id="tp-ai-message"
                   name="aiAssistantMessage"
                   rows={2}
+                  maxLength={moduleId === "timesheet" ? 2000 : undefined}
                   ariaLabel="Message AI Assistant"
                   placeholder={
                     moduleId === "reports"
                       ? "Describe the leave report to generate..."
-                      : canApprove
-                        ? "Ask about leave balance, history, status, or actions..."
-                        : "Ask about leave balance, history, status, or requests..."
+                      : moduleId === "timesheet"
+                        ? "Ask about timesheet status, submission, or actions..."
+                        : canApprove
+                          ? "Ask about leave balance, history, status, or actions..."
+                          : "Ask about leave balance, history, status, or requests..."
                   }
                   value={current.draft}
                   disabled={
                     current.busy ||
-                    !!current.pending ||
+                    (moduleId !== "timesheet" && !!current.pending) ||
                     !!current.selection ||
-                    !!current.remarksStep
+                    !!current.remarksStep ||
+                    (moduleId === "timesheet" &&
+                      !!current.clarification?.requiresRemarks)
                   }
                   onChange={(event) => {
                     update({ draft: event.target.value });
@@ -1596,9 +1938,11 @@ export default function AIAssistantWidget() {
                   disabled={
                     !readable(current.draft) ||
                     current.busy ||
-                    !!current.pending ||
+                    (moduleId !== "timesheet" && !!current.pending) ||
                     !!current.selection ||
-                    !!current.remarksStep
+                    !!current.remarksStep ||
+                    (moduleId === "timesheet" &&
+                      !!current.clarification?.requiresRemarks)
                   }
                   onClick={() => void send()}
                 >

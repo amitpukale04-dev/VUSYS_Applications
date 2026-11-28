@@ -8,6 +8,14 @@ export const aiAssistantModules = Object.freeze([
     status: "Available",
   },
   {
+    id: "timesheet",
+    name: "Timesheet",
+    icon: "timesheet",
+    description: "Manage timesheet activities using AI.",
+    enabled: true,
+    status: "Available",
+  },
+  {
     id: "reports",
     name: "Reports",
     icon: "report",
@@ -15,13 +23,5 @@ export const aiAssistantModules = Object.freeze([
     enabled: true,
     adminOnly: true,
     status: "Available",
-  },
-  {
-    id: "timesheet",
-    name: "Timesheet",
-    icon: "timesheet",
-    description: "Manage timesheet activities using AI.",
-    enabled: false,
-    status: "Coming Soon",
   },
 ]);
