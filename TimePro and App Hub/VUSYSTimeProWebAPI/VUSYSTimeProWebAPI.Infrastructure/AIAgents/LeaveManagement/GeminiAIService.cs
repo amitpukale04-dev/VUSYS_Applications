@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
@@ -16,7 +16,7 @@ namespace VUSYSTimeProWebAPI.Infrastructure.AIAgents.LeaveManagement;
 /// Extracts leave-management intent using the Google Gemini Interactions API.
 /// This service never executes leave actions.
 /// </summary>
-public sealed class GeminiAIService(HttpClient client) : IGeminiAIService
+public sealed partial class GeminiAIService(HttpClient client) : IGeminiAIService, VUSYSTimeProWebAPI.Application.Abstractions.AIAgents.TimesheetManagement.IGeminiAITimesheetService
 {
     private const int MaxRetries = 4;
 

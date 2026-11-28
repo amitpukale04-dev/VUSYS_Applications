@@ -88,6 +88,16 @@ namespace VUSYSTimeProWebAPI.Application.Abstractions.Modules.Timesheet
         Task<DataSet> ApproveOrRejectTimesheet(TimesheetApproveRejectRequestParam _objTimesheetApproveRejectRequestParam, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// This Method Is Used To Approve Or Reject Timesheet Using A Trusted Authenticated Approver ID.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="approverUserId"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        Task<DataSet> ApproveOrRejectTimesheetAsApprover(TimesheetApproveRejectRequestParam request, int approverUserId, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// This Method Is Used To Get Employee Timesheet Not Filled List and Send Email Notification.
         /// </summary>
         /// <param name="cancellationToken"></param>

@@ -29,6 +29,8 @@ using VUSYSTimeProWebAPI.Application.Abstractions.Users;
 using VUSYSTimeProWebAPI.Application.Common.Options;
 using VUSYSTimeProWebAPI.Application.Models.Authentication;
 using VUSYSTimeProWebAPI.Infrastructure.AIAgents.LeaveManagement;
+using VUSYSTimeProWebAPI.Application.Abstractions.AIAgents.TimesheetManagement;
+using VUSYSTimeProWebAPI.Infrastructure.AIAgents.TimesheetManagement;
 using VUSYSTimeProWebAPI.Infrastructure.Authentication;
 using VUSYSTimeProWebAPI.Infrastructure.Caching;
 using VUSYSTimeProWebAPI.Infrastructure.Common;
@@ -211,6 +213,13 @@ public static class DependencyInjection
         services.AddScoped<AILeaveDynamicReportService>();
         services.AddSingleton<IAILeaveReportTokenStore, InMemoryAILeaveReportTokenStore>();
         services.AddScoped<IAILeaveManagementAgentService, AILeaveManagementAgentService>();
+
+        // AI Timesheet Management
+        services.AddScoped<IAITimesheetManagementAgentService, AITimesheetManagementAgentService>();
+        services.AddTransient<IGeminiAITimesheetService>(provider => (IGeminiAITimesheetService)provider.GetRequiredService<IGeminiAIService>());
+        services.AddScoped<IAITimesheetSecurityContext, AITimesheetSecurityContext>();
+        services.AddSingleton<IAITimesheetConfirmationStore, InMemoryAITimesheetConfirmationStore>();
+        services.AddSingleton<IAITimesheetClarificationStore, InMemoryAITimesheetClarificationStore>();
         
 
         // Leave Management

@@ -90,11 +90,11 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Timesheet
                     if (DBStatus == Helper.ToProperCase(MessageTypeConstants.Success))
                     {
                         var ProjectTimesheetSubmissionApproveRejectReportList = Helper.ConvertDataSetToClassList<ProjectTimesheetSubmissionApproveRejectReportList>(ds);
-                        if(ProjectTimesheetSubmissionApproveRejectReportList != null && ProjectTimesheetSubmissionApproveRejectReportList.Count > 0)
+                        if (ProjectTimesheetSubmissionApproveRejectReportList != null && ProjectTimesheetSubmissionApproveRejectReportList.Count > 0)
                         {
                             foreach (ProjectTimesheetSubmissionApproveRejectReportList item in ProjectTimesheetSubmissionApproveRejectReportList)
                             {
-                                if(SourceScreen == "TimesheetReport")
+                                if (SourceScreen == "TimesheetReport")
                                 {
                                     item.IsShowSendNotificationButton = (item.TimesheetApprovalStatus != "Approved" && item.IsSentForApproval == false ? true : false);
                                     item.IsShowViewDetailsButton = (item.TimesheetApprovalStatus != "Not Submitted" && item.TimesheetApprovalStatus != "Pending For Approval" ? true : false);
@@ -203,10 +203,10 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Timesheet
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var IsApproved = await _DropdownSvc.CheckTimesheetApprovedAsync(_objGetTimesheetDetailsRequestParam.EmployeeCode, _objGetTimesheetDetailsRequestParam.TaskDate, cancellationToken);
-                if(!IsApproved)
+                if (!IsApproved)
                 {
                     var IsSentForApproval = await _DropdownSvc.CheckTimesheetSentForApprovalAsync(_objGetTimesheetDetailsRequestParam.EmployeeCode, _objGetTimesheetDetailsRequestParam.TaskDate, cancellationToken);
-                    if(!IsSentForApproval)
+                    if (!IsSentForApproval)
                     {
                         var parameters = new Dictionary<string, object>
                         {
@@ -485,7 +485,7 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Timesheet
                             string ContentType = _ContentTypeSvc.GetFileContentType(FileName);
 
                             var TimeSheetDataTable = Helper.ConvertDataSetToDataTable(ds);
-                            if(Helper.CheckDataTableIsNullOrEmpty(TimeSheetDataTable))
+                            if (Helper.CheckDataTableIsNullOrEmpty(TimeSheetDataTable))
                             {
                                 foreach (DataRow row in TimeSheetDataTable.Rows)
                                 {
@@ -877,7 +877,35 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Timesheet
         /// <param name="_objTimesheetApproveRejectRequestParam"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public async Task<DataSet> ApproveOrRejectTimesheet(TimesheetApproveRejectRequestParam _objTimesheetApproveRejectRequestParam, CancellationToken cancellationToken = default)
+        public Task<DataSet> ApproveOrRejectTimesheet(TimesheetApproveRejectRequestParam _objTimesheetApproveRejectRequestParam, CancellationToken cancellationToken = default)
+        {
+            return ApproveOrRejectTimesheetCore(_objTimesheetApproveRejectRequestParam, null, cancellationToken);
+        }
+
+
+        /// <summary>
+        /// This Method Is Used To Approve Or Reject Timesheet Using A Trusted Authenticated Approver ID.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="approverUserId"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public Task<DataSet> ApproveOrRejectTimesheetAsApprover(TimesheetApproveRejectRequestParam request, int approverUserId, CancellationToken cancellationToken = default)
+        {
+            if (approverUserId <= 0 || request.ApproveStatus is not ("Approve" or "Reject") || string.IsNullOrWhiteSpace(request.Remarks) || !string.IsNullOrEmpty(request.Source) || !string.IsNullOrEmpty(request.UserToken))
+                throw new ArgumentException("Invalid authenticated approval request.");
+            return ApproveOrRejectTimesheetCore(request, approverUserId, cancellationToken);
+        }
+
+        /// <summary>
+        /// This Method Is Used To Approve Or Reject Timesheet.
+        /// </summary>
+        /// <param name="_objTimesheetApproveRejectRequestParam"></param>
+        /// <param name="approverUserId"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        private async Task<DataSet> ApproveOrRejectTimesheetCore(TimesheetApproveRejectRequestParam _objTimesheetApproveRejectRequestParam, int? approverUserId, CancellationToken cancellationToken)
         {
             DataSet finalDataSet = new DataSet();
             string TableName = "TIMESHEET_APPROVE_REJECT_RESPONSE";
@@ -893,7 +921,7 @@ namespace VUSYSTimeProWebAPI.Infrastructure.Services.Modules.Timesheet
                 if (ApproverUserDetails != null && ApproverUserDetails.Count > 0)
                 {
                     var UserDetails = await _DropdownSvc.GetUserDetailsByEmployeeCode(_objTimesheetApproveRejectRequestParam.EmployeeCode, cancellationToken);
-                    if(UserDetails != null && UserDetails.Count > 0)
+                    if (UserDetails != null && UserDetails.Count > 0)
                     {
                         bool IsApproved = (_objTimesheetApproveRejectRequestParam.ApproveStatus == "Approve") ? true : false;
                         var parameters = new Dictionary<string, object>
